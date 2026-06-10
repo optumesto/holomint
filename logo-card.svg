@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="holo" x1="0%" y1="0%" x2="100%" y2="100%">
+  <stop offset="0%" stop-color="#c8a2ff"/><stop offset="26%" stop-color="#7fb0ff"/>
+  <stop offset="50%" stop-color="#7df0c8"/><stop offset="74%" stop-color="#ffe08a"/>
+  <stop offset="100%" stop-color="#ff9ad2"/></linearGradient>
+<linearGradient id="holo2" x1="100%" y1="0%" x2="0%" y2="100%">
+  <stop offset="0%" stop-color="#c8a2ff"/><stop offset="26%" stop-color="#7fb0ff"/>
+  <stop offset="50%" stop-color="#7df0c8"/><stop offset="74%" stop-color="#ffe08a"/>
+  <stop offset="100%" stop-color="#ff9ad2"/></linearGradient></defs>
+<rect width="512" height="512" fill="#070916"/>
+<g transform="rotate(-12 256 256)"><rect x="146" y="106" width="220" height="300" rx="22" fill="url(#holo2)" opacity="0.92"/></g>
+<g transform="scale(0.72) translate(100,96)"><g transform="rotate(-34 256 256)">
+  <path d="M256 430 L256 468" stroke="#070916" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <path d="M282.6 430.0 L293.3 422.7 L297.4 415.4 L308.8 408.1 L311.1 400.8 L323.2 393.5 L323.7 386.2 L336.3 379.0 L335.1 371.7 L348.1 364.4 L345.3 357.1 L358.5 349.8 L354.1 342.5 L367.4 335.2 L361.6 327.9 L374.7 320.6 L367.5 313.3 L380.4 306.0 L371.9 298.8 L384.3 291.5 L374.8 284.2 L386.5 276.9 L376.0 269.6 L386.9 262.3 L375.5 255.0 L385.6 247.7 L373.5 240.4 L382.4 233.1 L369.8 225.8 L377.6 218.5 L364.5 211.2 L371.0 204.0 L357.8 196.7 L362.8 189.4 L349.6 182.1 L353.1 174.8 L340.0 167.5 L342.0 160.2 L327.0 152.9 L323.5 145.6 L309.0 138.3 L304.6 131.0 L292.6 123.8 L287.8 116.5 L278.2 109.2 L273.3 101.9 L266.1 94.6 L261.3 87.3 L256.0 80.0 L256.0 74.0 L256.0 80.0 L250.7 87.3 L245.9 94.6 L238.7 101.9 L233.8 109.2 L224.2 116.5 L219.4 123.8 L207.4 131.0 L203.0 138.3 L188.5 145.6 L185.0 152.9 L170.0 160.2 L172.0 167.5 L158.9 174.8 L162.4 182.1 L149.2 189.4 L154.2 196.7 L141.0 204.0 L147.5 211.2 L134.4 218.5 L142.2 225.8 L129.6 233.1 L138.5 240.4 L126.4 247.7 L136.5 255.0 L125.1 262.3 L136.0 269.6 L125.5 276.9 L137.2 284.2 L127.7 291.5 L140.1 298.8 L131.6 306.0 L144.5 313.3 L137.3 320.6 L150.4 327.9 L144.6 335.2 L157.9 342.5 L153.5 349.8 L166.7 357.1 L163.9 364.4 L176.9 371.7 L175.7 379.0 L188.3 386.2 L188.8 393.5 L200.9 400.8 L203.2 408.1 L214.6 415.4 L218.7 422.7 L229.4 430.0 Z" fill="#070916"/>
+  <path d="M256 415 L256 100" stroke="#7df0c8" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M256 415 L256 100 M256 332 Q 297 318 331 280 M256 332 Q 215 318 181 280 M256 269 Q 304 255 342 217 M256 269 Q 208 255 170 217 M256 206 Q 298 192 333 154 M256 206 Q 214 192 179 154 M256 150 Q 283 136 304 98 M256 150 Q 229 136 208 98" stroke="#7df0c8" stroke-width="10" stroke-linecap="round" fill="none"/>
+</g></g></svg>

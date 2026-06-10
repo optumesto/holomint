@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Holomint</title>
+<meta name="theme-color" content="#070916">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px 120px}
+  header{padding:22px 0 14px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2) left bottom/100% 1.5px no-repeat}
+  .brand{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.02em;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
+  .brand b{font-weight:600;-webkit-text-fill-color:transparent}
+  @keyframes holo{to{background-position:240% center}}
+  .probtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:18px;padding:7px 14px;cursor:pointer}
+  .probtn.on{border-color:transparent;background:var(--holo);background-size:240% auto;color:#101010;font-weight:600;animation:holo 7s linear infinite}
+  .tabs{display:flex;gap:6px;margin:16px 0 18px;background:var(--bg2);padding:5px;border-radius:12px;border:1px solid var(--line)}
+  .tab{flex:1;padding:11px 4px;text-align:center;border-radius:8px;font-weight:500;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;border:none;background:none;font-family:var(--sans)}
+  .tab.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
+  .panel{display:none;animation:fade .3s ease}.panel.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
+  .seg button{flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+  .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+  .hide{display:none}
+  input,select{font-family:var(--sans);font-size:15px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--gold-dim)}input::placeholder{color:var(--ink3)}
+  select option{background:var(--bg2);color:var(--ink)}
+  .choice{display:flex;flex-direction:column;gap:8px}
+  .choice button{width:100%;text-align:left;background:var(--bg3);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:13px 14px;font-family:var(--sans);font-size:14px;cursor:pointer}
+  .choice button:active{transform:scale(.99)}
+  .choice button b{display:block;font-weight:600;margin-bottom:1px}
+  .choice button span{font-size:12px;color:var(--ink2)}
+  .choice button.danger b{color:var(--down)}
+  .num{font-family:var(--mono);text-align:right}
+  label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:5px}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:10px 12px;cursor:pointer;font-size:13px;font-family:var(--sans)}
+  button.ghost:active{transform:scale(.98)}
+  button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:11px;padding:14px;font-family:var(--sans);font-weight:600;font-size:15px;cursor:pointer}
+  button.act:active{transform:scale(.99)}button.act:disabled{opacity:.4;cursor:default}
+  .btnrow{display:flex;gap:8px}
+  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:20px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .swbtn.on{border-color:var(--gold);color:var(--gold);background:#1e1a36}
+  .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .sidehead .st{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
+  .sidehead .sv2{font-family:var(--mono);font-size:16px;color:var(--gold);font-weight:600}
+  .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.pile-item:last-child{border-bottom:none}
+  .pi-name{flex:1;min-width:0}.pi-name .n{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
+  .pirate{display:inline-block;width:40px;font-family:var(--mono);font-size:11px;text-align:right;background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:2px 5px;color:var(--ink)}
+  .chip{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
+  .chip.oop{background:#2a2410;color:var(--gold)}.chip.ip{background:var(--bg3);color:var(--ink3)}
+  .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}
+  .chip.pro{background:var(--holo);background-size:240% auto;color:#101010;animation:holo 7s linear infinite}
+  .qtybtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:16px;cursor:pointer;line-height:1}
+  .val{font-family:var(--mono);font-size:14px;min-width:64px;text-align:right}.x{color:var(--ink3);cursor:pointer;font-size:18px;padding:0 2px}
+  .results{margin-top:8px;max-height:230px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;display:none}.results.show{display:block}
+  .res{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
+  .res .rn{font-size:13px}.res .rp{font-family:var(--mono);font-size:12px;color:var(--gold)}
+  .hot{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px}.hot::-webkit-scrollbar{height:0}
+  .hchip{flex:0 0 auto;background:var(--bg3);border:1px solid var(--line);border-radius:18px;padding:8px 13px;font-size:12px;white-space:nowrap;cursor:pointer;font-family:var(--mono);color:var(--ink)}
+  .hchip:active{transform:scale(.97)}.hchip b{color:var(--gold);font-weight:500;margin-left:7px}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background:var(--bg3);border-radius:4px;padding:0;border:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
+  .bigrate{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
+  .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}.anchor:last-of-type{border-bottom:none}
+  .anchor .al{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
+  .anchor .av{font-family:var(--mono);font-size:17px;font-weight:600}
+  .anchor.hero .av{font-size:22px;color:var(--gold)}
+  .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 4px}
+  .ch{padding:9px 4px;text-align:center;border-radius:9px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:.15s}
+  .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:12px;font-weight:500}.ch .cf{font-family:var(--mono);font-size:10px;color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
+  .feeEdit{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feeEdit>div{flex:1}.feeEdit input{font-size:14px;padding:9px 10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 input,.grid2 select{font-size:14px;padding:9px 10px}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
+  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:15px}tr:last-child td{border-bottom:none}
+  .pos{color:var(--up)}.neg{color:var(--down)}
+  .toolbtn{color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px}.toolbtn:active{color:var(--ink)}
+  .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:28px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
+  .verdict{text-align:center;padding:10px 0 4px}.verdict .vv{font-family:var(--serif);font-size:24px;font-weight:600}.verdict .ve{font-family:var(--mono);font-size:14px;margin-top:4px}
+  .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.stat .sl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:5px}.stat .sv{font-family:var(--mono);font-size:21px;font-weight:600}
+  .weight{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
+  .wleg{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .empty{text-align:center;color:var(--ink3);font-size:13px;padding:18px 0;font-style:italic}
+  .banner{background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .banner p{flex:1;font-size:13px;color:var(--ink2);margin:0}
+  .lockcard{position:relative;overflow:hidden}
+  .lockcard .lk{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .lockcard .lk p{font-size:13px;color:var(--ink2);margin:0}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:14px;padding:12px 20px;border-radius:11px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:48}
+  .sheetbg.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px 26px;transform:translateY(105%);transition:.3s cubic-bezier(.3,.9,.3,1);z-index:50;max-height:82vh;overflow-y:auto}
+  .sheet.show{transform:translateY(0)}
+  .sheet h3{font-family:var(--serif);font-size:19px;font-weight:500;margin-bottom:14px}
+  .sheet .field{margin-bottom:12px}
+  .holo-line{height:2px;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2);border-radius:2px;width:44px;margin:0 auto 16px}
+  .feat{display:flex;gap:10px;align-items:baseline;padding:7px 0;font-size:14px;color:var(--ink2)}
+  .feat i{font-style:normal;color:var(--up)}
+  .colhead{cursor:pointer;user-select:none}
+  .chev{font-size:12px;color:var(--ink3);transition:.2s;display:inline-block}
+  .collapsed .chev{transform:rotate(-90deg)}
+  .collapsed .colbody{display:none}
+  .toolbtn.arm{color:var(--down);font-weight:600}
+  .lead,.bigrate,.anchor.hero .av{background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand">Holo<b>mint</b></div><button class="probtn" id="proBtn">PRO</button></header>
+  <div class="tabs">
+    <button class="tab on" data-tab="block">Trade Block</button>
+    <button class="tab" data-tab="port">Portfolio</button>
+    <button class="tab" data-tab="slab">Slab Math</button>
+  </div>
+
+  <!-- ============ TRADE BLOCK ============ -->
+  <section class="panel on" id="block">
+    <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
+    <div class="card">
+      <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
+      <input id="search" placeholder="Search sealed or graded…" autocomplete="off"><div class="results" id="results"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
+      <div id="pile" style="margin-top:4px"></div>
+      <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" value="0" style="width:96px"></div>
+    </div>
+    <div class="card hide" id="yourCard">
+      <div class="sidehead"><span class="st">Your side</span><span class="sv2" id="pileTotal2">$0</span></div>
+      <input id="search2" placeholder="Search…" autocomplete="off"><div class="results" id="results2"></div>
+      <div id="pile2" style="margin-top:6px"></div>
+      <div class="row between" style="margin-top:10px"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" value="0" style="width:96px"></div>
+    </div>
+    <div class="card hide" id="balanceCard"><label>Balance</label><div class="balance"><div class="bv" id="balVal">$0</div><div class="bl" id="balText">Add to both sides.</div></div></div>
+    <div class="card" id="channelCard">
+      <label>Resell channel</label><div class="channels" id="channels"></div>
+      <div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
+    </div>
+    <div class="card" id="rateCard">
+      <label>Buy rate</label>
+      <div class="bigrate" id="rateLabel">75%</div>
+      <input type="range" id="rate" min="40" max="100" step="1" value="75">
+      <div class="row between" style="margin-top:14px"><label style="margin:0">Store-credit bump</label>
+        <div class="row" style="gap:8px"><input class="num" id="creditBump" type="number" value="10" style="width:62px;padding:8px 10px"><span style="font-family:var(--mono);font-size:12px;color:var(--ink3)">%</span><button class="swbtn" id="creditTog">Off</button></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="anchor"><span class="al">Market total</span><span class="av" id="aMarket">$0</span></div>
+        <div class="anchor hero"><span class="al" id="payLabel">Cash payout</span><span class="av" id="aPayout">$0</span></div>
+        <div class="anchor"><span class="al">Net resale</span><span class="av" id="aNet">$0</span></div>
+        <div class="anchor"><span class="al">Profit · ROI</span><span class="av" id="aProfit">$0</span></div>
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="ghost" id="copyReceipt" style="flex:0 0 auto" disabled>Receipt</button>
+      <button class="act" id="sendDesk" style="flex:1" disabled>Send to Desk →</button>
+    </div>
+    <div class="card" id="hotCard" style="display:none;margin-top:14px">
+      <div class="row between" style="margin-bottom:6px"><label style="margin:0">Quick recall</label><button class="ghost" id="hotClear" style="padding:6px 10px">Clear</button></div>
+      <div class="hot" id="hotlist"></div>
+    </div>
+  </section>
+
+  <!-- ============ PORTFOLIO ============ -->
+  <section class="panel" id="port">
+    <div class="banner hide" id="sampleBanner"><p>Sample holdings — clear them to start your own desk.</p><button class="ghost" id="clearSamples">Clear</button></div>
+    <div class="stats" id="portStats"></div>
+    <div class="card">
+      <label>Allocation</label>
+      <div class="weight" id="weightBar"></div>
+      <div class="wleg" id="weightLeg"></div>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
+        <div class="row" style="gap:6px"><button class="ghost" id="exportCsv" style="padding:8px 11px">CSV</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
+      </div>
+      <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th>/yr</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
+    </div>
+    <div class="card hide" id="soldCard">
+      <div class="row between colhead" data-col="soldCard"><label style="margin:0">Sold</label><span class="chev">▾</span></div>
+      <div class="colbody"><table><thead><tr><th>Item</th><th>Basis</th><th>Net</th><th>P&amp;L</th><th></th></tr></thead><tbody id="soldBody"></tbody></table></div>
+    </div>
+    <div class="card" id="dealCard">
+      <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
+      <div class="colbody" id="dealBody"></div>
+    </div>
+    <div class="card" id="taxCard">
+      <div class="row between colhead" data-col="taxCard"><label style="margin:0">Tax summary <span class="chip pro">pro</span></label><span class="chev">▾</span></div>
+      <div class="colbody" id="taxBody"></div>
+    </div>
+  </section>
+
+  <!-- ============ SLAB MATH ============ -->
+  <section class="panel" id="slab">
+    <div class="card">
+      <div class="grid2" style="margin-bottom:10px">
+        <div><label>Card</label><input id="cardName" placeholder="Mega Charizard X EX"></div>
+        <div><label>Number</label><input id="cardNum" placeholder="125/094 or SWSH284"></div>
+      </div>
+      <button class="act" id="findCard">Find card</button>
+      <div class="results" id="cardResults"></div>
+      <div id="cardHit" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div class="row between"><div><div id="chName" style="font-weight:500"></div><div id="chSet" style="font-family:var(--mono);font-size:11px;color:var(--ink3)"></div></div></div>
+        <div class="row" id="finishRow" style="gap:6px;margin-top:10px;flex-wrap:wrap"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="grid2" style="margin-bottom:10px"><div><label>Grader</label><select id="gBrand"></select></div><div><label>Service</label><select id="gService"></select></div></div>
+      <div class="grid2" style="margin-bottom:12px"><div><label>Ship / card</label><input class="num" id="gShip" type="number" value="3"></div></div>
+      <div class="stats" style="grid-template-columns:repeat(3,1fr);margin:0">
+        <div class="stat"><div class="sl">Fee 🔒</div><div class="sv" id="tFee">—</div></div>
+        <div class="stat"><div class="sl">Days 🔒</div><div class="sv" id="tDays">—</div></div>
+        <div class="stat"><div class="sl">Raw 🔒</div><div class="sv" id="tRaw">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <table style="margin-top:0">
+        <thead><tr><th>Grade</th><th>Value</th><th>Pop</th><th>vs raw</th></tr></thead>
+        <tbody>
+          <tr><td>10</td><td><input class="num" id="g10" type="number" value="300" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p10pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d10">—</td></tr>
+          <tr><td>9</td><td><input class="num" id="g9" type="number" value="140" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p9pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d9">—</td></tr>
+          <tr><td>8</td><td><input class="num" id="g8" type="number" value="90" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p8pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d8">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card hide" id="salesCard">
+      <div class="row between colhead" data-col="salesCard"><label style="margin:0">Recent sales</label><span class="chev">▾</span></div>
+      <div class="colbody" id="salesBody"></div>
+    </div>
+    <div class="card">
+      <div class="verdict"><div class="vv" id="gVerdict">—</div><div class="ve" id="gEdge"></div></div>
+      <div class="stats" style="margin:14px 0 2px">
+        <div class="stat"><div class="sl">All-in cost</div><div class="sv" id="sCost">$0</div></div>
+        <div class="stat"><div class="sl">Net at 10</div><div class="sv" id="sN10">$0</div></div>
+        <div class="stat"><div class="sl">Net at 9</div><div class="sv" id="sN9">$0</div></div>
+        <div class="stat"><div class="sl">10 annualized</div><div class="sv" id="sAnn">—</div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="sheetbg" id="sheetbg"></div>
+<div class="sheet" id="sheet"><div class="holo-line"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div>
+  <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
+</div>
+<div class="toast" id="toast">Done</div>
+
+<script>
+/* ===== SPINE ===== */
+function makeHolding({type,name,qty=1,costBasis=0,currentValue=0,acquired=null,status='in-print',sample=false}){
+  return {id:'h'+Math.random().toString(36).slice(2,8),type,name,qty,costBasis,currentValue,acquired,status,sample};
+}
+const PriceEngine=(function(){
+  let catalog=[
+    {id:'es-bb',type:'sealed',name:'Evolving Skies Booster Box',status:'oop'},
+    {id:'lo-bb',type:'sealed',name:'Lost Origin Booster Box',status:'oop'},
+    {id:'cz-etb',type:'sealed',name:'Crown Zenith ETB',status:'oop'},
+    {id:'151-bb',type:'sealed',name:'151 Booster Bundle',status:'in-print'},
+    {id:'151-etb',type:'sealed',name:'151 Elite Trainer Box',status:'in-print'},
+    {id:'ss-bb',type:'sealed',name:'Surging Sparks Booster Box',status:'in-print'},
+    {id:'pe-etb',type:'sealed',name:'Prismatic Evolutions ETB',status:'in-print'},
+    {id:'zard151',type:'graded',name:'Charizard ex 151 · PSA 10',status:'graded'},
+    {id:'moon',type:'graded',name:'Umbreon VMAX Alt "Moonbreon" · PSA 10',status:'graded'},
+    {id:'gira',type:'graded',name:'Giratina V Alt Art · PSA 10',status:'graded'}
+  ];
+  let cache={'es-bb':480,'lo-bb':230,'cz-etb':92,'151-bb':40,'151-etb':74,'ss-bb':132,'pe-etb':90,'zard151':300,'moon':1100,'gira':250};
+  async function loadData(){
+    try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length)catalog=p;}}catch(e){}
+    try{const r=await fetch('prices.json');if(r.ok)Object.assign(cache,await r.json());}catch(e){}
+    return true;
+  }
+  return{
+    search(q){q=q.trim().toLowerCase();if(!q)return[];return catalog.filter(c=>c.name.toLowerCase().includes(q)).slice(0,8);},
+    getPrice(id){return cache[id]??0;},
+    getItem(id){return catalog.find(c=>c.id===id);},
+    loadData
+  };
+})();
+const FeeCalc=(function(){
+  const channels={cash:{label:'Cash',pct:0,flat:0},ebay:{label:'eBay',pct:13.6,flat:0.40},tcgplayer:{label:'TCGpl',pct:12.5,flat:0.30},whatnot:{label:'Whatnot',pct:11,flat:0.30}};
+  function net(a,k){const c=channels[k];if(!c||a<=0)return{fees:0,net:a};const fees=a*(c.pct/100)+c.flat;return{fees,net:a-fees};}
+  return{channels,net};
+})();
+const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
+
+/* ===== PREMIUM ===== */
+const Premium=(function(){
+  let lic=Store.load('license',null);
+  function active(){return !!(lic&&lic.valid);}
+  /* DROP-IN: replace validate() with a Lemon Squeezy license call:
+     POST https://api.lemonsqueezy.com/v1/licenses/validate {license_key}
+     -> set valid from response. Local format check stands in until then. */
+  async function validate(key){
+    key=(key||'').trim();
+    const ok=/^HF-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(key);
+    if(ok){lic={key,valid:true,at:Date.now()};Store.save('license',lic);}
+    return ok;
+  }
+  function clear(){lic=null;Store.save('license',null);}
+  return{active,validate,clear,key:()=>lic&&lic.key};
+})();
+let acct=Store.load('acct',{method:'fifo'});
+
+/* ===== UI CORE ===== */
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const usd=n=>(n<0?'\u2212$':'$')+Math.abs(Math.round(n)).toLocaleString();
+const pct=n=>(n>=0?'+':'')+Math.round(n)+'%';
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+function switchTab(name){$$('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));$$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));}
+$$('.tab').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+
+/* collapsible cards */
+let collapsed=Store.load('collapsed',{});
+function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',!!collapsed[k]);});}
+$$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!collapsed[k];Store.save('collapsed',collapsed);applyCollapse();});
+
+/* two-tap confirm: first tap arms, second within 2.5s fires */
+function armable(el,fn){let armed=false,t=null;el.onclick=e=>{e.stopPropagation();
+  if(armed){clearTimeout(t);fn();return;}
+  armed=true;el.classList.add('arm');el.textContent='✓?';
+  t=setTimeout(()=>{armed=false;el.classList.remove('arm');el.textContent='\u00d7';},2500);};}
+
+/* backup / restore */
+const SCHEMA=1;
+function backup(){
+  const data={schema:SCHEMA,exported:new Date().toISOString(),
+    holdings:Store.load('holdings',[]),sold:Store.load('sold',[]),deals:Store.load('deals',[]),
+    fees:Store.load('fees',null),hotlist:Store.load('hotlist',[]),credit:Store.load('credit',null),
+    buyRate:Store.load('buyRate',75),acct:Store.load('acct',{method:'fifo'})};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='holomint-backup.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Backup saved');}
+function restoreFile(file){const rd=new FileReader();
+  rd.onload=()=>{try{const d=JSON.parse(rd.result);
+    if(!d||typeof d!=='object'||!('schema' in d)){toast('Not a Holomint backup');return;}
+    ['holdings','sold','deals','fees','hotlist','credit','buyRate','acct'].forEach(k=>{if(d[k]!=null)Store.save(k,d[k]);});
+    toast('Restored');setTimeout(()=>location.reload(),600);
+  }catch(e){toast('Bad file');}};rd.readAsText(file);}
+const fileIn=document.createElement('input');fileIn.type='file';fileIn.accept='application/json';fileIn.style.display='none';document.body.appendChild(fileIn);
+fileIn.onchange=()=>{if(fileIn.files[0])restoreFile(fileIn.files[0]);fileIn.value='';};
+
+
+const Sheet=(function(){
+  let okFn=null;
+  function field(f){
+    if(f.type==='select')return `<div class="field"><label>${f.label}</label><select id="sf-${f.key}">${f.options.map(o=>`<option value="${o[0]}"${o[0]===f.value?' selected':''}>${o[1]}</option>`).join('')}</select></div>`;
+    if(f.type==='static')return `<div class="field">${f.html}</div>`;
+    return `<div class="field"><label>${f.label}</label><input id="sf-${f.key}" type="${f.type||'text'}" ${f.type==='number'?'inputmode="decimal" class="num"':''} value="${f.value!=null?String(f.value).replace(/"/g,'&quot;'):''}" placeholder="${f.placeholder||''}"></div>`;
+  }
+  function open(title,fields,okLabel,cb){
+    $('#sheetTitle').textContent=title;
+    $('#sheetBody').innerHTML=fields.map(field).join('');
+    $('#sheetOk').textContent=okLabel||'Save';$('#sheetOk').style.display=(okLabel==='Cancel')?'none':'';$('#sheetCancel').style.flex=(okLabel==='Cancel')?'1':'';
+    okFn=()=>{const out={};fields.forEach(f=>{if(f.type==='static')return;const v=$('#sf-'+f.key).value;out[f.key]=f.type==='number'?(parseFloat(v)||0):v;});close();cb(out);};
+    $('#sheetbg').classList.add('show');$('#sheet').classList.add('show');
+    const first=$('#sheetBody input');if(first)setTimeout(()=>first.focus(),250);
+  }
+  function close(){$('#sheetbg').classList.remove('show');$('#sheet').classList.remove('show');okFn=null;}
+  $('#sheetCancel').onclick=close;$('#sheetbg').onclick=close;
+  $('#sheetOk').onclick=()=>{if(okFn)okFn();};
+  return{open,close};
+})();
+
+/* ---- PRO sheet ---- */
+function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
+const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:14px"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
+function wireData(){setTimeout(()=>{const b=document.getElementById('bkBtn'),r=document.getElementById('rsBtn');
+  if(b)b.onclick=()=>{Sheet.close();backup();};
+  if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
+$('#proBtn').onclick=()=>{
+  if(Premium.active()){
+    Sheet.open('Settings',[
+      {type:'static',html:`<div class="feat"><i>✓</i> Pro active — ${Premium.key()}</div>`},
+      {key:'method',label:'Lot accounting',type:'select',value:acct.method,options:[['fifo','FIFO — first in, first out'],['lifo','LIFO — last in, first out']]},
+      {type:'static',html:DATA_ROW}
+    ],'Save',out=>{acct.method=out.method;Store.save('acct',acct);toast('Saved');renderPortfolio();});
+  }else{
+    Sheet.open('Settings',[
+      {type:'static',html:
+        '<div class="feat"><i>✓</i> Deal log — every buy and trade archived</div>'+
+        '<div class="feat"><i>✓</i> Tax summary — realized P&L by year</div>'+
+        '<div class="feat"><i>✓</i> Full CSV — holdings, sales, deals</div>'+
+        '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
+        '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
+      {key:'key',label:'License key',placeholder:'HF-XXXX-XXXX-XXXX'},
+      {type:'static',html:DATA_ROW}
+    ],'Activate',async out=>{
+      if(!out.key){return;}
+      const ok=await Premium.validate(out.key);
+      toast(ok?'Pro activated':'Invalid key');
+      renderProBtn();renderPortfolio();
+    });
+  }
+  wireData();
+};
+
+/* ---- TRADE BLOCK ---- */
+let theirPile=[],yourPile=[],mode='cash',channel='ebay';
+let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
+let storeCredit=Store.load('credit',{on:false,bump:10});
+let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
+const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{if(FeeCalc.channels[k])Object.assign(FeeCalc.channels[k],savedFees[k]);});
+
+function resolveItem(key){return manualItems[key]||PriceEngine.getItem(key);}
+function priceOf(key){return manualItems[key]?manualItems[key].price:PriceEngine.getPrice(key);}
+function pileValue(arr){return arr.reduce((s,p)=>s+priceOf(p.key)*p.qty,0);}
+
+$$('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode===mode));
+  const trade=mode==='trade';$('#theirLabel').textContent=trade?'You receive':'The pile';
+  $('#yourCard').classList.toggle('hide',!trade);$('#balanceCard').classList.toggle('hide',!trade);
+  $('#channelCard').classList.toggle('hide',trade);$('#rateCard').classList.toggle('hide',trade);
+  $('#theirCashRow').classList.toggle('hide',!trade);
+  $('#sendDesk').textContent=trade?'Log trade →':'Send to Desk →';
+  $('#copyReceipt').classList.toggle('hide',trade);recompute();});
+
+const chWrap=$('#channels');
+function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(([k,c])=>`<div class="ch${k===channel?' on':''}" data-ch="${k}"><div class="cn">${c.label}</div><div class="cf">${c.pct}%</div></div>`).join('');
+  chWrap.querySelectorAll('.ch').forEach(el=>el.onclick=()=>{channel=el.dataset.ch;renderChannels();syncFeeInputs();recompute();});}
+function syncFeeInputs(){const c=FeeCalc.channels[channel];$('#feePctLabel').textContent=c.label+' fee %';$('#feePct').value=c.pct;$('#feeFlat').value=c.flat;}
+$('#feePct').oninput=e=>{FeeCalc.channels[channel].pct=parseFloat(e.target.value)||0;Store.save('fees',FeeCalc.channels);renderChannels();recompute();};
+$('#feeFlat').oninput=e=>{FeeCalc.channels[channel].flat=parseFloat(e.target.value)||0;Store.save('fees',FeeCalc.channels);recompute();};
+$('#rate').oninput=e=>{buyRate=+e.target.value;$('#rateLabel').textContent=buyRate+'%';Store.save('buyRate',buyRate);recompute();};
+$('#creditTog').onclick=()=>{storeCredit.on=!storeCredit.on;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';Store.save('credit',storeCredit);recompute();};
+$('#creditBump').oninput=e=>{storeCredit.bump=parseFloat(e.target.value)||0;Store.save('credit',storeCredit);recompute();};
+$('#theirCash').oninput=e=>{theirCash=parseFloat(e.target.value)||0;recompute();};
+$('#yourCash').oninput=e=>{yourCash=parseFloat(e.target.value)||0;recompute();};
+
+function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);
+  inp.oninput=()=>{const r=PriceEngine.search(inp.value);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
+    res.innerHTML=r.map(i=>`<div class="res" data-add="${i.id}"><span class="rn">${i.name}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');res.classList.add('show');
+    res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});};}
+function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
+
+$('#manualBtn').onclick=()=>Sheet.open('Manual entry',[
+  {key:'name',label:'Name',placeholder:'e.g. Moonbreon raw NM'},
+  {key:'price',label:'Market price',type:'number',value:''},
+  {key:'type',label:'Type',type:'select',value:'sealed',options:[['sealed','Sealed'],['graded','Graded']]}
+],'Add',out=>{
+  if(!out.name||out.price<=0){toast('Name and price required');return;}
+  const key='m'+Date.now().toString(36)+Math.floor(Math.random()*1000);
+  const tmpl={key,name:out.name,price:out.price,type:out.type,status:out.type==='graded'?'graded':'in-print',manual:true};
+  manualItems[key]=tmpl;
+  if(!hotlist.some(h=>h.name.toLowerCase()===out.name.toLowerCase())){hotlist.push(tmpl);Store.save('hotlist',hotlist);}
+  addTo('their',key);renderHotlist();});
+function renderHotlist(){const el=$('#hotlist');$('#hotCard').style.display=hotlist.length?'block':'none';
+  el.innerHTML=hotlist.map(t=>`<div class="hchip" data-hot="${t.key}">${t.name}<b>${usd(t.price)}</b></div>`).join('');
+  el.querySelectorAll('.hchip').forEach(c=>c.onclick=()=>{const t=hotlist.find(x=>x.key===c.dataset.hot);if(t){manualItems[t.key]=t;addTo('their',t.key);}});}
+$('#hotClear').onclick=()=>{hotlist=[];Store.save('hotlist',hotlist);renderHotlist();};
+
+function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
+  if(!arr.length){el.innerHTML='<div class="empty">Empty</div>';return;}
+  el.innerHTML=arr.map(p=>{const it=resolveItem(p.key),price=priceOf(p.key);
+    const chip=it.type==='graded'?'<span class="chip graded">graded</span>':'<span class="chip sealed">sealed</span>';
+    const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
+    const rate=showRate?` · <input class="pirate" inputmode="decimal" data-rate="${p.key}" value="${p.rate!=null?p.rate:''}" placeholder="${buyRate}">%`:'';
+    return `<div class="pile-item"><div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea ${chip}${stat}${rate}</div></div>
+      <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
+      <span class="val">${usd(price*p.qty)}</span><span class="x" data-rm="${p.key}">\u00d7</span></div>`;}).join('');
+  el.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{arr.find(p=>p.key===b.dataset.inc).qty++;recompute();});
+  el.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{const p=arr.find(p=>p.key===b.dataset.dec);p.qty=Math.max(1,p.qty-1);recompute();});
+  el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const i=arr.findIndex(p=>p.key===b.dataset.rm);arr.splice(i,1);recompute();});
+  el.querySelectorAll('.pirate').forEach(inp=>inp.onchange=()=>{const it=arr.find(x=>x.key===inp.dataset.rate);const v=parseFloat(inp.value);it.rate=isNaN(v)?null:v;recompute();});}
+
+function cashNumbers(){let base=0,market=0;
+  theirPile.forEach(p=>{const pr=priceOf(p.key),r=(p.rate!=null?p.rate:buyRate)/100;market+=pr*p.qty;base+=pr*p.qty*r;});
+  const offer=storeCredit.on?base*(1+storeCredit.bump/100):base;
+  const net=FeeCalc.net(market,channel).net;return{market,base,offer,net,profit:net-offer};}
+function renderCash(){const n=cashNumbers(),roi=n.offer>0?n.profit/n.offer*100:0;
+  $('#aMarket').textContent=usd(n.market);
+  $('#payLabel').textContent=storeCredit.on?`Credit payout (+${Math.round(storeCredit.bump)}%)`:'Cash payout';
+  $('#aPayout').textContent=usd(n.offer);$('#aNet').textContent=usd(n.net);
+  const pe=$('#aProfit');pe.textContent=usd(n.profit)+' · '+pct(roi);pe.className='av '+(n.profit>=0?'pos':'neg');
+  const empty=n.market<=0;$('#sendDesk').disabled=empty;$('#copyReceipt').disabled=empty;}
+function renderBalance(){const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash,diff=T-Y;
+  const bigger=Math.max(T,Y),spread=bigger>0?Math.abs(diff)/bigger*100:0,bv=$('#balVal'),bt=$('#balText');
+  $('#sendDesk').disabled=pileValue(theirPile)<=0;
+  if(T<=0&&Y<=0){bv.textContent='$0';bv.className='bv';bt.innerHTML='Add to both sides.';return;}
+  if(spread<=3){bv.textContent='Even';bv.className='bv pos';bt.innerHTML=`Within <b>${Math.round(spread)}%</b>.`;return;}
+  bv.textContent=usd(Math.abs(diff));
+  if(diff>0){bv.className='bv neg';bt.innerHTML=`Their side is heavier — <b>you add ${usd(Math.abs(diff))}</b>.`;}
+  else{bv.className='bv pos';bt.innerHTML=`Your side is heavier — <b>they owe ${usd(Math.abs(diff))}</b>.`;}}
+function recompute(){$('#pileTotal').textContent=usd(pileValue(theirPile));$('#pileTotal2').textContent=usd(pileValue(yourPile));
+  renderPile(theirPile,'pile',mode==='cash');renderPile(yourPile,'pile2',false);
+  if(mode==='trade')renderBalance();else renderCash();}
+
+let dealLog=Store.load('deals',[]);
+function saveDeals(){Store.save('deals',dealLog);}
+function logDeal(kind,items,market,payout){
+  dealLog.push({id:'d'+Math.random().toString(36).slice(2,8),date:new Date().toISOString().slice(0,10),kind,items,market:Math.round(market),payout:Math.round(payout)});
+  saveDeals();
+}
+
+$('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
+  if(mode==='cash'){
+    const n=cashNumbers();if(n.market<=0)return;
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key),r=(p.rate!=null?p.rate:buyRate)/100;
+      holdings.push(makeHolding({type:it.type,name:it.name,qty:p.qty,costBasis:Math.round(pr*r),currentValue:pr,acquired:today,status:it.status}));});
+    logDeal('buy',theirPile.map(p=>({name:resolveItem(p.key).name,qty:p.qty})),n.market,n.offer);
+    toast('Booked at '+buyRate+'%');
+  }else{
+    const recvMarket=pileValue(theirPile);if(recvMarket<=0)return;
+    const given=Math.max(0,pileValue(yourPile)+yourCash-theirCash);
+    const ratio=given>0?given/recvMarket:0;
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);
+      holdings.push(makeHolding({type:it.type,name:it.name,qty:p.qty,costBasis:Math.round(pr*ratio),currentValue:pr,acquired:today,status:it.status}));});
+    logDeal('trade',theirPile.map(p=>({name:resolveItem(p.key).name,qty:p.qty})),recvMarket,given);
+    toast('Trade booked at '+Math.round(ratio*100)+'% basis');
+  }
+  saveHoldings();renderPortfolio();
+  theirPile=[];yourPile=[];theirCash=0;yourCash=0;$('#theirCash').value=0;$('#yourCash').value=0;
+  recompute();switchTab('port');};
+
+$('#copyReceipt').onclick=()=>{const n=cashNumbers();if(n.market<=0)return;
+  const L=['HOLOMINT — DEAL RECEIPT',new Date().toLocaleString(),''];
+  theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push((p.qty+'x '+it.name).slice(0,30).padEnd(31)+usd(pr*p.qty).padStart(9));});
+  L.push('');L.push('Market total'.padEnd(22)+usd(n.market).padStart(9));
+  L.push((storeCredit.on?'Credit offer':'Cash offer').padEnd(22)+usd(n.offer).padStart(9));
+  L.push(('Net resale ('+FeeCalc.channels[channel].label+')').padEnd(22)+usd(n.net).padStart(9));
+  L.push('Est. profit'.padEnd(22)+usd(n.profit).padStart(9));L.push('');L.push('via Holomint');
+  const text=L.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast('Copied')).catch(()=>toast('Copy failed'));}
+  else{toast('Clipboard unavailable');}};
+
+/* ---- PORTFOLIO ---- */
+const DEFAULT_HOLDINGS=[
+  makeHolding({type:'sealed',name:'Evolving Skies Booster Box',qty:2,costBasis:110,currentValue:480,acquired:'2021-09-01',status:'oop',sample:true}),
+  makeHolding({type:'graded',name:'Umbreon VMAX "Moonbreon" PSA 10',qty:1,costBasis:450,currentValue:1100,acquired:'2022-03-15',status:'graded',sample:true}),
+  makeHolding({type:'sealed',name:'Lost Origin Booster Box',qty:1,costBasis:100,currentValue:230,acquired:'2022-09-09',status:'oop',sample:true}),
+  makeHolding({type:'sealed',name:'151 Elite Trainer Box',qty:6,costBasis:50,currentValue:74,acquired:'2024-09-22',status:'in-print',sample:true}),
+  makeHolding({type:'sealed',name:'Surging Sparks Booster Box',qty:3,costBasis:120,currentValue:132,acquired:'2025-11-08',status:'in-print',sample:true})
+];
+let samplesCleared=Store.load('samplesCleared',false);
+let holdings=Store.load('holdings',samplesCleared?[]:DEFAULT_HOLDINGS);
+let soldLog=Store.load('sold',[]);
+function saveHoldings(){Store.save('holdings',holdings);}
+function saveSold(){Store.save('sold',soldLog);}
+function monthsHeld(d){if(!d)return 12;return Math.max(0.5,(Date.now()-new Date(d).getTime())/(1000*60*60*24*30.44));}
+function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis*100:0;}
+function cagrPct(h){if(h.costBasis<=0)return 0;return(Math.pow(h.currentValue/h.costBasis,12/monthsHeld(h.acquired))-1)*100;}
+
+function renderPortfolio(){
+  $('#sampleBanner').classList.toggle('hide',samplesCleared||!holdings.some(h=>h.sample));
+  const cost=holdings.reduce((s,h)=>s+h.costBasis*h.qty,0),val=holdings.reduce((s,h)=>s+h.currentValue*h.qty,0);
+  const gain=val-cost;
+  const realized=soldLog.reduce((s,r)=>s+r.realized,0);
+  $('#portStats').innerHTML=[['Cost basis',usd(cost),''],['Market value',usd(val),''],['Unrealized',usd(gain),gain>=0?'pos':'neg'],['Realized P&L',usd(realized),realized>=0?'pos':'neg']].map(s=>`<div class="stat"><div class="sl">${s[0]}</div><div class="sv ${s[2]}">${s[1]}</div></div>`).join('');
+  const sealedV=holdings.filter(h=>h.type==='sealed').reduce((s,h)=>s+h.currentValue*h.qty,0);
+  const gradedV=holdings.filter(h=>h.type==='graded').reduce((s,h)=>s+h.currentValue*h.qty,0);
+  const tot=sealedV+gradedV||1,sp=Math.round(sealedV/tot*100),gp=100-sp;
+  $('#weightBar').innerHTML=`<i style="width:${sp}%;background:var(--up)"></i><i style="width:${gp}%;background:#9fb6ff"></i>`;
+  $('#weightLeg').innerHTML=`<span><i class="dot" style="background:var(--up)"></i>Sealed ${sp}%</span><span><i class="dot" style="background:#9fb6ff"></i>Graded ${gp}%</span>`;
+  const sorted=[...holdings].sort((a,b)=>cagrPct(b)-cagrPct(a));
+  $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),c=cagrPct(h),cls=r>=0?'pos':'neg';
+    const chip=h.type==='graded'?'<span class="chip graded">graded</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>');
+    return `<tr><td style="max-width:128px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td class="${cls}">${pct(c)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty — buy something in the Trade Block.</td></tr>';
+  $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
+  $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
+  $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
+  renderSold();renderDeals();renderTax();
+}
+function renderSold(){
+  $('#soldCard').classList.toggle('hide',!soldLog.length);
+  if(!soldLog.length)return;
+  $('#soldBody').innerHTML=[...soldLog].reverse().map(r=>{const cls=r.realized>=0?'pos':'neg';
+    return `<tr><td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${r.qty} · ${r.channel} · ${r.date}</div></td><td>${usd(r.basis)}</td><td>${usd(r.net)}</td><td class="${cls}">${usd(r.realized)}</td><td><span class="toolbtn" data-unsell="${r.id}">\u00d7</span></td></tr>`;}).join('');
+  $('#soldBody').querySelectorAll('[data-unsell]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=soldLog.find(x=>x.id===b.dataset.unsell);if(!r)return;
+    Sheet.open(r.name,[
+      {type:'static',html:'<div class="choice">'+
+        '<button id="ch-return"><b>Return to desk</b><span>Restore the item at its basis, undo the P&L</span></button>'+
+        '<button id="ch-delete" class="danger"><b>Delete record</b><span>Remove the sale from history</span></button>'+
+      '</div>'}
+    ],'Cancel',()=>{});
+    setTimeout(()=>{
+      const done=()=>{soldLog=soldLog.filter(x=>x.id!==r.id);saveSold();renderPortfolio();};
+      const rb=document.getElementById('ch-return'),db=document.getElementById('ch-delete');
+      if(rb)rb.onclick=()=>{Sheet.close();
+        holdings.push(makeHolding({type:r.type||'sealed',name:r.name,qty:r.qty,costBasis:r.qty>0?Math.round(r.basis/r.qty):r.basis,currentValue:r.qty>0?Math.round(r.basis/r.qty):r.basis,acquired:new Date().toISOString().slice(0,10),status:r.status||'in-print'}));
+        saveHoldings();done();toast('Returned to desk');};
+      if(db)db.onclick=()=>{Sheet.close();done();toast('Record deleted');};
+    },60);});
+}
+function lockHtml(text){return `<div class="lk" style="padding:8px 0 2px"><p>${text}</p><button class="ghost" data-pro-up style="padding:8px 13px">Unlock</button></div>`;}
+function wireLocks(){$$('#port [data-pro-up]').forEach(b=>b.onclick=()=>$('#proBtn').click());}
+function renderDeals(){
+  const body=$('#dealBody');$('#dealCount').textContent='';
+  if(!Premium.active()){body.innerHTML=lockHtml('Every buy and trade, archived with date and payout.');wireLocks();return;}
+  if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet</div>';return;}
+  $('#dealCount').textContent=dealLog.length;
+  body.innerHTML='<table><thead><tr><th>Deal</th><th>Market</th><th>Paid</th></tr></thead><tbody>'+[...dealLog].reverse().slice(0,30).map(d=>{
+    const names=d.items.map(i=>i.qty+'× '+i.name).join(', ');
+    return `<tr><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;color:var(--ink);font-size:13px">${names}<div style="font-size:10px;color:var(--ink3)">${d.kind} · ${d.date}</div></td><td>${usd(d.market)}</td><td>${usd(d.payout)}</td></tr>`;}).join('')+'</tbody></table>';
+}
+function renderTax(){
+  const body=$('#taxBody');
+  if(!Premium.active()){body.innerHTML=lockHtml('Realized P&L by tax year, ready for filing.');wireLocks();return;}
+  if(!soldLog.length){body.innerHTML='<div class="empty">No sales yet</div>';return;}
+  const byYear={};soldLog.forEach(r=>{const y=(r.date||'').slice(0,4)||'—';byYear[y]=byYear[y]||{n:0,basis:0,net:0,realized:0};const b=byYear[y];b.n+=1;b.basis+=r.basis;b.net+=r.net;b.realized+=r.realized;});
+  body.innerHTML='<table><thead><tr><th>Year</th><th>Sales</th><th>Basis</th><th>Net</th><th>P&L</th></tr></thead><tbody>'+Object.entries(byYear).sort((a,b)=>b[0].localeCompare(a[0])).map(([y,v])=>{
+    const cls=v.realized>=0?'pos':'neg';
+    return `<tr><td>${y}</td><td>${v.n}</td><td>${usd(v.basis)}</td><td>${usd(v.net)}</td><td class="${cls}">${usd(v.realized)}</td></tr>`;}).join('')+'</tbody></table>';
+}
+/* FIFO/LIFO sell across same-name lots */
+function lotsFor(h){return holdings.filter(x=>x.name===h.name&&x.type===h.type).sort((a,b)=>{
+  const cmp=(a.acquired||'').localeCompare(b.acquired||'');
+  return (Premium.active()&&acct.method==='lifo')?-cmp:cmp;});}
+function sellHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
+  const lots=lotsFor(h),totalQty=lots.reduce((s,l)=>s+l.qty,0);
+  Sheet.open('Sell — '+h.name,[
+    {key:'qty',label:'Quantity (of '+totalQty+')',type:'number',value:Math.min(h.qty,totalQty)},
+    {key:'price',label:'Sale price / unit',type:'number',value:h.currentValue},
+    {key:'channel',label:'Channel',type:'select',value:'ebay',options:Object.entries(FeeCalc.channels).map(([k,c])=>[k,c.label])}
+  ],'Book sale',out=>{
+    let q=Math.max(1,Math.min(totalQty,Math.round(out.qty)));
+    const soldQty=q;let basis=0;
+    for(const lot of lots){if(q<=0)break;const take=Math.min(lot.qty,q);basis+=lot.costBasis*take;lot.qty-=take;q-=take;}
+    holdings=holdings.filter(x=>x.qty>0);
+    const gross=out.price*soldQty,net=FeeCalc.net(gross,out.channel).net;
+    soldLog.push({id:'s'+Math.random().toString(36).slice(2,8),name:h.name,type:h.type,status:h.status,qty:soldQty,basis:Math.round(basis),net:Math.round(net),realized:Math.round(net-basis),channel:FeeCalc.channels[out.channel].label,date:new Date().toISOString().slice(0,10)});
+    saveHoldings();saveSold();renderPortfolio();toast(usd(net-basis)+' realized');
+  });}
+function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
+  Sheet.open('Edit — '+h.name,[
+    {key:'name',label:'Name',value:h.name},
+    {key:'qty',label:'Quantity',type:'number',value:h.qty},
+    {key:'costBasis',label:'Cost basis / unit',type:'number',value:h.costBasis},
+    {key:'currentValue',label:'Current value / unit',type:'number',value:h.currentValue},
+    {key:'type',label:'Type',type:'select',value:h.type,options:[['sealed','Sealed'],['graded','Graded']]},
+    {key:'status',label:'Status',type:'select',value:h.status,options:[['in-print','In print'],['oop','Out of print'],['graded','Graded']]}
+  ],'Save',out=>{
+    if(out.name)h.name=out.name;
+    if(out.qty>0)h.qty=Math.round(out.qty);
+    h.costBasis=out.costBasis;h.currentValue=out.currentValue;h.type=out.type;h.status=out.status;h.sample=false;
+    saveHoldings();renderPortfolio();});}
+function delHolding(id){holdings=holdings.filter(x=>x.id!==id);saveHoldings();renderPortfolio();}
+$('#clearSamples').onclick=()=>{holdings=holdings.filter(h=>!h.sample);samplesCleared=true;Store.save('samplesCleared',true);saveHoldings();renderPortfolio();toast('Cleared');};
+$('#addHolding').onclick=()=>Sheet.open('Add a holding',[
+  {key:'name',label:'Name',placeholder:'e.g. Evolving Skies Booster Box'},
+  {key:'qty',label:'Quantity',type:'number',value:1},
+  {key:'costBasis',label:'Paid / unit',type:'number',value:''},
+  {key:'currentValue',label:'Value / unit',type:'number',value:''},
+  {key:'type',label:'Type',type:'select',value:'sealed',options:[['sealed','Sealed'],['graded','Graded']]},
+  {key:'status',label:'Status',type:'select',value:'in-print',options:[['in-print','In print'],['oop','Out of print'],['graded','Graded']]}
+],'Add',out=>{
+  if(!out.name){toast('Needs a name');return;}
+  holdings.push(makeHolding({type:out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status}));
+  saveHoldings();renderPortfolio();});
+$('#exportCsv').onclick=()=>{
+  let rows,head;
+  if(Premium.active()){
+    head=['Kind','Name','Type','Status','Qty','Basis','Value_or_Net','Date','ROI_or_Realized'];
+    rows=[...holdings.map(h=>['holding',h.name,h.type,h.status,h.qty,h.costBasis,h.currentValue,h.acquired||'',Math.round(roiPct(h))]),
+          ...soldLog.map(r=>['sold',r.name,'','',r.qty,r.basis,r.net,r.date,r.realized]),
+          ...dealLog.map(d=>['deal',d.items.map(i=>i.qty+'x '+i.name).join('; '),d.kind,'','', '',d.payout,d.date,''])];
+  }else{
+    head=['Name','Type','Status','Qty','Basis','Value','Date','ROI'];
+    rows=holdings.map(h=>[h.name,h.type,h.status,h.qty,h.costBasis,h.currentValue,h.acquired||'',Math.round(roiPct(h))]);
+  }
+  const csv=[head,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='holomint.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Exported');};
+
+/* ---- SLAB MATH ---- */
+/* Grading fees + estimated business-day turnarounds, sourced June 2026.
+   Industry is at capacity: several budget tiers are paused — marked below. */
+const SLAB_BRANDS={
+  psa:{label:'PSA',tiers:{
+    vbulk:{label:'Value Bulk',fee:24.99,days:150,cap:500,paused:true},
+    value:{label:'Value',fee:39.99,days:75,cap:500,paused:true},
+    reg:{label:'Regular',fee:79.99,days:30,cap:2500,paused:true},
+    express:{label:'Express',fee:149,days:10,cap:5000},
+    sexpress:{label:'Super Express',fee:349,days:5,cap:10000},
+    walk:{label:'Walk-Through',fee:599,days:6,cap:50000}}},
+  cgc:{label:'CGC',tiers:{
+    bulk:{label:'Bulk',fee:15,days:120,cap:200,paused:true},
+    economy:{label:'Economy',fee:18,days:65,cap:500,paused:true},
+    standard:{label:'Standard',fee:55,days:30,cap:1000},
+    express:{label:'Express',fee:100,days:10,cap:3000},
+    walk:{label:'WalkThrough',fee:300,days:2,cap:Infinity}}},
+  bgs:{label:'Beckett',tiers:{
+    base:{label:'Base',fee:14.95,days:60,cap:499},
+    standard:{label:'Standard',fee:34.95,days:40,cap:999},
+    express:{label:'Express',fee:75,days:18,cap:2499},
+    sexpress:{label:'Super Express',fee:150,days:11,cap:4999}}},
+  tag:{label:'TAG',tiers:{
+    basic:{label:'Basic',fee:22,days:45,cap:Infinity,paused:true},
+    standard:{label:'Standard',fee:39,days:30,cap:Infinity,paused:true},
+    express:{label:'Express',fee:60,days:15,cap:Infinity,paused:true},
+    priority:{label:'Priority',fee:149,days:5,cap:Infinity},
+    walk:{label:'Walkthrough',fee:299,days:3,cap:Infinity}}},
+  sgc:{label:'SGC',tiers:{
+    standard:{label:'Standard',fee:18,days:8,cap:1500}}}
+};
+/* upcharge: the fee an outcome actually pays is that of the cheapest tier whose cap covers the graded value */
+function effectiveFee(value){
+  const tiers=Object.values(SLAB_BRANDS[gBrandSel].tiers);
+  let fee=Slab.fee||0;
+  const sel=tiers.find(t=>t.fee===Slab.fee);
+  if(sel&&value>sel.cap){
+    const candidates=tiers.filter(t=>t.cap>=value).sort((a,b)=>a.fee-b.fee);
+    fee=candidates.length?Math.max(fee,candidates[0].fee):Math.max(fee,tiers.sort((a,b)=>b.fee-a.fee)[0].fee);
+  }
+  return fee;
+}
+let gBrandSel='psa';
+const Slab={fee:null,days:null,raw:null};
+$('#gBrand').innerHTML=Object.entries(SLAB_BRANDS).map(([k,b])=>`<option value="${k}">${b.label}</option>`).join('');
+function tierLabel(t){return t.label+(t.paused?' · paused':'');}
+function applyTier(){const tiers=SLAB_BRANDS[gBrandSel].tiers,cur=$('#gService').value,t=tiers[cur];
+  Slab.fee=t.fee;Slab.days=t.days;
+  $('#tFee').textContent='$'+t.fee;
+  $('#tDays').textContent=t.days+(t.paused?' ⏸':'');
+  renderGrade();}
+function fillTiers(sel){const tiers=SLAB_BRANDS[gBrandSel].tiers;
+  const keys=Object.keys(tiers);
+  const pick=sel&&tiers[sel]?sel:(keys.find(k=>!tiers[k].paused)||keys[0]);
+  $('#gService').innerHTML=keys.map(k=>`<option value="${k}"${k===pick?' selected':''}>${tierLabel(tiers[k])}</option>`).join('');
+  applyTier();}
+$('#gBrand').onchange=e=>{gBrandSel=e.target.value;fillTiers();slabData();};
+$('#gService').onchange=applyTier;
+fillTiers();
+
+/* SlabData — graded-market adapter.
+   lookupCards is LIVE (pokemontcg.io). gradeData is the drop-in for graded values + pop + sales:
+   pop via PSA Public API (free 100/day, no browser CORS — route through the daily build step or proxy)
+   or GemRate developer API; graded prices + sales via a paid source (e.g. PriceCharting).
+   Returns {prices:{g10,g9,g8}, pop:{g10,g9,g8}, sales:[{date,grade,price}]} or null. */
+const FINISH_LABELS={normal:'Normal',holofoil:'Holo',reverseHolofoil:'Reverse Holo','1stEditionHolofoil':'1st Ed Holo','1stEditionNormal':'1st Ed',unlimitedHolofoil:'Unltd Holo'};
+const SlabData={
+  card:null,finish:null,
+  async lookupCards(name,num){
+    num=(num||'').split('/')[0].trim();
+    let q='name:"'+name.trim().replace(/"/g,'')+'"';
+    if(num)q+=' number:'+num;
+    const r=await fetch('https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=8&orderBy=-set.releaseDate');
+    if(!r.ok)throw 0;
+    const d=await r.json();
+    return (d.data||[]).map(c=>({name:c.name,number:c.number,set:(c.set&&c.set.name)||'',prices:(c.tcgplayer&&c.tcgplayer.prices)||{}}));
+  },
+  async gradeData(card,brand){return null;}
+};
+function pickCard(c){
+  SlabData.card=c;
+  $('#chName').textContent=c.name+' · '+c.number;
+  $('#chSet').textContent=c.set;
+  const finishes=Object.keys(c.prices).filter(k=>c.prices[k]&&c.prices[k].market!=null);
+  const fr=$('#finishRow');
+  if(finishes.length){
+    SlabData.finish=finishes[0];
+    fr.innerHTML=finishes.map(k=>`<button class="swbtn${k===SlabData.finish?' on':''}" data-fin="${k}">${FINISH_LABELS[k]||k}</button>`).join('');
+    fr.querySelectorAll('[data-fin]').forEach(b=>b.onclick=()=>{SlabData.finish=b.dataset.fin;
+      fr.querySelectorAll('[data-fin]').forEach(x=>x.classList.toggle('on',x.dataset.fin===SlabData.finish));applyFinish();});
+  }else{SlabData.finish=null;fr.innerHTML='';}
+  applyFinish();
+  $('#cardHit').classList.remove('hide');
+  slabData();
+}
+function applyFinish(){const c=SlabData.card;let raw=null;
+  if(c&&SlabData.finish&&c.prices[SlabData.finish])raw=c.prices[SlabData.finish].market;
+  Slab.raw=raw;
+  $('#tRaw').textContent=raw!=null?usd(raw):'—';
+  renderGrade();}
+function slabData(){if(!SlabData.card)return;
+  SlabData.gradeData(SlabData.card,gBrandSel).then(d=>{
+    if(!d)return;
+    if(d.prices){if(d.prices.g10)$('#g10').value=d.prices.g10;if(d.prices.g9)$('#g9').value=d.prices.g9;if(d.prices.g8)$('#g8').value=d.prices.g8;}
+    if(d.pop){if(d.pop.g10)$('#p10pop').value=d.pop.g10;if(d.pop.g9)$('#p9pop').value=d.pop.g9;if(d.pop.g8)$('#p8pop').value=d.pop.g8;}
+    if(d.sales&&d.sales.length){$('#salesCard').classList.remove('hide');
+      $('#salesBody').innerHTML=d.sales.slice(0,5).map(x=>`<div class="brk"><span>${x.date} · ${x.grade}</span><b>${usd(x.price)}</b></div>`).join('');}
+    renderGrade();
+  }).catch(()=>{});}
+$('#findCard').onclick=async()=>{
+  const name=$('#cardName').value.trim();if(!name){toast('Enter a card name');return;}
+  const btn=$('#findCard');btn.textContent='Searching…';btn.disabled=true;
+  const res=$('#cardResults');
+  try{
+    const hits=await SlabData.lookupCards(name,$('#cardNum').value);
+    if(!hits.length){toast('No match');res.classList.remove('show');}
+    else if(hits.length===1){res.classList.remove('show');pickCard(hits[0]);}
+    else{
+      res.innerHTML=hits.map((c,i)=>`<div class="res" data-pick="${i}"><span class="rn">${c.name} · ${c.number}</span><span class="rp">${c.set}</span></div>`).join('');
+      res.classList.add('show');
+      res.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{res.classList.remove('show');pickCard(hits[+el.dataset.pick]);});
+    }
+  }catch(e){toast('Lookup failed — offline?');}
+  btn.textContent='Find card';btn.disabled=false;
+};
+function renderGrade(){
+  const ship=+$('#gShip').value||0;
+  const fee=Slab.fee||0,days=Slab.days||1,raw=Slab.raw,cost=fee+ship;
+  $('#sCost').textContent=usd(cost);
+  const grades=[['10',+$('#g10').value||0,'d10'],['9',+$('#g9').value||0,'d9'],['8',+$('#g8').value||0,'d8']];
+  if(raw==null){
+    grades.forEach(([g,v,id])=>{const el=$('#'+id);el.textContent='—';el.className='';});
+    $('#sN10').textContent=usd((+$('#g10').value||0)-cost);
+    $('#sN9').textContent=usd((+$('#g9').value||0)-cost);
+    $('#sAnn').textContent='—';$('#sAnn').className='sv';
+    $('#gVerdict').textContent='Find a card';$('#gVerdict').className='vv';$('#gVerdict').style.color='var(--ink3)';
+    $('#gEdge').textContent='';return;
+  }
+  let breakeven=null,anyUp=false;
+  grades.forEach(([g,v,id])=>{
+    const f=effectiveFee(v),up=f>(Slab.fee||0);if(up)anyUp=true;
+    const delta=(v-(f+ship))-raw;
+    const el=$('#'+id);el.textContent=(delta>=0?'+':'\u2212')+'$'+Math.abs(Math.round(delta)).toLocaleString()+(up?' ⚠':'');
+    el.className=delta>=0?'pos':'neg';
+    if(delta>=0)breakeven=g;
+  });
+  const n10=(+$('#g10').value||0)-(effectiveFee(+$('#g10').value||0)+ship),n9=(+$('#g9').value||0)-(effectiveFee(+$('#g9').value||0)+ship);
+  $('#sN10').textContent=usd(n10);$('#sN9').textContent=usd(n9);
+  const base=raw+cost;let ann=0;if(base>0&&days>0&&n10>0)ann=(Math.pow(n10/base,365/days)-1)*100;
+  const annEl=$('#sAnn');annEl.textContent=(n10>0?(ann>=0?'+':'')+Math.round(ann)+'%/yr':'—');annEl.className='sv '+(ann>=0?'pos':'neg');
+  const v=$('#gVerdict'),e=$('#gEdge');v.style.color='';
+  if(!breakeven){v.textContent="Don't grade";v.className='vv neg';e.className='ve neg';e.textContent='Loses money even at a 10';}
+  else if(breakeven==='10'){v.textContent='Needs the 10';v.className='vv';v.style.color='var(--gold)';e.className='ve';e.textContent='Only a gem beats raw · '+days+'d wait';}
+  else{v.textContent='Profitable at '+breakeven+'+';v.className='vv pos';e.className='ve pos';e.textContent='Beats raw at grade '+breakeven+' or better · '+days+'d wait'+(anyUp?' · ⚠ incl. upcharge':'');}
+}
+$$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrade));
+
+/* ---- BOOT ---- */
+$('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
+$('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
+renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();
+PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>

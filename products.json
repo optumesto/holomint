@@ -1,0 +1,12 @@
+[
+  {"id":"es-bb","type":"sealed","name":"Evolving Skies Booster Box","status":"oop"},
+  {"id":"lo-bb","type":"sealed","name":"Lost Origin Booster Box","status":"oop"},
+  {"id":"cz-etb","type":"sealed","name":"Crown Zenith ETB","status":"oop"},
+  {"id":"151-bb","type":"sealed","name":"151 Booster Bundle","status":"in-print"},
+  {"id":"151-etb","type":"sealed","name":"151 Elite Trainer Box","status":"in-print"},
+  {"id":"ss-bb","type":"sealed","name":"Surging Sparks Booster Box","status":"in-print"},
+  {"id":"pe-etb","type":"sealed","name":"Prismatic Evolutions ETB","status":"in-print"},
+  {"id":"zard151","type":"graded","name":"Charizard ex 151 · PSA 10","status":"graded"},
+  {"id":"moon","type":"graded","name":"Umbreon VMAX Alt \"Moonbreon\" · PSA 10","status":"graded"},
+  {"id":"gira","type":"graded","name":"Giratina V Alt Art · PSA 10","status":"graded"}
+]
