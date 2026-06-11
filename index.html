@@ -57,7 +57,6 @@
   .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.pile-item:last-child{border-bottom:none}
   .pi-name{flex:1;min-width:0}.pi-name .n{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
-  .pirate{display:inline-block;width:40px;font-family:var(--mono);font-size:11px;text-align:right;background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:2px 5px;color:var(--ink)}
   .chip{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
   .chip.oop{background:#2a2410;color:var(--gold)}.chip.ip{background:var(--bg3);color:var(--ink3)}
   .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}
@@ -302,7 +301,7 @@ const PriceEngine=(function(){
   };
 })();
 const FeeCalc=(function(){
-  const channels={cash:{label:'Cash',pct:0,flat:0},ebay:{label:'eBay',pct:13.6,flat:0.40},tcgplayer:{label:'TCGpl',pct:12.5,flat:0.30},whatnot:{label:'Whatnot',pct:11,flat:0.30}};
+  const channels={cash:{label:'Cash',pct:0,flat:0},ebay:{label:'eBay',pct:13.6,flat:0.40,est:true},tcgplayer:{label:'TCGPlayer',pct:12.5,flat:0.30,est:true},whatnot:{label:'Whatnot',pct:11,flat:0.30,est:true}};
   function net(a,k){const c=channels[k];if(!c||a<=0)return{fees:0,net:a};const fees=a*(c.pct/100)+c.flat;return{fees,net:a-fees};}
   return{channels,net};
 })();
@@ -419,7 +418,7 @@ $('#proBtn').onclick=()=>{
 };
 
 /* ---- TRADE BLOCK ---- */
-let theirPile=[],yourPile=[],mode='cash',channel='ebay';
+let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
 let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
@@ -438,7 +437,7 @@ $$('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('#modeSeg
   $('#copyReceipt').classList.toggle('hide',trade);recompute();});
 
 const chWrap=$('#channels');
-function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(([k,c])=>`<div class="ch${k===channel?' on':''}" data-ch="${k}"><div class="cn">${c.label}</div><div class="cf">${c.pct}%</div></div>`).join('');
+function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(([k,c])=>`<div class="ch${k===channel?' on':''}" data-ch="${k}"><div class="cn">${c.label}</div><div class="cf">${c.pct}%${c.est?' est':''}</div></div>`).join('');
   chWrap.querySelectorAll('.ch').forEach(el=>el.onclick=()=>{channel=el.dataset.ch;renderChannels();syncFeeInputs();recompute();});}
 function syncFeeInputs(){const c=FeeCalc.channels[channel];$('#feePctLabel').textContent=c.label+' fee %';$('#feePct').value=c.pct;$('#feeFlat').value=c.flat;}
 $('#feePct').oninput=e=>{FeeCalc.channels[channel].pct=parseFloat(e.target.value)||0;Store.save('fees',FeeCalc.channels);renderChannels();recompute();};
@@ -476,14 +475,13 @@ function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
   el.innerHTML=arr.map(p=>{const it=resolveItem(p.key),price=priceOf(p.key);
     const chip=it.type==='graded'?'<span class="chip graded">graded</span>':'<span class="chip sealed">sealed</span>';
     const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
-    const rate=showRate?` · <input class="pirate" inputmode="decimal" data-rate="${p.key}" value="${p.rate!=null?p.rate:''}" placeholder="${buyRate}">%`:'';
-    return `<div class="pile-item"><div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea ${chip}${stat}${rate}</div></div>
+    return `<div class="pile-item"><div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea ${chip}${stat}</div></div>
       <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
       <span class="val">${usd(price*p.qty)}</span><span class="x" data-rm="${p.key}">\u00d7</span></div>`;}).join('');
   el.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{arr.find(p=>p.key===b.dataset.inc).qty++;recompute();});
   el.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{const p=arr.find(p=>p.key===b.dataset.dec);p.qty=Math.max(1,p.qty-1);recompute();});
   el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const i=arr.findIndex(p=>p.key===b.dataset.rm);arr.splice(i,1);recompute();});
-  el.querySelectorAll('.pirate').forEach(inp=>inp.onchange=()=>{const it=arr.find(x=>x.key===inp.dataset.rate);const v=parseFloat(inp.value);it.rate=isNaN(v)?null:v;recompute();});}
+}
 
 function cashNumbers(){let base=0,market=0;
   theirPile.forEach(p=>{const pr=priceOf(p.key),r=(p.rate!=null?p.rate:buyRate)/100;market+=pr*p.qty;base+=pr*p.qty*r;});
