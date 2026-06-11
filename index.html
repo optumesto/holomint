@@ -133,14 +133,14 @@
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
-      <input id="search" placeholder="Search sealed or graded…" autocomplete="off"><div class="results" id="results"></div>
+      <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
       <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
     <div class="card hide" id="yourCard">
       <div class="sidehead"><span class="st">Your side</span><span class="sv2" id="pileTotal2">$0</span></div>
-      <input id="search2" placeholder="Search…" autocomplete="off"><div class="results" id="results2"></div>
+      <input id="search2" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results2"></div>
       <div id="pile2" style="margin-top:6px"></div>
       <div class="row between" style="margin-top:10px"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
@@ -150,7 +150,7 @@
       <div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
     </div>
     <div class="card" id="rateCard">
-      <label>Buy rate</label>
+      <label>Rate</label>
       <div class="bigrate" id="rateLabel">75%</div>
       <input type="range" id="rate" min="40" max="100" step="1" value="75">
       <div class="row between" style="margin-top:14px"><label style="margin:0">Store-credit bump</label>
@@ -175,7 +175,6 @@
 
   <!-- ============ PORTFOLIO ============ -->
   <section class="panel" id="port">
-    <div class="banner hide" id="sampleBanner"><p>Sample holdings — clear them to start your own desk.</p><button class="ghost" id="clearSamples">Clear</button></div>
     <div class="stats" id="portStats"></div>
     <div class="card">
       <label>Allocation</label>
@@ -195,6 +194,10 @@
     <div class="card" id="dealCard">
       <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
       <div class="colbody" id="dealBody"></div>
+    </div>
+    <div class="card" id="dropsCard">
+      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">My drops <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
+      <div class="colbody" id="dropsBody"></div>
     </div>
     <div class="card" id="taxCard">
       <div class="row between colhead" data-col="taxCard"><label style="margin:0">Tax summary <span class="chip pro">pro</span></label><span class="chev">▾</span></div>
@@ -327,7 +330,9 @@ let acct=Store.load('acct',{method:'fifo'});
 
 /* ===== UI CORE ===== */
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
-const usd=n=>(n<0?'\u2212$':'$')+Math.abs(Math.round(n)).toLocaleString();
+const CURRENCIES={USD:'$',EUR:'\u20ac',GBP:'\u00a3',CAD:'CA$',AUD:'A$',JPY:'\u00a5',MXN:'MX$'};
+let FX=Store.load('fx',{code:'USD',rate:1});
+const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$';return (v<0?'\u2212':'')+sym+Math.abs(Math.round(v)).toLocaleString();};
 const pct=n=>(n>=0?'+':'')+Math.round(n)+'%';
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
 function switchTab(name){$$('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));$$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));}
@@ -395,8 +400,12 @@ $('#proBtn').onclick=()=>{
     Sheet.open('Settings',[
       {type:'static',html:`<div class="feat"><i>✓</i> Pro active — ${Premium.key()}</div>`},
       {key:'method',label:'Lot accounting',type:'select',value:acct.method,options:[['fifo','FIFO — first in, first out'],['lifo','LIFO — last in, first out']]},
+      {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
+      {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
       {type:'static',html:DATA_ROW}
-    ],'Save',out=>{acct.method=out.method;Store.save('acct',acct);toast('Saved');renderPortfolio();});
+    ],'Save',out=>{acct.method=out.method;Store.save('acct',acct);
+      FX={code:out.cur,rate:out.rate>0?out.rate:1};Store.save('fx',FX);
+      toast('Saved');recompute();renderPortfolio();renderGrade();});
   }else{
     Sheet.open('Settings',[
       {type:'static',html:
@@ -404,14 +413,17 @@ $('#proBtn').onclick=()=>{
         '<div class="feat"><i>✓</i> Tax summary — realized P&L by year</div>'+
         '<div class="feat"><i>✓</i> CSV export &amp; import — holdings, sales, deals</div>'+
         '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
+        '<div class="feat"><i>✓</i> Drop tracker with day-before reminders</div>'+
         '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
       {key:'key',label:'License key',placeholder:'HF-XXXX-XXXX-XXXX'},
+      {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
+      {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
       {type:'static',html:DATA_ROW}
-    ],'Activate',async out=>{
-      if(!out.key){return;}
-      const ok=await Premium.validate(out.key);
-      toast(ok?'Pro activated':'Invalid key');
-      renderProBtn();renderPortfolio();
+    ],'Save',async out=>{
+      FX={code:out.cur,rate:out.rate>0?out.rate:1};Store.save('fx',FX);
+      recompute();renderPortfolio();renderGrade();
+      if(out.key){const ok=await Premium.validate(out.key);toast(ok?'Pro activated':'Invalid key');renderProBtn();renderPortfolio();}
+      else toast('Saved');
     });
   }
   wireData();
@@ -544,17 +556,9 @@ $('#copyReceipt').onclick=()=>{const n=cashNumbers();if(n.market<=0)return;
   else{toast('Clipboard unavailable');}};
 
 /* ---- PORTFOLIO ---- */
-const DEFAULT_HOLDINGS=[
-  makeHolding({type:'sealed',name:'Evolving Skies Booster Box',qty:2,costBasis:110,currentValue:480,acquired:'2021-09-01',status:'oop',sample:true}),
-  makeHolding({type:'graded',name:'Umbreon VMAX "Moonbreon" PSA 10',qty:1,costBasis:450,currentValue:1100,acquired:'2022-03-15',status:'graded',sample:true}),
-  makeHolding({type:'sealed',name:'Lost Origin Booster Box',qty:1,costBasis:100,currentValue:230,acquired:'2022-09-09',status:'oop',sample:true}),
-  makeHolding({type:'sealed',name:'151 Elite Trainer Box',qty:6,costBasis:50,currentValue:74,acquired:'2024-09-22',status:'in-print',sample:true}),
-  makeHolding({type:'sealed',name:'Surging Sparks Booster Box',qty:3,costBasis:120,currentValue:132,acquired:'2025-11-08',status:'in-print',sample:true})
-];
-let samplesCleared=Store.load('samplesCleared',false);
-const firstRun=!Store.load('seeded',false);
-if(firstRun)Store.save('seeded',true);
-let holdings=Store.load('holdings',(firstRun&&!samplesCleared)?DEFAULT_HOLDINGS:[]);
+let holdings=Store.load('holdings',[]);
+/* migration: purge legacy sample holdings for good */
+if(holdings.some(h=>h&&h.sample)){holdings=holdings.filter(h=>!h.sample);Store.save('holdings',holdings);}
 let soldLog=Store.load('sold',[]);
 function saveHoldings(){Store.save('holdings',holdings);}
 function saveSold(){Store.save('sold',soldLog);}
@@ -563,7 +567,6 @@ function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis
 function cagrPct(h){if(h.costBasis<=0)return 0;return(Math.pow(h.currentValue/h.costBasis,12/monthsHeld(h.acquired))-1)*100;}
 
 function renderPortfolio(){
-  $('#sampleBanner').classList.toggle('hide',samplesCleared||!holdings.some(h=>h.sample));
   const cost=holdings.reduce((s,h)=>s+h.costBasis*h.qty,0),val=holdings.reduce((s,h)=>s+h.currentValue*h.qty,0);
   const gain=val-cost;
   const realized=soldLog.reduce((s,r)=>s+r.realized,0);
@@ -582,7 +585,7 @@ function renderPortfolio(){
   $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
   $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
   $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
-  renderSold();renderDeals();renderTax();
+  renderSold();renderDeals();renderTax();renderDrops();
 }
 function renderSold(){
   $('#soldCard').classList.toggle('hide',!soldLog.length);
@@ -625,6 +628,46 @@ function renderTax(){
     const cls=v.realized>=0?'pos':'neg';
     return `<tr><td>${y}</td><td>${v.n}</td><td>${usd(v.basis)}</td><td>${usd(v.net)}</td><td class="${cls}">${usd(v.realized)}</td></tr>`;}).join('')+'</tbody></table>';
 }
+/* Drops — local release reminders; day-before alarm ships as a calendar event */
+let drops=Store.load('drops',[]);
+function saveDrops(){Store.save('drops',drops);}
+function icsFor(d){
+  const dt=d.date.replace(/-/g,'');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Holomint//EN','BEGIN:VEVENT',
+    'UID:'+d.id+'@holomint.app','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
+    'DTSTART;VALUE=DATE:'+dt,'SUMMARY:'+d.name.replace(/[,;]/g,' ')+(d.where?' @ '+d.where.replace(/[,;]/g,' '):''),
+    'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:Drop tomorrow: '+d.name.replace(/[,;]/g,' '),'END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=d.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.ics';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+function renderDrops(){
+  const body=$('#dropsBody');
+  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases and restocks — with a day-before reminder on your calendar.');wireLocks();return;}
+  if(!drops.length){body.innerHTML='<div class="empty">No drops tracked</div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  body.innerHTML=[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
+    const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
+    const when=days<0?'passed':days===0?'today':days===1?'tomorrow':'in '+days+'d';
+    const hot=days>=0&&days<=1;
+    return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:10px;color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:8px"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
+  }).join('');
+  body.querySelectorAll('[data-ics]').forEach(b=>b.onclick=()=>{const d=drops.find(x=>x.id===b.dataset.ics);if(d){icsFor(d);toast('Calendar event saved — alarm set for the day before');}});
+  body.querySelectorAll('[data-deldrop]').forEach(b=>b.onclick=()=>{drops=drops.filter(x=>x.id!==b.dataset.deldrop);saveDrops();renderDrops();});
+}
+$('#addDrop').onclick=()=>{
+  if(!Premium.active()){$('#proBtn').click();return;}
+  Sheet.open('Track a drop',[
+    {key:'name',label:'What drops',placeholder:'e.g. Prismatic Evolutions restock'},
+    {key:'date',label:'Date',type:'date',value:new Date(Date.now()+86400000*7).toISOString().slice(0,10)},
+    {key:'where',label:'Where (optional)',placeholder:'e.g. Target on Plank Rd'}
+  ],'Track',out=>{
+    if(!out.name||!out.date){toast('Needs a name and date');return;}
+    drops.push({id:'dr'+Math.random().toString(36).slice(2,8),name:out.name,date:out.date,where:out.where||''});
+    saveDrops();renderDrops();toast('Tracking — tap \ud83d\udcc5 for the day-before reminder');
+  });
+};
+
 /* FIFO/LIFO sell across same-name lots */
 function lotsFor(h){return holdings.filter(x=>x.name===h.name&&x.type===h.type).sort((a,b)=>{
   const cmp=(a.acquired||'').localeCompare(b.acquired||'');
@@ -658,7 +701,6 @@ function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
     h.costBasis=out.costBasis;h.currentValue=out.currentValue;h.type=out.type;h.status=out.status;h.sample=false;
     saveHoldings();renderPortfolio();});}
 function delHolding(id){holdings=holdings.filter(x=>x.id!==id);saveHoldings();renderPortfolio();}
-$('#clearSamples').onclick=()=>{holdings=holdings.filter(h=>!h.sample);samplesCleared=true;Store.save('samplesCleared',true);saveHoldings();renderPortfolio();toast('Cleared');};
 $('#addHolding').onclick=()=>{
   Sheet.open('Add a holding',[
     {type:'static',html:'<label>Search catalog</label><input id="ah-search" placeholder="Type to autofill…" autocomplete="off"><div class="results" id="ah-results"></div>'},

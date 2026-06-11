@@ -44,10 +44,13 @@ function isSealed(p) {
   if (!p.name || EXCLUDE.test(p.name)) return false;
   return SEALED.test(p.name);
 }
+const NONCARD = /(playmat|sleeve|deck box|binder|portfolio|coin|pin\b|figure|plush|dice|marker|album|toploader|case\b)/i;
 function isChaseSingle(p, price) {
   if (!p.name || EXCLUDE.test(p.name)) return false;
   if (price == null || price < SINGLE_MIN) return false;
-  return (p.extendedData || []).some(d => /^number$/i.test(d.name || ''));
+  const ext = p.extendedData || [];
+  if (ext.length) return ext.some(d => /^(number|rarity)$/i.test(d.name || ''));
+  return !NONCARD.test(p.name);   // no metadata on this set — fall back to name screening
 }
 
 async function main() {
