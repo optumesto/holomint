@@ -10,7 +10,7 @@ const CAT = 3; // Pokémon
 const BASE = `https://tcgcsv.com/tcgplayer/${CAT}`;
 
 // What counts as "sealed" — name patterns (case-insensitive)
-const SEALED = /(booster box|elite trainer box|\betb\b|booster bundle|build & battle|build and battle|premium collection|ultra.?premium|collection box|special collection|pencil case|mini tin|\btin\b|booster display|sleeved booster case|booster case|box set|poke ?ball tin|premier deck|league battle deck|battle deck bundle)/i;
+const SEALED = /(booster box|booster pack|sleeved booster|elite trainer box|\betb\b|booster bundle|build & battle|build and battle|premium collection|ultra.?premium|collection box|special collection|pencil case|mini tin|\btin\b|booster display|sleeved booster case|booster case|box set|poke ?ball tin|premier deck|league battle deck|battle deck bundle)/i;
 // Exclusions that sneak past the patterns
 const EXCLUDE = /(single|\bcard\b only|code card|empty|damaged|opened|japanese)/i;
 
@@ -38,12 +38,16 @@ async function getJSON(url, tries = 3) {
   return null;
 }
 
+const SINGLE_MIN = 5; // chase singles only — cards at/above this market price
+
 function isSealed(p) {
   if (!p.name || EXCLUDE.test(p.name)) return false;
-  if (SEALED.test(p.name)) return true;
-  // Belt-and-suspenders: singles carry a card Number in extendedData; sealed doesn't
-  const hasNumber = (p.extendedData || []).some(d => /^number$/i.test(d.name || ''));
-  return false && !hasNumber; // name patterns are the gate; number check reserved
+  return SEALED.test(p.name);
+}
+function isChaseSingle(p, price) {
+  if (!p.name || EXCLUDE.test(p.name)) return false;
+  if (price == null || price < SINGLE_MIN) return false;
+  return (p.extendedData || []).some(d => /^number$/i.test(d.name || ''));
 }
 
 async function main() {
@@ -71,11 +75,14 @@ async function main() {
     const status = ageMonths > OOP_MONTHS ? 'oop' : 'in-print';
 
     for (const p of prods) {
-      if (!isSealed(p)) continue;
       const price = priceById[p.productId];
-      if (price == null || price <= 0) continue;       // unpriced sealed = noise
+      if (price == null || price <= 0) continue;
+      let type = null;
+      if (isSealed(p)) type = 'sealed';
+      else if (isChaseSingle(p, price)) type = 'single';
+      if (!type) continue;
       const id = String(p.productId);
-      products.push({ id, type: 'sealed', name: p.name, status, set: g.name });
+      products.push({ id, type, name: p.name, status: type === 'single' ? 'raw' : status, set: g.name });
       prices[id] = Math.round(price * 100) / 100;
     }
   }

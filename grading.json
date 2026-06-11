@@ -1,0 +1,28 @@
+{
+  "psa": {"label":"PSA","tiers":{
+    "vbulk":{"label":"Value Bulk","fee":24.99,"days":150,"cap":500,"paused":true},
+    "value":{"label":"Value","fee":39.99,"days":75,"cap":500,"paused":true},
+    "reg":{"label":"Regular","fee":79.99,"days":30,"cap":2500,"paused":true},
+    "express":{"label":"Express","fee":149,"days":10,"cap":5000},
+    "sexpress":{"label":"Super Express","fee":349,"days":5,"cap":10000},
+    "walk":{"label":"Walk-Through","fee":599,"days":6,"cap":50000}}},
+  "cgc": {"label":"CGC","tiers":{
+    "bulk":{"label":"Bulk","fee":15,"days":120,"cap":200,"paused":true},
+    "economy":{"label":"Economy","fee":18,"days":65,"cap":500,"paused":true},
+    "standard":{"label":"Standard","fee":55,"days":30,"cap":1000},
+    "express":{"label":"Express","fee":100,"days":10,"cap":3000},
+    "walk":{"label":"WalkThrough","fee":300,"days":2,"cap":null}}},
+  "bgs": {"label":"Beckett","tiers":{
+    "base":{"label":"Base","fee":14.95,"days":60,"cap":499},
+    "standard":{"label":"Standard","fee":34.95,"days":40,"cap":999},
+    "express":{"label":"Express","fee":75,"days":18,"cap":2499},
+    "sexpress":{"label":"Super Express","fee":150,"days":11,"cap":4999}}},
+  "tag": {"label":"TAG","tiers":{
+    "basic":{"label":"Basic","fee":22,"days":45,"cap":null,"paused":true},
+    "standard":{"label":"Standard","fee":39,"days":30,"cap":null,"paused":true},
+    "express":{"label":"Express","fee":60,"days":15,"cap":null,"paused":true},
+    "priority":{"label":"Priority","fee":149,"days":5,"cap":null},
+    "walk":{"label":"Walkthrough","fee":299,"days":3,"cap":null}}},
+  "sgc": {"label":"SGC","tiers":{
+    "standard":{"label":"Standard","fee":18,"days":8,"cap":1500}}}
+}

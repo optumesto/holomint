@@ -45,6 +45,7 @@
   label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:5px}
   button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:10px 12px;cursor:pointer;font-size:13px;font-family:var(--sans)}
   button.ghost:active{transform:scale(.98)}
+  button.ghost.proglow{border:1.5px solid transparent;background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--holo) border-box;background-size:auto,240% auto;color:var(--ink);animation:holo 7s linear infinite}
   button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:11px;padding:14px;font-family:var(--sans);font-weight:600;font-size:15px;cursor:pointer}
   button.act:active{transform:scale(.99)}button.act:disabled{opacity:.4;cursor:default}
   .btnrow{display:flex;gap:8px}
@@ -58,7 +59,7 @@
   .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
   .chip{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
   .chip.oop{background:#2a2410;color:var(--gold)}.chip.ip{background:var(--bg3);color:var(--ink3)}
-  .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}
+  .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}.chip.raw{background:#2a1626;color:#ff9ad2}
   .chip.pro{background:var(--holo);background-size:240% auto;color:#101010;animation:holo 7s linear infinite}
   .qtybtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:16px;cursor:pointer;line-height:1}
   .val{font-family:var(--mono);font-size:14px;min-width:64px;text-align:right}.x{color:var(--ink3);cursor:pointer;font-size:18px;padding:0 2px}
@@ -135,13 +136,13 @@
       <input id="search" placeholder="Search sealed or graded…" autocomplete="off"><div class="results" id="results"></div>
       <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
-      <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" value="0" style="width:96px"></div>
+      <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
     <div class="card hide" id="yourCard">
       <div class="sidehead"><span class="st">Your side</span><span class="sv2" id="pileTotal2">$0</span></div>
       <input id="search2" placeholder="Search…" autocomplete="off"><div class="results" id="results2"></div>
       <div id="pile2" style="margin-top:6px"></div>
-      <div class="row between" style="margin-top:10px"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" value="0" style="width:96px"></div>
+      <div class="row between" style="margin-top:10px"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
     <div class="card hide" id="balanceCard"><label>Balance</label><div class="balance"><div class="bv" id="balVal">$0</div><div class="bl" id="balText">Add to both sides.</div></div></div>
     <div class="card" id="channelCard">
@@ -183,7 +184,7 @@
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
-        <div class="row" style="gap:6px"><button class="ghost" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost" id="exportCsv" style="padding:8px 11px">CSV</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
+        <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th>/yr</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
@@ -244,7 +245,7 @@
         <div class="stat"><div class="sl">All-in cost</div><div class="sv" id="sCost">$0</div></div>
         <div class="stat"><div class="sl">Net at 10</div><div class="sv" id="sN10">$0</div></div>
         <div class="stat"><div class="sl">Net at 9</div><div class="sv" id="sN9">$0</div></div>
-        <div class="stat"><div class="sl">10 annualized</div><div class="sv" id="sAnn">—</div></div>
+        <div class="stat"><div class="sl">Net at 8</div><div class="sv" id="sN8">$0</div></div>
       </div>
     </div>
   </section>
@@ -421,7 +422,7 @@ let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
 let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
-const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{if(FeeCalc.channels[k])Object.assign(FeeCalc.channels[k],savedFees[k]);});
+const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{const c=FeeCalc.channels[k],v=savedFees[k];if(c&&v){if(typeof v.pct==='number')c.pct=v.pct;if(typeof v.flat==='number')c.flat=v.flat;}});
 
 function resolveItem(key){return manualItems[key]||PriceEngine.getItem(key);}
 function priceOf(key){return manualItems[key]?manualItems[key].price:PriceEngine.getPrice(key);}
@@ -444,8 +445,8 @@ $('#feeFlat').oninput=e=>{FeeCalc.channels[channel].flat=parseFloat(e.target.val
 $('#rate').oninput=e=>{buyRate=+e.target.value;$('#rateLabel').textContent=buyRate+'%';Store.save('buyRate',buyRate);recompute();};
 $('#creditTog').onclick=()=>{storeCredit.on=!storeCredit.on;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';Store.save('credit',storeCredit);recompute();};
 $('#creditBump').oninput=e=>{storeCredit.bump=parseFloat(e.target.value)||0;Store.save('credit',storeCredit);recompute();};
-$('#theirCash').oninput=e=>{theirCash=parseFloat(e.target.value)||0;recompute();};
-$('#yourCash').oninput=e=>{yourCash=parseFloat(e.target.value)||0;recompute();};
+$('#theirCash').oninput=e=>{theirCash=Math.max(0,parseFloat(e.target.value)||0);if(theirCash!=e.target.value)e.target.value=theirCash;recompute();};
+$('#yourCash').oninput=e=>{yourCash=Math.max(0,parseFloat(e.target.value)||0);if(yourCash!=e.target.value)e.target.value=yourCash;recompute();};
 
 function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);
   inp.oninput=()=>{const r=PriceEngine.search(inp.value);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
@@ -472,7 +473,7 @@ $('#hotClear').onclick=()=>{hotlist=[];Store.save('hotlist',hotlist);renderHotli
 function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
   if(!arr.length){el.innerHTML='<div class="empty">Empty</div>';return;}
   el.innerHTML=arr.map(p=>{const it=resolveItem(p.key),price=priceOf(p.key);
-    const chip=it.type==='graded'?'<span class="chip graded">graded</span>':'<span class="chip sealed">sealed</span>';
+    const chip=it.type==='graded'?'<span class="chip graded">graded</span>':(it.type==='single'?'<span class="chip raw">raw</span>':'<span class="chip sealed">sealed</span>');
     const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
     return `<div class="pile-item"><div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea ${chip}${stat}</div></div>
       <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
@@ -551,7 +552,9 @@ const DEFAULT_HOLDINGS=[
   makeHolding({type:'sealed',name:'Surging Sparks Booster Box',qty:3,costBasis:120,currentValue:132,acquired:'2025-11-08',status:'in-print',sample:true})
 ];
 let samplesCleared=Store.load('samplesCleared',false);
-let holdings=Store.load('holdings',samplesCleared?[]:DEFAULT_HOLDINGS);
+const firstRun=!Store.load('seeded',false);
+if(firstRun)Store.save('seeded',true);
+let holdings=Store.load('holdings',(firstRun&&!samplesCleared)?DEFAULT_HOLDINGS:[]);
 let soldLog=Store.load('sold',[]);
 function saveHoldings(){Store.save('holdings',holdings);}
 function saveSold(){Store.save('sold',soldLog);}
@@ -567,12 +570,13 @@ function renderPortfolio(){
   $('#portStats').innerHTML=[['Cost basis',usd(cost),''],['Market value',usd(val),''],['Unrealized',usd(gain),gain>=0?'pos':'neg'],['Realized P&L',usd(realized),realized>=0?'pos':'neg']].map(s=>`<div class="stat"><div class="sl">${s[0]}</div><div class="sv ${s[2]}">${s[1]}</div></div>`).join('');
   const sealedV=holdings.filter(h=>h.type==='sealed').reduce((s,h)=>s+h.currentValue*h.qty,0);
   const gradedV=holdings.filter(h=>h.type==='graded').reduce((s,h)=>s+h.currentValue*h.qty,0);
-  const tot=sealedV+gradedV||1,sp=Math.round(sealedV/tot*100),gp=100-sp;
-  $('#weightBar').innerHTML=`<i style="width:${sp}%;background:var(--up)"></i><i style="width:${gp}%;background:#9fb6ff"></i>`;
-  $('#weightLeg').innerHTML=`<span><i class="dot" style="background:var(--up)"></i>Sealed ${sp}%</span><span><i class="dot" style="background:#9fb6ff"></i>Graded ${gp}%</span>`;
+  const rawV=holdings.filter(h=>h.type==='single').reduce((s,h)=>s+h.currentValue*h.qty,0);
+  const tot=sealedV+gradedV+rawV||1,sp=Math.round(sealedV/tot*100),gp=Math.round(gradedV/tot*100),rp=100-sp-gp;
+  $('#weightBar').innerHTML=`<i style="width:${sp}%;background:var(--up)"></i><i style="width:${gp}%;background:#9fb6ff"></i><i style="width:${rp}%;background:#ff9ad2"></i>`;
+  $('#weightLeg').innerHTML=`<span><i class="dot" style="background:var(--up)"></i>Sealed ${sp}%</span><span><i class="dot" style="background:#9fb6ff"></i>Graded ${gp}%</span>`+(rawV>0?`<span><i class="dot" style="background:#ff9ad2"></i>Raw ${rp}%</span>`:'');
   const sorted=[...holdings].sort((a,b)=>cagrPct(b)-cagrPct(a));
   $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),c=cagrPct(h),cls=r>=0?'pos':'neg';
-    const chip=h.type==='graded'?'<span class="chip graded">graded</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>');
+    const chip=h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>'));
     return `<tr><td style="max-width:128px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td class="${cls}">${pct(c)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
     :'<tr><td colspan="6" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty — buy something in the Trade Block.</td></tr>';
   $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
@@ -604,10 +608,10 @@ function renderSold(){
 function lockHtml(text){return `<div class="lk" style="padding:8px 0 2px"><p>${text}</p><button class="ghost" data-pro-up style="padding:8px 13px">Unlock</button></div>`;}
 function wireLocks(){$$('#port [data-pro-up]').forEach(b=>b.onclick=()=>$('#proBtn').click());}
 function renderDeals(){
-  const body=$('#dealBody');$('#dealCount').textContent='';
-  if(!Premium.active()){body.innerHTML=lockHtml('Every buy and trade, archived with date and payout.');wireLocks();return;}
+  const body=$('#dealBody');
+  $('#dealCount').textContent=dealLog.length?dealLog.length+' logged':'';
+  if(!Premium.active()){body.innerHTML=lockHtml(dealLog.length?dealLog.length+' deal'+(dealLog.length>1?'s':'')+' archived and waiting — unlock to view them.':'Every buy and trade, archived with date and payout.');wireLocks();return;}
   if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet</div>';return;}
-  $('#dealCount').textContent=dealLog.length;
   body.innerHTML='<table><thead><tr><th>Deal</th><th>Market</th><th>Paid</th></tr></thead><tbody>'+[...dealLog].reverse().slice(0,30).map(d=>{
     const names=d.items.map(i=>i.qty+'× '+i.name).join(', ');
     return `<tr><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;color:var(--ink);font-size:13px">${names}<div style="font-size:10px;color:var(--ink3)">${d.kind} · ${d.date}</div></td><td>${usd(d.market)}</td><td>${usd(d.payout)}</td></tr>`;}).join('')+'</tbody></table>';
@@ -655,17 +659,37 @@ function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
     saveHoldings();renderPortfolio();});}
 function delHolding(id){holdings=holdings.filter(x=>x.id!==id);saveHoldings();renderPortfolio();}
 $('#clearSamples').onclick=()=>{holdings=holdings.filter(h=>!h.sample);samplesCleared=true;Store.save('samplesCleared',true);saveHoldings();renderPortfolio();toast('Cleared');};
-$('#addHolding').onclick=()=>Sheet.open('Add a holding',[
-  {key:'name',label:'Name',placeholder:'e.g. Evolving Skies Booster Box'},
-  {key:'qty',label:'Quantity',type:'number',value:1},
-  {key:'costBasis',label:'Paid / unit',type:'number',value:''},
-  {key:'currentValue',label:'Value / unit',type:'number',value:''},
-  {key:'type',label:'Type',type:'select',value:'sealed',options:[['sealed','Sealed'],['graded','Graded']]},
-  {key:'status',label:'Status',type:'select',value:'in-print',options:[['in-print','In print'],['oop','Out of print'],['graded','Graded']]}
-],'Add',out=>{
-  if(!out.name){toast('Needs a name');return;}
-  holdings.push(makeHolding({type:out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status}));
-  saveHoldings();renderPortfolio();});
+$('#addHolding').onclick=()=>{
+  Sheet.open('Add a holding',[
+    {type:'static',html:'<label>Search catalog</label><input id="ah-search" placeholder="Type to autofill…" autocomplete="off"><div class="results" id="ah-results"></div>'},
+    {key:'name',label:'Name',placeholder:'or enter manually'},
+    {key:'qty',label:'Quantity',type:'number',value:1},
+    {key:'costBasis',label:'Paid / unit',type:'number',value:''},
+    {key:'currentValue',label:'Value / unit',type:'number',value:''},
+    {key:'type',label:'Type',type:'select',value:'sealed',options:[['sealed','Sealed'],['graded','Graded'],['single','Raw single']]},
+    {key:'status',label:'Status',type:'select',value:'in-print',options:[['in-print','In print'],['oop','Out of print'],['graded','Graded'],['raw','Raw']]}
+  ],'Add',out=>{
+    if(!out.name){toast('Needs a name');return;}
+    holdings.push(makeHolding({type:out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status}));
+    saveHoldings();renderPortfolio();});
+  setTimeout(()=>{
+    const inp=document.getElementById('ah-search'),res=document.getElementById('ah-results');
+    if(!inp)return;
+    inp.oninput=()=>{const r=PriceEngine.search(inp.value);
+      if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
+      res.innerHTML=r.map(i=>`<div class="res" data-pk="${i.id}"><span class="rn">${i.name}${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');
+      res.classList.add('show');
+      res.querySelectorAll('[data-pk]').forEach(el=>el.onclick=()=>{
+        const it=PriceEngine.getItem(el.dataset.pk);if(!it)return;
+        document.getElementById('sf-name').value=it.name;
+        document.getElementById('sf-currentValue').value=PriceEngine.getPrice(it.id)||'';
+        document.getElementById('sf-type').value=it.type||'sealed';
+        document.getElementById('sf-status').value=it.status||'in-print';
+        res.classList.remove('show');inp.value='';
+        document.getElementById('sf-costBasis').focus();
+      });};
+  },80);
+};
 $('#exportCsv').onclick=()=>{
   if(!Premium.active()){$('#proBtn').click();return;}
   const head=['Kind','Name','Type','Status','Qty','Basis','Value_or_Net','Date','ROI_or_Realized'];
@@ -723,8 +747,8 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
 };
 
 /* ---- SLAB MATH ---- */
-/* Grading fees + estimated business-day turnarounds, sourced June 2026.
-   Industry is at capacity: several budget tiers are paused — marked below. */
+/* Grading fees/days/caps/paused — seed copy; grading.json overrides on load
+   so pauses and price changes ship as a data edit, no app update. */
 const SLAB_BRANDS={
   psa:{label:'PSA',tiers:{
     vbulk:{label:'Value Bulk',fee:24.99,days:150,cap:500,paused:true},
@@ -781,6 +805,17 @@ function fillTiers(sel){const tiers=SLAB_BRANDS[gBrandSel].tiers;
 $('#gBrand').onchange=e=>{gBrandSel=e.target.value;fillTiers();slabData();};
 $('#gService').onchange=applyTier;
 fillTiers();
+fetch('grading.json').then(r=>r.ok?r.json():null).then(d=>{
+  if(!d)return;
+  for(const k of Object.keys(d)){
+    if(d[k]&&d[k].tiers){
+      for(const t of Object.values(d[k].tiers))if(t.cap==null)t.cap=Infinity;
+      SLAB_BRANDS[k]=d[k];
+    }
+  }
+  $('#gBrand').innerHTML=Object.entries(SLAB_BRANDS).map(([k,b])=>`<option value="${k}"${k===gBrandSel?' selected':''}>${b.label}</option>`).join('');
+  fillTiers($('#gService').value);
+}).catch(()=>{});
 
 /* SlabData — graded-market adapter.
    lookupCards is LIVE (pokemontcg.io). gradeData is the drop-in for graded values + pop + sales:
@@ -856,7 +891,7 @@ function renderGrade(){
     grades.forEach(([g,v,id])=>{const el=$('#'+id);el.textContent='—';el.className='';});
     $('#sN10').textContent=usd((+$('#g10').value||0)-cost);
     $('#sN9').textContent=usd((+$('#g9').value||0)-cost);
-    $('#sAnn').textContent='—';$('#sAnn').className='sv';
+    $('#sN8').textContent=usd((+$('#g8').value||0)-cost);
     $('#gVerdict').textContent='Find a card';$('#gVerdict').className='vv';$('#gVerdict').style.color='var(--ink3)';
     $('#gEdge').textContent='';return;
   }
@@ -868,10 +903,8 @@ function renderGrade(){
     el.className=delta>=0?'pos':'neg';
     if(delta>=0)breakeven=g;
   });
-  const n10=(+$('#g10').value||0)-(effectiveFee(+$('#g10').value||0)+ship),n9=(+$('#g9').value||0)-(effectiveFee(+$('#g9').value||0)+ship);
-  $('#sN10').textContent=usd(n10);$('#sN9').textContent=usd(n9);
-  const base=raw+cost;let ann=0;if(base>0&&days>0&&n10>0)ann=(Math.pow(n10/base,365/days)-1)*100;
-  const annEl=$('#sAnn');annEl.textContent=(n10>0?(ann>=0?'+':'')+Math.round(ann)+'%/yr':'—');annEl.className='sv '+(ann>=0?'pos':'neg');
+  const n10=(+$('#g10').value||0)-(effectiveFee(+$('#g10').value||0)+ship),n9=(+$('#g9').value||0)-(effectiveFee(+$('#g9').value||0)+ship),n8=(+$('#g8').value||0)-(effectiveFee(+$('#g8').value||0)+ship);
+  $('#sN10').textContent=usd(n10);$('#sN9').textContent=usd(n9);$('#sN8').textContent=usd(n8);
   const v=$('#gVerdict'),e=$('#gEdge');v.style.color='';
   if(!breakeven){v.textContent="Don't grade";v.className='vv neg';e.className='ve neg';e.textContent='Loses money even at a 10';}
   else if(breakeven==='10'){v.textContent='Needs the 10';v.className='vv';v.style.color='var(--gold)';e.className='ve';e.textContent='Only a gem beats raw · '+days+'d wait';}
