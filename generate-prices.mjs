@@ -16,15 +16,25 @@ const EXCLUDE = /(single|\bcard\b only|code card|empty|damaged|opened|japanese)/
 
 const OOP_MONTHS = 24; // sets older than this flag out-of-print (heuristic — override per product if wrong)
 
+const HEADERS = {
+  // TCGcsv fronts with Cloudflare; identify ourselves like a normal client
+  'User-Agent': 'Holomint/1.0 (+https://holomint.app; sealed price tracker)',
+  'Accept': 'application/json'
+};
 async function getJSON(url, tries = 3) {
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetch(url);
-      if (r.ok) return (await r.json()).results;
-    } catch (e) { /* retry */ }
-    await new Promise(res => setTimeout(res, 800 * (i + 1)));
+      const r = await fetch(url, { headers: HEADERS });
+      if (r.ok) {
+        const d = await r.json();
+        return d.results ?? d;            // TCGcsv wraps in {results}; tolerate raw arrays
+      }
+      console.warn(`HTTP ${r.status} on ${url} (try ${i + 1}/${tries})`);
+    } catch (e) {
+      console.warn(`fetch error on ${url} (try ${i + 1}/${tries}):`, e.message || e);
+    }
+    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
   }
-  console.warn('skip (failed):', url);
   return null;
 }
 
