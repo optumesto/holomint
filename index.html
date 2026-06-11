@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -184,7 +185,7 @@
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
-        <div class="row" style="gap:6px"><button class="ghost" id="exportCsv" style="padding:8px 11px">CSV</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
+        <div class="row" style="gap:6px"><button class="ghost" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost" id="exportCsv" style="padding:8px 11px">CSV</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th>/yr</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
@@ -282,7 +283,19 @@ const PriceEngine=(function(){
     return true;
   }
   return{
-    search(q){q=q.trim().toLowerCase();if(!q)return[];return catalog.filter(c=>c.name.toLowerCase().includes(q)).slice(0,8);},
+    search(q){q=q.trim().toLowerCase();if(q.length<2)return[];
+      const toks=q.split(/\s+/);
+      const scored=[];
+      for(const c of catalog){
+        const hay=(c.name+' '+(c.set||'')).toLowerCase();
+        if(!toks.every(t=>hay.includes(t)))continue;
+        let score=hay.indexOf(toks[0]);
+        if(c.name.toLowerCase().startsWith(toks[0]))score-=50;
+        if(c.status!=='oop')score-=5;
+        scored.push([score,c]);
+        if(scored.length>400)break;
+      }
+      return scored.sort((a,b)=>a[0]-b[0]).slice(0,8).map(x=>x[1]);},
     getPrice(id){return cache[id]??0;},
     getItem(id){return catalog.find(c=>c.id===id);},
     loadData
@@ -390,7 +403,7 @@ $('#proBtn').onclick=()=>{
       {type:'static',html:
         '<div class="feat"><i>✓</i> Deal log — every buy and trade archived</div>'+
         '<div class="feat"><i>✓</i> Tax summary — realized P&L by year</div>'+
-        '<div class="feat"><i>✓</i> Full CSV — holdings, sales, deals</div>'+
+        '<div class="feat"><i>✓</i> CSV export &amp; import — holdings, sales, deals</div>'+
         '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
         '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
       {key:'key',label:'License key',placeholder:'HF-XXXX-XXXX-XXXX'},
@@ -438,7 +451,7 @@ $('#yourCash').oninput=e=>{yourCash=parseFloat(e.target.value)||0;recompute();};
 
 function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);
   inp.oninput=()=>{const r=PriceEngine.search(inp.value);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
-    res.innerHTML=r.map(i=>`<div class="res" data-add="${i.id}"><span class="rn">${i.name}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');res.classList.add('show');
+    res.innerHTML=r.map(i=>`<div class="res" data-add="${i.id}"><span class="rn">${i.name}${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');res.classList.add('show');
     res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});};}
 function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
 
@@ -657,19 +670,60 @@ $('#addHolding').onclick=()=>Sheet.open('Add a holding',[
   holdings.push(makeHolding({type:out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status}));
   saveHoldings();renderPortfolio();});
 $('#exportCsv').onclick=()=>{
-  let rows,head;
-  if(Premium.active()){
-    head=['Kind','Name','Type','Status','Qty','Basis','Value_or_Net','Date','ROI_or_Realized'];
-    rows=[...holdings.map(h=>['holding',h.name,h.type,h.status,h.qty,h.costBasis,h.currentValue,h.acquired||'',Math.round(roiPct(h))]),
-          ...soldLog.map(r=>['sold',r.name,'','',r.qty,r.basis,r.net,r.date,r.realized]),
-          ...dealLog.map(d=>['deal',d.items.map(i=>i.qty+'x '+i.name).join('; '),d.kind,'','', '',d.payout,d.date,''])];
-  }else{
-    head=['Name','Type','Status','Qty','Basis','Value','Date','ROI'];
-    rows=holdings.map(h=>[h.name,h.type,h.status,h.qty,h.costBasis,h.currentValue,h.acquired||'',Math.round(roiPct(h))]);
-  }
+  if(!Premium.active()){$('#proBtn').click();return;}
+  const head=['Kind','Name','Type','Status','Qty','Basis','Value_or_Net','Date','ROI_or_Realized'];
+  const rows=[...holdings.map(h=>['holding',h.name,h.type,h.status,h.qty,h.costBasis,h.currentValue,h.acquired||'',Math.round(roiPct(h))]),
+        ...soldLog.map(r=>['sold',r.name,'','',r.qty,r.basis,r.net,r.date,r.realized]),
+        ...dealLog.map(d=>['deal',d.items.map(i=>i.qty+'x '+i.name).join('; '),d.kind,'','', '',d.payout,d.date,''])];
   const csv=[head,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='holomint.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Exported');};
+
+/* CSV import (Pro): accepts Holomint exports or any CSV with name/qty/basis/value columns */
+function parseCSV(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(inQ){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else inQ=false;}else cur+=ch;}
+    else if(ch==='"')inQ=true;
+    else if(ch===','){row.push(cur);cur='';}
+    else if(ch==='\n'||ch==='\r'){if(cur!==''||row.length){row.push(cur);rows.push(row);row=[];cur='';}}
+    else cur+=ch;}
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.some(c=>c!==''));
+}
+const csvIn=document.createElement('input');csvIn.type='file';csvIn.accept='.csv,text/csv';csvIn.style.display='none';document.body.appendChild(csvIn);
+$('#importCsv').onclick=()=>{if(!Premium.active()){$('#proBtn').click();return;}csvIn.click();};
+csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const rows=parseCSV(rd.result);if(rows.length<2){toast('Empty CSV');return;}
+      const head=rows[0].map(h=>h.trim().toLowerCase());
+      const col=names=>{for(const n of names){const i=head.indexOf(n);if(i>=0)return i;}return -1;};
+      const ci={kind:col(['kind']),name:col(['name','item','product']),type:col(['type']),status:col(['status']),
+        qty:col(['qty','quantity']),basis:col(['basis','costbasis','cost','paid']),
+        value:col(['value_or_net','value','currentvalue','now']),date:col(['date','acquired'])};
+      if(ci.name<0){toast('No name column found');return;}
+      let added=0;
+      for(const r of rows.slice(1)){
+        if(ci.kind>=0&&r[ci.kind]&&r[ci.kind]!=='holding')continue;   // skip sold/deal rows
+        const name=(r[ci.name]||'').trim();if(!name)continue;
+        const type=(ci.type>=0&&/grad/i.test(r[ci.type]||''))?'graded':'sealed';
+        const status=ci.status>=0&&r[ci.status]?r[ci.status]:(type==='graded'?'graded':'in-print');
+        holdings.push(makeHolding({type,name,
+          qty:Math.max(1,Math.round(parseFloat(ci.qty>=0?r[ci.qty]:1)||1)),
+          costBasis:parseFloat(ci.basis>=0?r[ci.basis]:0)||0,
+          currentValue:parseFloat(ci.value>=0?r[ci.value]:0)||0,
+          acquired:(ci.date>=0&&r[ci.date])?r[ci.date]:new Date().toISOString().slice(0,10),
+          status}));
+        added++;
+      }
+      if(!added){toast('No holdings found in file');return;}
+      saveHoldings();renderPortfolio();toast(added+' holdings imported');
+    }catch(e){toast('Could not read that CSV');}
+  };
+  rd.readAsText(file);
+};
 
 /* ---- SLAB MATH ---- */
 /* Grading fees + estimated business-day turnarounds, sourced June 2026.
