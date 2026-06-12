@@ -189,7 +189,7 @@
       <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
         <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
-      <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th>/yr</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
+      <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
     <div class="card hide" id="soldCard">
       <div class="row between colhead" data-col="soldCard"><label style="margin:0">Sold</label><span class="chev">▾</span></div>
@@ -200,7 +200,7 @@
       <div class="colbody" id="dealBody"></div>
     </div>
     <div class="card" id="dropsCard">
-      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">My drops <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
+      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">Drops <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
       <div class="colbody" id="dropsBody"></div>
     </div>
     <div class="card" id="taxCard">
@@ -266,8 +266,8 @@
 
 <script>
 /* ===== SPINE ===== */
-function makeHolding({type,name,qty=1,costBasis=0,currentValue=0,acquired=null,status='in-print',sample=false}){
-  return {id:'h'+Math.random().toString(36).slice(2,8),type,name,qty,costBasis,currentValue,acquired,status,sample};
+function makeHolding({type,name,qty=1,costBasis=0,currentValue=0,acquired=null,status='in-print',grader=null,grade=null}){
+  return {id:'h'+Math.random().toString(36).slice(2,8),type,name,qty,costBasis,currentValue,acquired,status,grader,grade};
 }
 const PriceEngine=(function(){
   let catalog=[
@@ -450,7 +450,7 @@ $$('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('#modeSeg
   $('#channelCard').classList.toggle('hide',trade);$('#rateCard').classList.toggle('hide',trade);
   $('#theirCashRow').classList.toggle('hide',!trade);
   $('#sendDesk').textContent=trade?'Log trade →':'Send to Desk →';
-  $('#copyReceipt').classList.toggle('hide',trade);recompute();});
+  $('#copyReceipt').textContent=trade?'Share trade':'Receipt';recompute();});
 
 const chWrap=$('#channels');
 function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(([k,c])=>`<div class="ch${k===channel?' on':''}" data-ch="${k}"><div class="cn">${c.label}</div><div class="cf">${c.pct}%${c.est?' est':''}</div></div>`).join('');
@@ -512,6 +512,7 @@ function renderCash(){const n=cashNumbers(),roi=n.offer>0?n.profit/n.offer*100:0
 function renderBalance(){const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash,diff=T-Y;
   const bigger=Math.max(T,Y),spread=bigger>0?Math.abs(diff)/bigger*100:0,bv=$('#balVal'),bt=$('#balText');
   $('#sendDesk').disabled=pileValue(theirPile)<=0;
+  $('#copyReceipt').disabled=(T<=0&&Y<=0);
   if(T<=0&&Y<=0){bv.textContent='$0';bv.className='bv';bt.innerHTML='Add to both sides.';return;}
   if(spread<=3){bv.textContent='Even';bv.className='bv pos';bt.innerHTML=`Within <b>${Math.round(spread)}%</b>.`;return;}
   bv.textContent=usd(Math.abs(diff));
@@ -548,7 +549,28 @@ $('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
   theirPile=[];yourPile=[];theirCash=0;yourCash=0;$('#theirCash').value=0;$('#yourCash').value=0;
   recompute();switchTab('port');};
 
-$('#copyReceipt').onclick=()=>{const n=cashNumbers();if(n.market<=0)return;
+function shareText(text,okMsg){
+  if(navigator.share){navigator.share({text}).then(()=>{}).catch(()=>{});toast(okMsg);return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast(okMsg)).catch(()=>toast('Copy failed'));}
+  else toast('Clipboard unavailable');
+}
+$('#copyReceipt').onclick=()=>{
+  if(mode==='trade'){
+    const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash;
+    if(T<=0&&Y<=0)return;
+    const L=['HOLOMINT — TRADE',new Date().toLocaleString(),'','THEY GIVE:'];
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push('  '+p.qty+'x '+it.name+'  '+usd(pr*p.qty));});
+    if(theirCash>0)L.push('  + '+usd(theirCash)+' cash');
+    L.push('','YOU GIVE:');
+    yourPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push('  '+p.qty+'x '+it.name+'  '+usd(pr*p.qty));});
+    if(yourCash>0)L.push('  + '+usd(yourCash)+' cash');
+    const diff=T-Y;
+    L.push('','Their side '+usd(T)+' · your side '+usd(Y));
+    L.push(Math.abs(diff)<=Math.max(T,Y)*0.03?'Balanced.':(diff>0?'You add '+usd(diff)+' to even it.':'They owe '+usd(-diff)+' to even it.'));
+    L.push('','via Holomint · holomint.app');
+    shareText(L.join('\n'),'Trade ready to share');return;
+  }
+  const n=cashNumbers();if(n.market<=0)return;
   const L=['HOLOMINT — DEAL RECEIPT',new Date().toLocaleString(),''];
   theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push((p.qty+'x '+it.name).slice(0,30).padEnd(31)+usd(pr*p.qty).padStart(9));});
   L.push('');L.push('Market total'.padEnd(22)+usd(n.market).padStart(9));
@@ -568,7 +590,6 @@ function saveHoldings(){Store.save('holdings',holdings);}
 function saveSold(){Store.save('sold',soldLog);}
 function monthsHeld(d){if(!d)return 12;return Math.max(0.5,(Date.now()-new Date(d).getTime())/(1000*60*60*24*30.44));}
 function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis*100:0;}
-function cagrPct(h){if(h.costBasis<=0)return 0;return(Math.pow(h.currentValue/h.costBasis,12/monthsHeld(h.acquired))-1)*100;}
 
 function renderPortfolio(){
   const cost=holdings.reduce((s,h)=>s+h.costBasis*h.qty,0),val=holdings.reduce((s,h)=>s+h.currentValue*h.qty,0);
@@ -581,11 +602,11 @@ function renderPortfolio(){
   const tot=sealedV+gradedV+rawV||1,sp=Math.round(sealedV/tot*100),gp=Math.round(gradedV/tot*100),rp=100-sp-gp;
   $('#weightBar').innerHTML=`<i style="width:${sp}%;background:var(--up)"></i><i style="width:${gp}%;background:#9fb6ff"></i><i style="width:${rp}%;background:#ff9ad2"></i>`;
   $('#weightLeg').innerHTML=`<span><i class="dot" style="background:var(--up)"></i>Sealed ${sp}%</span><span><i class="dot" style="background:#9fb6ff"></i>Graded ${gp}%</span>`+(rawV>0?`<span><i class="dot" style="background:#ff9ad2"></i>Raw ${rp}%</span>`:'');
-  const sorted=[...holdings].sort((a,b)=>cagrPct(b)-cagrPct(a));
-  $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),c=cagrPct(h),cls=r>=0?'pos':'neg';
-    const chip=h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>'));
-    return `<tr><td style="max-width:128px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td class="${cls}">${pct(c)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
-    :'<tr><td colspan="6" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty — buy something in the Trade Block.</td></tr>';
+  const sorted=[...holdings].sort((a,b)=>roiPct(b)-roiPct(a));
+  $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
+    const chip=(h.grade)?`<span class="chip graded">${(h.grader||'').toUpperCase()} ${h.grade}</span>`:(h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>')));
+    return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
+    :'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty — buy something in the Trade Block.</td></tr>';
   $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
   $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
   $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
@@ -607,7 +628,7 @@ function renderSold(){
       const done=()=>{soldLog=soldLog.filter(x=>x.id!==r.id);saveSold();renderPortfolio();};
       const rb=document.getElementById('ch-return'),db=document.getElementById('ch-delete');
       if(rb)rb.onclick=()=>{Sheet.close();
-        holdings.push(makeHolding({type:r.type||'sealed',name:r.name,qty:r.qty,costBasis:r.qty>0?Math.round(r.basis/r.qty):r.basis,currentValue:r.qty>0?Math.round(r.basis/r.qty):r.basis,acquired:new Date().toISOString().slice(0,10),status:r.status||'in-print'}));
+        holdings.push(makeHolding({type:r.type||'sealed',name:r.name,qty:r.qty,costBasis:r.qty>0?Math.round(r.basis/r.qty):r.basis,currentValue:r.qty>0?Math.round(r.basis/r.qty):r.basis,acquired:new Date().toISOString().slice(0,10),status:r.status||'in-print',grader:r.grader||null,grade:r.grade||null}));
         saveHoldings();done();toast('Returned to desk');};
       if(db)db.onclick=()=>{Sheet.close();done();toast('Record deleted');};
     },60);});
@@ -647,7 +668,7 @@ function icsFor(d){
 }
 function renderDrops(){
   const body=$('#dropsBody');
-  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases and restocks — with a day-before reminder on your calendar.');wireLocks();return;}
+  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases and restocks with day-before calendar reminders. Live retail drops (Pok\u00e9mon Center and more) coming.');wireLocks();return;}
   if(!drops.length){body.innerHTML='<div class="empty">No drops tracked</div>';return;}
   const today=new Date();today.setHours(0,0,0,0);
   body.innerHTML=[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
@@ -688,7 +709,7 @@ function sellHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
     for(const lot of lots){if(q<=0)break;const take=Math.min(lot.qty,q);basis+=lot.costBasis*take;lot.qty-=take;q-=take;}
     holdings=holdings.filter(x=>x.qty>0);
     const gross=out.price*soldQty,net=FeeCalc.net(gross,out.channel).net;
-    soldLog.push({id:'s'+Math.random().toString(36).slice(2,8),name:h.name,type:h.type,status:h.status,qty:soldQty,basis:Math.round(basis),net:Math.round(net),realized:Math.round(net-basis),channel:FeeCalc.channels[out.channel].label,date:new Date().toISOString().slice(0,10)});
+    soldLog.push({id:'s'+Math.random().toString(36).slice(2,8),name:h.name,type:h.type,status:h.status,grader:h.grader||null,grade:h.grade||null,qty:soldQty,basis:Math.round(basis),net:Math.round(net),realized:Math.round(net-basis),channel:FeeCalc.channels[out.channel].label,date:new Date().toISOString().slice(0,10)});
     saveHoldings();saveSold();renderPortfolio();toast(usd(net-basis)+' realized');
   });}
 function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
@@ -697,13 +718,20 @@ function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
     {key:'qty',label:'Quantity',type:'number',value:h.qty},
     {key:'costBasis',label:'Cost basis / unit',type:'number',value:h.costBasis},
     {key:'currentValue',label:'Current value / unit',type:'number',value:h.currentValue},
-    {key:'type',label:'Type',type:'select',value:h.type,options:[['sealed','Sealed'],['graded','Graded']]},
-    {key:'status',label:'Status',type:'select',value:h.status,options:[['in-print','In print'],['oop','Out of print'],['graded','Graded']]}
+    {key:'type',label:'Type',type:'select',value:h.type,options:[['sealed','Sealed'],['graded','Graded'],['single','Raw single']]},
+    {key:'status',label:'Status',type:'select',value:h.status,options:[['in-print','In print'],['oop','Out of print'],['graded','Graded'],['raw','Raw']]},
+    {key:'grader',label:'Grader',type:'select',value:h.grader||'psa',options:[['psa','PSA'],['cgc','CGC'],['bgs','Beckett'],['tag','TAG'],['sgc','SGC']]},
+    {key:'grade',label:'Grade',type:'select',value:h.grade||'10',options:[['10','10'],['9.5','9.5'],['9','9'],['8.5','8.5'],['8','8'],['7','7'],['6','6'],['5','5'],['Auth','Authentic']]}
   ],'Save',out=>{
     if(out.name)h.name=out.name;
     if(out.qty>0)h.qty=Math.round(out.qty);
-    h.costBasis=out.costBasis;h.currentValue=out.currentValue;h.type=out.type;h.status=out.status;h.sample=false;
-    saveHoldings();renderPortfolio();});}
+    const graded=out.status==='graded';
+    h.costBasis=out.costBasis;h.currentValue=out.currentValue;h.type=graded?'graded':out.type;h.status=out.status;
+    h.grader=graded?out.grader:null;h.grade=graded?out.grade:null;
+    saveHoldings();renderPortfolio();});
+  setTimeout(()=>{const stSel=document.getElementById('sf-status');
+    function syncG(){const show=stSel&&stSel.value==='graded';['sf-grader','sf-grade'].forEach(id=>{const el=document.getElementById(id);if(el)el.closest('.field').style.display=show?'':'none';});}
+    if(stSel){stSel.onchange=syncG;syncG();}},80);}
 function delHolding(id){holdings=holdings.filter(x=>x.id!==id);saveHoldings();renderPortfolio();}
 $('#addHolding').onclick=()=>{
   Sheet.open('Add a holding',[
@@ -713,13 +741,19 @@ $('#addHolding').onclick=()=>{
     {key:'costBasis',label:'Paid / unit',type:'number',value:''},
     {key:'currentValue',label:'Value / unit',type:'number',value:''},
     {key:'type',label:'Type',type:'select',value:'sealed',options:[['sealed','Sealed'],['graded','Graded'],['single','Raw single']]},
-    {key:'status',label:'Status',type:'select',value:'in-print',options:[['in-print','In print'],['oop','Out of print'],['graded','Graded'],['raw','Raw']]}
+    {key:'status',label:'Status',type:'select',value:'in-print',options:[['in-print','In print'],['oop','Out of print'],['graded','Graded'],['raw','Raw']]},
+    {key:'grader',label:'Grader',type:'select',value:'psa',options:[['psa','PSA'],['cgc','CGC'],['bgs','Beckett'],['tag','TAG'],['sgc','SGC']]},
+    {key:'grade',label:'Grade',type:'select',value:'10',options:[['10','10'],['9.5','9.5'],['9','9'],['8.5','8.5'],['8','8'],['7','7'],['6','6'],['5','5'],['Auth','Authentic']]}
   ],'Add',out=>{
     if(!out.name){toast('Needs a name');return;}
-    holdings.push(makeHolding({type:out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status}));
+    const graded=out.status==='graded';
+    holdings.push(makeHolding({type:graded?'graded':out.type,name:out.name,qty:Math.max(1,Math.round(out.qty)),costBasis:out.costBasis,currentValue:out.currentValue,acquired:new Date().toISOString().slice(0,10),status:out.status,grader:graded?out.grader:null,grade:graded?out.grade:null}));
     saveHoldings();renderPortfolio();});
   setTimeout(()=>{
     const inp=document.getElementById('ah-search'),res=document.getElementById('ah-results');
+    const stSel=document.getElementById('sf-status');
+    function syncG(){const show=stSel&&stSel.value==='graded';['sf-grader','sf-grade'].forEach(id=>{const el=document.getElementById(id);if(el)el.closest('.field').style.display=show?'':'none';});}
+    if(stSel){stSel.onchange=syncG;syncG();}
     if(!inp)return;
     inp.oninput=()=>{const r=PriceEngine.search(inp.value);
       if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
@@ -731,6 +765,7 @@ $('#addHolding').onclick=()=>{
         document.getElementById('sf-currentValue').value=PriceEngine.getPrice(it.id)||'';
         document.getElementById('sf-type').value=it.type||'sealed';
         document.getElementById('sf-status').value=it.status||'in-print';
+        if(stSel)stSel.dispatchEvent(new Event('change'));
         res.classList.remove('show');inp.value='';
         document.getElementById('sf-costBasis').focus();
       });};
@@ -884,6 +919,15 @@ const SlabData={
 };
 function pickCard(c){
   SlabData.card=c;
+  if(c.local){
+    $('#chName').textContent=c.name;
+    $('#chSet').textContent=c.set;
+    $('#finishRow').innerHTML='';SlabData.finish=null;
+    Slab.raw=c.price!=null?c.price:null;
+    $('#tRaw').textContent=Slab.raw!=null?usd(Slab.raw):'—';
+    $('#cardHit').classList.remove('hide');
+    renderGrade();return;
+  }
   $('#chName').textContent=c.name+' · '+c.number;
   $('#chSet').textContent=c.set;
   const finishes=Object.keys(c.prices).filter(k=>c.prices[k]&&c.prices[k].market!=null);
@@ -917,7 +961,12 @@ $('#findCard').onclick=async()=>{
   const btn=$('#findCard');btn.textContent='Searching…';btn.disabled=true;
   const res=$('#cardResults');
   try{
-    const hits=await SlabData.lookupCards(name,$('#cardNum').value);
+    let hits=[];
+    try{hits=await SlabData.lookupCards(name,$('#cardNum').value);}catch(e){hits=[];}
+    const lq=(name+' '+($('#cardNum').value||'')).trim();
+    const locals=PriceEngine.search(lq).filter(i=>i.type==='single').slice(0,4)
+      .map(i=>({name:i.name,number:'',set:(i.set||'')+' · catalog',prices:{},local:true,price:PriceEngine.getPrice(i.id)}));
+    hits=[...locals,...hits];
     if(!hits.length){toast('No match');res.classList.remove('show');}
     else if(hits.length===1){res.classList.remove('show');pickCard(hits[0]);}
     else{
