@@ -293,22 +293,31 @@ const PriceEngine=(function(){
     return true;
   }
   return{
-    search(q,langFilter){q=q.trim().toLowerCase();if(q.length<2)return[];
-      const toks=q.split(/\s+/);
-      const scored=[];
+    search(q,langFilter){
+      // punctuation-blind: "226/sp", "226/s-p", "226 sp" all collapse the same way
+      const norm=x=>x.toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'');
+      const raw=q.trim().toLowerCase();if(raw.length<2)return[];
+      const toks=raw.split(/\s+/).map(norm).filter(Boolean);
+      const en=[],jp=[];
       for(const c of catalog){
         if(langFilter==='en'&&c.jp)continue;
         if(langFilter==='jp'&&!c.jp)continue;
-        const hay=(c.name+' '+(c.set||'')).toLowerCase();
+        const hay=norm(c.name+' '+(c.set||''));
         if(!toks.every(t=>hay.includes(t)))continue;
         let score=hay.indexOf(toks[0]);
-        if(c.name.toLowerCase().startsWith(toks[0]))score-=50;
-        if(c.jp)score+=8; // English ranks first in blended 'all' mode
+        if(norm(c.name).startsWith(toks[0]))score-=50;
         if(c.status!=='oop')score-=5;
-        scored.push([score,c]);
-        if(scored.length>600)break;
+        (c.jp?jp:en).push([score,c]);
+        if(en.length+jp.length>1200)break;
       }
-      return scored.sort((a,b)=>a[0]-b[0]).slice(0,10).map(x=>x[1]);},
+      const bySc=(a,b)=>a[0]-b[0];en.sort(bySc);jp.sort(bySc);
+      if(langFilter==='en')return en.slice(0,10).map(x=>x[1]);
+      if(langFilter==='jp')return jp.slice(0,10).map(x=>x[1]);
+      // 'all': guarantee both languages a fair share instead of EN crowding JP out
+      const out=[],take=arr=>{for(const x of arr)out.push(x[1]);};
+      take(en.slice(0,6));take(jp.slice(0,6));
+      return out.slice(0,12);
+    },
     getPrice(id){return cache[id]??0;},
     getItem(id){return catalog.find(c=>c.id===id);},
     loadData
@@ -345,7 +354,11 @@ const CURRENCIES={USD:'$',EUR:'\u20ac',GBP:'\u00a3',CAD:'CA$',AUD:'A$',JPY:'\u00
 let FX=Store.load('fx',{code:'USD',rate:1});
 function thumbHtml(it,cls){const u=it&&it.img;if(!u)return `<div class="${cls}"></div>`;
   return `<img class="${cls}" loading="lazy" src="${u}" onerror="this.style.visibility='hidden'">`;}
-const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$';return (v<0?'\u2212':'')+sym+Math.abs(Math.round(v)).toLocaleString();};
+const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$',a=Math.abs(v);
+  let body;
+  if(a>0&&a<10)body=a.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  else body=Math.round(a).toLocaleString();
+  return (v<0?'\u2212':'')+sym+body;};
 const pct=n=>(n>=0?'+':'')+Math.round(n)+'%';
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
 function switchTab(name){$$('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));$$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));}
