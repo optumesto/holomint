@@ -14,8 +14,27 @@
   :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
-  .wrap{max-width:560px;margin:0 auto;padding:0 16px 120px}
-  header{padding:22px 0 14px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2) left bottom/100% 1.5px no-repeat}
+    .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+  #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease,visibility .5s}
+  #splash.gone{opacity:0;visibility:hidden}
+  #splash img{width:108px;height:108px;filter:drop-shadow(0 8px 30px rgba(125,240,200,.25));animation:sfloat 2.4s ease-in-out infinite}
+  @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  #splash .sname{font-family:var(--serif);font-size:30px;font-weight:600;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
+  #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
+  @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
+  .brandrow{display:flex;align-items:center;gap:9px}
+  .brandrow img{width:26px;height:26px;flex:0 0 auto}
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
+  .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .navb.on{color:var(--gold)}
+  .navb.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;border-radius:2px;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite}
+  .navb.scan-fab{color:var(--ink)}
+  .navb.scan-fab .fabwrap{width:46px;height:46px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;display:flex;align-items:center;justify-content:center;margin-top:-14px;box-shadow:0 4px 16px rgba(125,240,200,.3);border:3px solid var(--bg)}
+  .navb.scan-fab .fabwrap svg{width:24px;height:24px;stroke:#0c1020;stroke-width:2}
+  .wrap2{display:none}
+  .tabs{display:flex;
+  header{padding:calc(14px + env(safe-area-inset-top)) 0 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none}
   .brand{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.02em;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
   @keyframes holo{to{background-position:240% center}}
@@ -28,7 +47,8 @@
   .tab{flex:1;padding:11px 4px;text-align:center;border-radius:8px;font-weight:500;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;border:none;background:none;font-family:var(--sans)}
   .tab.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .panel{display:none;animation:fade .3s ease}.panel.on{display:block}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .panel.on{animation:fade .32s cubic-bezier(.22,.8,.3,1)}
   .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
   .seg button{flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
@@ -138,14 +158,10 @@
 </style>
 </head>
 <body>
+<div id="splash"><img src="icon-512.png" alt=""><div class="sname">Holomint</div><div class="sdot"></div></div>
 <div class="wrap">
-  <header><div class="brand">Holo<b>mint</b></div><button class="probtn" id="proBtn">PRO</button></header>
+  <header><div class="brandrow"><img src="icon-192.png" alt=""><div class="brand">Holomint</div></div><button class="probtn" id="proBtn">PRO</button></header>
   <div class="netpill" id="netPill"><span id="netPillText">Offline</span></div>
-  <div class="tabs">
-    <button class="tab on" data-tab="block">Trade Block</button>
-    <button class="tab" data-tab="port">Portfolio</button>
-    <button class="tab" data-tab="slab">Slab Math</button>
-  </div>
 
   <!-- ============ TRADE BLOCK ============ -->
   <section class="panel on" id="block">
@@ -154,7 +170,7 @@
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">\u25a3 Scan</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">\u25a3 Scan</button><button class="scanbtn" id="quickBtn">\u26a1 Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
@@ -225,6 +241,23 @@
     </div>
   </section>
 
+  <!-- ============ SETTINGS ============ -->
+  <section class="panel" id="settings">
+    <div class="card" style="text-align:center;padding:22px 16px">
+      <img src="icon-512.png" alt="" style="width:72px;height:72px;margin-bottom:10px">
+      <div class="brand" style="font-size:24px">Holomint</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px">sealed · graded · singles</div>
+    </div>
+    <div class="card">
+      <div class="row between" style="padding:6px 0"><span style="font-size:14px">Holomint Pro</span><button class="ghost" id="setProBtn" style="padding:8px 14px">Manage</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:8px 14px">Open</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Back up / restore</span><div class="row" style="gap:6px"><button class="ghost" id="setBkBtn" style="padding:8px 12px">Back up</button><button class="ghost" id="setRsBtn" style="padding:8px 12px">Restore</button></div></div>
+    </div>
+    <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.7">
+      Prices from TCGplayer via TCGcsv, refreshed daily. Card data from pokemontcg.io.<br>Independent tool — not affiliated with Nintendo, The Pokémon Company, PSA, CGC, eBay, or TCGplayer.
+    </div>
+  </section>
+
   <!-- ============ SLAB MATH ============ -->
   <section class="panel" id="slab">
     <div class="card">
@@ -274,12 +307,20 @@
   </section>
 </div>
 
+<nav class="botnav" id="botnav">
+  <button class="navb on" data-tab="block"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg>Trade</button>
+  <button class="navb" data-tab="port"><svg viewBox="0 0 24 24"><path d="M4 19V10M9 19V5M14 19v-7M19 19v-4"/></svg>Portfolio</button>
+  <button class="navb scan-fab" data-tab="scan"><span class="fabwrap"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></svg></span>Scan</button>
+  <button class="navb" data-tab="slab"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Slab</button>
+  <button class="navb" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L14.5 3h-5l-.3 2.6a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4L3 11a7.5 7.5 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.3 2.6h5l.3-2.6a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4Z"/></svg>Settings</button>
+</nav>
 <div class="sheetbg" id="sheetbg"></div>
 <div class="sheet" id="sheet"><div class="holo-line"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div>
   <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
 </div>
 <div id="scanModal">
   <button class="scanx" id="scanClose">\u00d7</button>
+  <div class="seg" style="position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:3;width:88%;max-width:340px;margin:0"><button id="scanModeAdd" class="on" onclick="Scanner.setMode(false)">Add to pile</button><button id="scanModeQuick" onclick="Scanner.setMode(true)">Quick check</button></div>
   <video id="scanVideo" autoplay playsinline muted></video>
   <div class="scanframe"></div>
   <div class="scanhint" id="scanHint">Fill the frame with the card\u2019s name &amp; number</div>
@@ -306,10 +347,12 @@ const PriceEngine=(function(){
     {id:'moon',type:'graded',name:'Umbreon VMAX Alt "Moonbreon" · PSA 10',status:'graded'},
     {id:'gira',type:'graded',name:'Giratina V Alt Art · PSA 10',status:'graded'}
   ];
+  let history={};
   let cache={'es-bb':480,'lo-bb':230,'cz-etb':92,'151-bb':40,'151-etb':74,'ss-bb':132,'pe-etb':90,'zard151':300,'moon':1100,'gira':250};
   async function loadData(){
     try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length)catalog=p;}}catch(e){}
     try{const r=await fetch('prices.json');if(r.ok){Object.assign(cache,await r.json());Store.save('pricesAt',new Date().toISOString());}}catch(e){}
+    try{const r=await fetch('history.json');if(r.ok)history=await r.json();}catch(e){}
     return true;
   }
   return{
@@ -340,6 +383,7 @@ const PriceEngine=(function(){
     },
     getPrice(id){return cache[id]??0;},
     getItem(id){return catalog.find(c=>c.id===id);},
+    getHistory(id){return history[id]||[];},
     loadData
   };
 })();
@@ -372,6 +416,15 @@ let acct=Store.load('acct',{method:'fifo'});
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const CURRENCIES={USD:'$',EUR:'\u20ac',GBP:'\u00a3',CAD:'CA$',AUD:'A$',JPY:'\u00a5',MXN:'MX$'};
 let FX=Store.load('fx',{code:'USD',rate:1});
+function sparkline(pts,w,h){
+  if(!pts||pts.length<2)return '';
+  const ps=pts.slice(-30),vals=ps.map(p=>p.p),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
+  const step=w/(ps.length-1);
+  const d=ps.map((p,i)=>`${i?'L':'M'}${(i*step).toFixed(1)} ${(h-((p.p-min)/rng)*h).toFixed(1)}`).join(' ');
+  const up=vals[vals.length-1]>=vals[0],col=up?'var(--up)':'var(--down)';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+function pctChange(pts){if(!pts||pts.length<2)return null;const a=pts[0].p,b=pts[pts.length-1].p;return a>0?(b-a)/a*100:null;}
 function thumbHtml(it,cls){const u=it&&it.img;if(!u)return `<div class="${cls}"></div>`;
   return `<img class="${cls}" loading="lazy" src="${u}" onerror="this.style.visibility='hidden'">`;}
 const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$',a=Math.abs(v);
@@ -381,8 +434,15 @@ const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$',a=Math.abs(v);
   return (v<0?'\u2212':'')+sym+body;};
 const pct=n=>(n>=0?'+':'')+Math.round(n)+'%';
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
-function switchTab(name){$$('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));$$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));}
-$$('.tab').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+let lastTab='block';
+function switchTab(name){
+  if(name==='scan'){Scanner.open(false);return;}
+  lastTab=name;
+  $$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));
+  $$('.navb').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
+  window.scrollTo({top:0});
+}
+$$('.navb').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
 
 /* collapsible cards */
 let collapsed=Store.load('collapsed',{});
@@ -438,9 +498,12 @@ const Sheet=(function(){
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
 const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:14px"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
-function wireData(){setTimeout(()=>{const b=document.getElementById('bkBtn'),r=document.getElementById('rsBtn');
+function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
+  setTimeout(()=>{const b=document.getElementById('bkBtn'),r=document.getElementById('rsBtn');
   if(b)b.onclick=()=>{Sheet.close();backup();};
   if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
+['setProBtn','setCurBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.onclick=()=>$('#proBtn').click();});
+const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();const _sr=document.getElementById('setRsBtn');if(_sr)_sr.onclick=()=>fileIn.click();
 $('#proBtn').onclick=()=>{
   if(Premium.active()){
     Sheet.open('Settings',[
@@ -512,7 +575,9 @@ $('#yourCash').oninput=e=>{yourCash=Math.max(0,parseFloat(e.target.value)||0);if
 
 function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);
   inp.oninput=()=>{const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
-    res.innerHTML=r.map(i=>`<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');res.classList.add('show');
+    res.innerHTML=r.map(i=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
+      const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
+      return `<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}${ch}</span></div>`;}).join('');res.classList.add('show');
     res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});};}
 function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
 
@@ -1059,6 +1124,7 @@ $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',st
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
 renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
+setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
 const Scanner=(function(){
   let stream=null,tListPromise=null;
@@ -1070,8 +1136,11 @@ const Scanner=(function(){
       sc.onload=res;sc.onerror=rej;document.head.appendChild(sc);});
     return tListPromise;
   }
-  async function open(){
-    const m=$('#scanModal');m.classList.add('show');
+  let quickMode=false;
+  function setMode(q){quickMode=q;const qb=$('#scanModeQuick'),ab=$('#scanModeAdd');
+    if(qb&&ab){qb.classList.toggle('on',q);ab.classList.toggle('on',!q);}}
+  async function open(quick){
+    const m=$('#scanModal');m.classList.add('show');setMode(!!quick);
     $('#scanStatus').textContent='';$('#scanHint').style.display='';
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
@@ -1105,10 +1174,41 @@ const Scanner=(function(){
     if(!hits.length&&num)hits=PriceEngine.search(num,lang);
     if(!hits.length&&nameGuess)hits=PriceEngine.search(nameGuess,lang);
     if(!hits.length){$('#scanStatus').textContent='No match'+(num?' for '+num:'')+' \u2014 try again or + Manual';return;}
-    close();showScanResults(hits,query);
+    close();
+    if(quickMode)showQuickCheck(hits,query);else showScanResults(hits,query);
   }
-  return{open,close,capture};
+  return{open,close,capture,setMode};
 })();
+function ownedInfo(it){
+  // match by catalog id first, else by normalized name
+  const norm=x=>(x||'').toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'');
+  let owned=holdings.filter(h=>norm(h.name)===norm(it.name));
+  const qty=owned.reduce((s,h)=>s+h.qty,0);
+  return {qty};
+}
+function showQuickCheck(hits,q){
+  const it=hits[0];
+  const hist=PriceEngine.getHistory(it.id),chg=pctChange(hist);
+  const own=ownedInfo(it);
+  const price=PriceEngine.getPrice(it.id);
+  const chgHtml=chg!=null?`<span class="${chg>=0?'pos':'neg'}" style="font-family:var(--mono);font-size:13px">${chg>=0?'+':''}${chg.toFixed(1)}% 30d</span>`:'<span style="color:var(--ink3);font-family:var(--mono);font-size:12px">building history…</span>';
+  const ownHtml=own.qty>0
+    ?`<div style="margin-top:10px;padding:10px;border-radius:9px;background:#10231c;border:1px solid var(--up);color:var(--up);font-size:13px">\u2713 In your collection \u00d7${own.qty}</div>`
+    :`<div style="margin-top:10px;padding:10px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);color:var(--ink2);font-size:13px">Not in your collection</div>`;
+  Sheet.open('Quick check',[
+    {type:'static',html:
+      `<div class="row" style="gap:12px;align-items:flex-start">${thumbHtml(it,'thumb')}
+        <div style="flex:1;min-width:0"><div style="font-weight:500">${it.name}${it.jp?' <span class="chip jp">JP</span>':''}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${it.set||''}</div></div>
+        <div style="text-align:right"><div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--gold)">${usd(price)}</div>${chgHtml}</div></div>`+
+      (hist.length>1?`<div style="margin-top:12px">${sparkline(hist,300,52)}</div>`:'')+
+      ownHtml+
+      (hits.length>1?`<div style="margin-top:12px"><label>Other matches</label>${hits.slice(1,5).map(h=>`<div class="res" data-qc="${h.id}"><span class="rmeta"><span class="rn">${h.name}</span></span><span class="rp">${usd(PriceEngine.getPrice(h.id))}</span></div>`).join('')}</div>`:'')}
+  ],'Done',()=>{});
+  setTimeout(()=>{
+    document.querySelectorAll('[data-qc]').forEach(el=>el.onclick=()=>{const h=PriceEngine.getItem(el.dataset.qc);if(h){Sheet.close();showQuickCheck([h,...hits.filter(x=>x.id!==h.id)],q);}});
+  },60);
+}
 function showScanResults(hits,q){
   Sheet.open('Scanned'+(q?' \u2014 '+q:''),[
     {type:'static',html:'<div class="results show" style="max-height:300px">'+hits.slice(0,8).map(i=>
@@ -1118,7 +1218,8 @@ function showScanResults(hits,q){
   setTimeout(()=>{document.querySelectorAll('[data-scan]').forEach(el=>el.onclick=()=>{
     addTo('their',el.dataset.scan);Sheet.close();toast('Added');});},60);
 }
-$('#scanBtn').onclick=()=>Scanner.open();
+$('#scanBtn').onclick=()=>Scanner.open(false);
+$('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
 $('#scanCap').onclick=()=>Scanner.capture();
 
