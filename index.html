@@ -1198,16 +1198,49 @@ const Scanner=(function(){
     try{full=await loadImage(file);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
     // Resize to ~1400px wide — sharp enough for OCR, fast enough to not hang on 50MP.
     const cv=fitCanvas(full,1400);const fw=cv.width,fh=cv.height;
-    // OCR the name strip (top ~18%), the number corner (bottom-right), and full card.
-    function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=sw;c.height=sh;
+    function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
       c.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);return c;}
-    const nameStrip=crop(0,0,fw,fh*0.18);
+    // No framing guide anymore (native camera). Detect the card rectangle on the background:
+    // a card is a large, brighter, higher-variance region vs. a flat carpet/table.
+    function cardRect(){
+      try{const data=cv.getContext('2d').getImageData(0,0,fw,fh).data;
+        // brightness per sampled row & column; card edges = where brightness jumps
+        const colB=new Array(fw).fill(0),rowB=new Array(fh).fill(0);
+        for(let y=0;y<fh;y+=3)for(let x=0;x<fw;x+=3){const i=(y*fw+x)*4;const b=g(data,i);rowB[y]+=b;colB[x]+=b;}
+        function bounds(arr,step,len){
+          const vals=[];for(let i=0;i<len;i+=step)vals.push(arr[i]||0);
+          const mx=Math.max(...vals),mn=Math.min(...vals),thr=mn+(mx-mn)*0.35;
+          let lo=0,hi=len-1;
+          for(let i=0;i<len;i+=step){if((arr[i]||0)>thr){lo=i;break;}}
+          for(let i=len-1;i>=0;i-=step){if((arr[i]||0)>thr){hi=i;break;}}
+          return [lo,hi];
+        }
+        const [top,bot]=bounds(rowB,3,fh),[left,right]=bounds(colB,3,fw);
+        // sanity: card should be a meaningful chunk; else use whole image
+        if(bot-top<fh*0.3||right-left<fw*0.3)return {x:0,y:0,w:fw,h:fh};
+        // pad inward slightly to drop the bright border glow
+        return {x:left,y:top,w:right-left,h:bot-top};
+      }catch(e){return {x:0,y:0,w:fw,h:fh};}
+    }
+    function g(d,i){return d[i]+d[i+1]+d[i+2];}
+    const cr=cardRect();
+    // crop to just the card, then the name strip is the top ~15% of THAT
+    const cardImg=crop(cr.x,cr.y,cr.w,cr.h);
+    const cardCv=document.createElement('canvas');cardCv.width=cr.w;cardCv.height=cr.h;
+    cardCv.getContext('2d').drawImage(cardImg,0,0);
+    function cropFrom(src,sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
+      c.getContext('2d').drawImage(src,sx,sy,sw,sh,0,0,sw,sh);return c;}
+    const nameStrip=cropFrom(cardCv,0,0,cr.w,cr.h*0.15);
     let nameText='',fullText='';
     try{
       const w=await getWorker();
-      // sequential, single worker — avoids double 10MB downloads that hang mobile
-      const rFull=await w.recognize(cv);fullText=(rFull.data.text||'');
+      // Restrict to letters for the name pass — kills numeric/symbol noise from foil & watermarks.
+      // PSM 7 = treat the image as a single text line (the card name is one line).
+      await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'7'});
       const rName=await w.recognize(nameStrip);nameText=(rName.data.text||'');
+      // full pass with default params for the number + fallback
+      await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'3'});
+      const rFull=await w.recognize(cardCv);fullText=(rFull.data.text||'');
     }catch(e){$('#scanStatus').textContent='Scanner error: '+(e.message||e);return;}
 
     // The card NAME is the reliable signal and lives in the top strip. Extract it cleanly.
