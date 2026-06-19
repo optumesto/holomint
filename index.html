@@ -92,7 +92,9 @@
   .scanbtn:active{transform:scale(.97)}
   #scanModal{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column}
   #scanModal.show{display:flex}
-  #scanVideo{flex:1;width:100%;object-fit:cover;background:#000}
+  .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  #scanStatus{font-family:var(--mono);font-size:15px;color:var(--gold)}
+  #scanHint{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-top:8px;max-width:300px}
   .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
   .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:12px;text-shadow:0 1px 3px #000}
   .scanbar{position:absolute;bottom:0;left:0;right:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.7))}
@@ -320,12 +322,11 @@
 </div>
 <div id="scanModal">
   <button class="scanx" id="scanClose">×</button><button class="scanx" id="scanTorch" style="right:64px;display:none" onclick="Scanner.toggleTorch()">⚡</button>
-  <div class="seg" style="position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:3;width:88%;max-width:340px;margin:0"><button id="scanModeAdd" class="on" onclick="Scanner.setMode(false)">Add to pile</button><button id="scanModeQuick" onclick="Scanner.setMode(true)">Quick check</button></div>
-  <video id="scanVideo" autoplay playsinline muted onclick="Scanner.tapFocus(event)"></video>
-  <div class="scanframe"></div>
-  <div class="scanhint" id="scanHint">Fill the frame with the card’s name &amp; number</div>
-  <div class="scanstatus" id="scanStatus"></div>
-  <div class="scanbar"><button class="scancap" id="scanCap"></button></div>
+  <div class="scanpanel">
+    <div class="scanstatus" id="scanStatus">Reading…</div>
+    <div class="scanhint" id="scanHint"></div>
+    <button class="act" id="scanRetake" style="max-width:260px;margin-top:18px">Take another photo</button>
+  </div>
 </div>
 <div class="toast" id="toast">Done</div>
 
@@ -1141,38 +1142,25 @@ const Scanner=(function(){
   let quickMode=false;
   function setMode(q){quickMode=q;const qb=$('#scanModeQuick'),ab=$('#scanModeAdd');
     if(qb&&ab){qb.classList.toggle('on',q);ab.classList.toggle('on',!q);}}
-  let track=null,torchOn=false;
-  async function open(quick){
-    const m=$('#scanModal');m.classList.add('show');setMode(!!quick);
-    $('#scanStatus').textContent='';$('#scanHint').style.display='';torchOn=false;
-    try{
-      // Minimal constraints — just the rear camera. Let the phone handle focus &
-      // resolution natively; over-constraining forces worse modes and fights autofocus.
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-      const v=$('#scanVideo');v.srcObject=stream;
-      track=stream.getVideoTracks()[0];
-      // torch button only if the device exposes it — but never touch focus.
-      try{const caps=track.getCapabilities?track.getCapabilities():{};const tb=$('#scanTorch');if(tb)tb.style.display=caps.torch?'flex':'none';}catch(e){}
-    }catch(e){toast('Camera unavailable — check permissions');close();return;}
-    loadTesseract().catch(()=>{});
-  }
-  async function toggleTorch(){if(!track)return;try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});$('#scanTorch').classList.toggle('on',torchOn);}catch(e){}}
-  function tapFocus(ev){/* let native continuous autofocus do its job — no manual override */}
-  function close(){const m=$('#scanModal');m.classList.remove('show');
-    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
+  let lastQuick=false;
+  // Native camera capture: launches the phone's real camera app for a full-res photo.
+  // This is the ONLY way to get the S24's actual 50MP sensor + processing on the web —
+  // getUserMedia only exposes a low-res video stream, not the real camera.
+  const camIn=document.createElement('input');
+  camIn.type='file';camIn.accept='image/*';camIn.setAttribute('capture','environment');
+  camIn.style.display='none';document.body.appendChild(camIn);
+  function open(quick){lastQuick=!!quick;loadTesseract().catch(()=>{});camIn.value='';camIn.click();}
+  camIn.onchange=()=>{const file=camIn.files&&camIn.files[0];if(file)processPhoto(file);};
+  function toggleTorch(){}
+  function tapFocus(){}
+  function close(){const m=$('#scanModal');m.classList.remove('show');}
   function parseNumber(text){
     // collector numbers like 125/094, 226/S-P, SWSH284, 073, TG12/TG30
     const m=text.match(/\b([A-Z]{0,5}\d{1,3}\s*\/\s*[A-Z0-9]{1,4}|[A-Z]{2,4}\d{2,4}|\d{1,3}\/\d{1,3})\b/i);
     return m?m[0].replace(/\s+/g,''):'';
   }
-  async function grabFrame(){
-    // prefer full-sensor still via ImageCapture; fall back to the video element
-    try{if(track&&window.ImageCapture){const ic=new ImageCapture(track);const bmp=await ic.grabFrame();
-      const c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;
-      c.getContext('2d').drawImage(bmp,0,0);return c;}}catch(e){}
-    const v=$('#scanVideo');const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
-    c.getContext('2d').drawImage(v,0,0);return c;
-  }
+  function loadImage(file){return new Promise((res,rej)=>{const img=new Image();
+    img.onload=()=>res(img);img.onerror=rej;img.src=URL.createObjectURL(file);});}
   function enhance(cx,w,h){
     try{const img=cx.getImageData(0,0,w,h),d=img.data;
       // grayscale + local-ish contrast: compute mean, stretch around it (gentler than hard threshold)
@@ -1181,15 +1169,17 @@ const Scanner=(function(){
       for(let i=0;i<d.length;i+=4){let g=d[i+1];g=(g-mean)*1.6+mean;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g;}
       cx.putImageData(img,0,0);}catch(e){}
   }
-  async function capture(){
-    if(!window.Tesseract){$('#scanStatus').textContent='Loading scanner\u2026';await loadTesseract();}
-    const v=$('#scanVideo');if(!v.videoWidth){toast('Camera not ready');return;}
+  async function processPhoto(file){
+    const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);
     $('#scanHint').style.display='none';$('#scanStatus').textContent='Reading\u2026';
-    const full=await grabFrame();const cw=full.width,ch=full.height;
-    // map the on-screen card frame (78% width, 63:88) to the full-res frame
-    const fw=cw*0.80,fh=fw*88/63,fx=(cw-fw)/2,fy=(ch-fh)/2;
-    const cv=document.createElement('canvas');cv.width=fw;cv.height=fh;
-    const cx=cv.getContext('2d');cx.drawImage(full,fx,fy,fw,fh,0,0,fw,fh);
+    if(!window.Tesseract){$('#scanStatus').textContent='Loading scanner\u2026';await loadTesseract();}
+    let full;
+    try{full=await loadImage(file);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
+    // use the full native-resolution photo; OCR the whole thing (it's sharp now)
+    const cw=full.naturalWidth,ch=full.naturalHeight;
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+    const cx=cv.getContext('2d');cx.drawImage(full,0,0);
+    const fw=cw,fh=ch;
     enhance(cx,fw,fh);
     // name lives in the top ~14% strip; number in the bottom ~12%. OCR those zones for accuracy.
     function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=sw;c.height=sh;
@@ -1215,7 +1205,7 @@ const Scanner=(function(){
     close();
     if(quickMode)showQuickCheck(hits,query);else showScanResults(hits,query);
   }
-  return{open,close,capture,setMode,toggleTorch,tapFocus};
+  return{open,close,setMode,toggleTorch,tapFocus};
 })();
 function ownedInfo(it){
   // match by catalog id first, else by normalized name
@@ -1224,8 +1214,9 @@ function ownedInfo(it){
   const qty=owned.reduce((s,h)=>s+h.qty,0);
   return {qty};
 }
+let __qcCard=null;
 function showQuickCheck(hits,q){
-  const it=hits[0];
+  const it=hits[0];__qcCard=it;
   const hist=PriceEngine.getHistory(it.id),chg=pctChange(hist);
   const own=ownedInfo(it);
   const price=PriceEngine.getPrice(it.id);
@@ -1234,6 +1225,7 @@ function showQuickCheck(hits,q){
     ?`<div style="margin-top:10px;padding:10px;border-radius:9px;background:#10231c;border:1px solid var(--up);color:var(--up);font-size:13px">\u2713 In your collection \u00d7${own.qty}</div>`
     :`<div style="margin-top:10px;padding:10px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);color:var(--ink2);font-size:13px">Not in your collection</div>`;
   Sheet.open('Quick check',[
+    {type:'static',html:'<button class="ghost proglow" style="width:100%;margin-bottom:12px" onclick="PiP.show(__qcCard)">'+(PiP.supported()?'\u2197 Float this price (stays on top)':'\ud83d\udccc Pin this price')+'</button>'},
     {type:'static',html:
       `<div class="row" style="gap:12px;align-items:flex-start">${thumbHtml(it,'thumb')}
         <div style="flex:1;min-width:0"><div style="font-weight:500">${it.name}${it.jp?' <span class="chip jp">JP</span>':''}</div>
@@ -1259,7 +1251,41 @@ function showScanResults(hits,q){
 $('#scanBtn').onclick=()=>Scanner.open(false);
 $('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
-$('#scanCap').onclick=()=>Scanner.capture();
+document.getElementById('scanRetake').onclick=()=>Scanner.open(false);
+/* native capture: no on-screen shutter needed */
+
+/* ---- FLOATING PRICE (Document Picture-in-Picture) ---- */
+const PiP=(function(){
+  let win=null;
+  function supported(){return 'documentPictureInPicture' in window;}
+  async function show(it){
+    const price=PriceEngine.hasPrice(it.id)?usd(PriceEngine.getPrice(it.id)):'\u2014';
+    const hist=PriceEngine.getHistory(it.id),chg=pctChange(hist);
+    const chgTxt=chg!=null?((chg>=0?'+':'')+chg.toFixed(1)+'% 30d'):'';
+    const chgCol=chg==null?'#9aa3b8':(chg>=0?'#46e3ac':'#ff7e8a');
+    if(!supported()){pinnedChip(it,price,chgTxt,chgCol);return;}
+    try{
+      if(win){win.close();win=null;}
+      win=await documentPictureInPicture.requestWindow({width:240,height:128});
+      const d=win.document;
+      d.body.style.cssText='margin:0;font-family:system-ui,sans-serif;background:#0e1122;color:#ece7d8;display:flex;flex-direction:column;justify-content:center;padding:14px;gap:4px';
+      d.body.innerHTML=
+        '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
+        '<div style="font-family:monospace;font-size:11px;color:#5d6480">'+(it.set||'')+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><div style="font-family:monospace;font-size:26px;font-weight:700;color:#d8a93f">'+price+'</div><div style="font-family:monospace;font-size:12px;color:'+chgCol+'">'+chgTxt+'</div></div>';
+    }catch(e){pinnedChip(it,price,chgTxt,chgCol);}
+  }
+  function pinnedChip(it,price,chgTxt,chgCol){
+    let chip=document.getElementById('pinChip');
+    if(!chip){chip=document.createElement('div');chip.id='pinChip';document.body.appendChild(chip);
+      chip.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:#0e1122;border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;max-width:90vw';}
+    chip.innerHTML='<div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div><div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">'+(it.set||'')+'</div></div>'+
+      '<div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--gold)">'+price+'</div>'+
+      (chgTxt?'<div style="font-family:var(--mono);font-size:11px;color:'+chgCol+'">'+chgTxt+'</div>':'')+
+      '<span style="color:var(--ink3);cursor:pointer;font-size:18px;padding-left:4px" onclick="document.getElementById(\'pinChip\').remove()">\u00d7</span>';
+  }
+  return{show,supported};
+})();
 
 function netStatus(){
   const pill=$('#netPill');
