@@ -1130,15 +1130,36 @@ PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
 const Scanner=(function(){
-  let stream=null,tListPromise=null;
-  function loadTesseract(){
+  let stream=null,tScriptP=null,worker=null,workerP=null;
+  function loadScript(){
     if(window.Tesseract)return Promise.resolve();
-    if(tListPromise)return tListPromise;
-    tListPromise=new Promise((res,rej)=>{const sc=document.createElement('script');
+    if(tScriptP)return tScriptP;
+    tScriptP=new Promise((res,rej)=>{const sc=document.createElement('script');
       sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-      sc.onload=res;sc.onerror=rej;document.head.appendChild(sc);});
-    return tListPromise;
+      sc.onload=res;sc.onerror=()=>rej(new Error('script load failed'));document.head.appendChild(sc);});
+    return tScriptP;
   }
+  // One persistent worker, reused across scans. Reports download/recognize progress.
+  async function getWorker(){
+    if(worker)return worker;
+    if(workerP)return workerP;
+    workerP=(async()=>{
+      await loadScript();
+      const w=await Tesseract.createWorker('eng',1,{
+        logger:m=>{
+          if(m.status&&$('#scanStatus')){
+            if(m.status==='downloading'||m.status==='loading tesseract core'||m.status.indexOf('loading')>=0)
+              $('#scanStatus').textContent='Loading scanner '+(m.progress?Math.round(m.progress*100)+'%':'\u2026');
+            else if(m.status==='recognizing text')
+              $('#scanStatus').textContent='Reading '+(m.progress?Math.round(m.progress*100)+'%':'\u2026');
+          }
+        }
+      });
+      worker=w;return w;
+    })();
+    return workerP;
+  }
+  function loadTesseract(){return loadScript();}
   let quickMode=false;
   function setMode(q){quickMode=q;const qb=$('#scanModeQuick'),ab=$('#scanModeAdd');
     if(qb&&ab){qb.classList.toggle('on',q);ab.classList.toggle('on',!q);}}
@@ -1183,12 +1204,11 @@ const Scanner=(function(){
     const nameStrip=crop(0,0,fw,fh*0.18);
     let nameText='',fullText='';
     try{
-      const [rName,rFull]=await Promise.all([
-        Tesseract.recognize(nameStrip,'eng'),
-        Tesseract.recognize(cv,'eng')
-      ]);
-      nameText=(rName.data.text||'');fullText=(rFull.data.text||'');
-    }catch(e){$('#scanStatus').textContent='Could not read — try again';return;}
+      const w=await getWorker();
+      // sequential, single worker — avoids double 10MB downloads that hang mobile
+      const rFull=await w.recognize(cv);fullText=(rFull.data.text||'');
+      const rName=await w.recognize(nameStrip);nameText=(rName.data.text||'');
+    }catch(e){$('#scanStatus').textContent='Scanner error: '+(e.message||e);return;}
 
     // Build candidate name queries from cleanest sources, each searched INDEPENDENTLY.
     const clean=t=>t.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
