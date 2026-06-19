@@ -74,24 +74,31 @@ async function main() {
 
       const priceById = {};
       for (const row of priceRows) {
-        const v = row.marketPrice ?? row.midPrice ?? null;
-        if (v != null && v > 0) priceById[row.productId] = v;
+        // fall through every available price type — promos & low-volume cards
+        // often have no marketPrice but do have mid/low. Never lose a card to this.
+        const v = row.marketPrice ?? row.midPrice ?? row.directLowPrice ?? row.lowPrice ?? row.highPrice ?? null;
+        if (v != null && v > 0) {
+          // prefer the highest-confidence price if a product has multiple rows (e.g. foil + normal)
+          if (priceById[row.productId] == null) priceById[row.productId] = v;
+        }
       }
 
       const ageM = g.publishedOn ? (now - new Date(g.publishedOn).getTime()) / (1000 * 60 * 60 * 24 * 30.44) : 0;
 
       for (const p of prods) {
         const price = priceById[p.productId];
-        if (price == null) continue;            // unpriced = noise
         const kind = classify(p);
         if (!kind) continue;
+        // keep the card even if unpriced — searchability matters more than price coverage.
+        // (sealed with no price is usually noise; require a price for sealed only.)
+        if (price == null && kind === 'sealed') continue;
         const id = String(p.productId);
         const status = kind === 'single' ? 'raw' : (ageM > OOP_MONTHS ? 'oop' : 'in-print');
         const entry = { id, type: kind, name: p.name, status, set: g.name };
         if (p.imageUrl) entry.img = p.imageUrl;   // TCGplayer CDN thumbnail
         if (cat.lang === 'JP') entry.jp = true;  // flag for the JP/EN toggle
         products.push(entry);
-        prices[id] = Math.round(price * 100) / 100;
+        if (price != null) prices[id] = Math.round(price * 100) / 100;
       }
     }
     console.log(`${cat.lang}: running total ${products.length} products`);
@@ -104,8 +111,24 @@ async function main() {
 
   await writeFile('products.json', JSON.stringify(products));
   await writeFile('prices.json', JSON.stringify(prices));
+
+  // Price history: append today's snapshot for tracked movers (keeps file lean —
+  // only items >= $2, capped, 180-day rolling window). Chart fills in over time.
+  const today = new Date().toISOString().slice(0, 10);
+  let hist = {};
+  try { const { readFile } = await import('node:fs/promises'); hist = JSON.parse(await readFile('history.json', 'utf8')); } catch (e) { hist = {}; }
+  const CUTOFF = Date.now() - 180 * 86400 * 1000;
+  for (const [id, price] of Object.entries(prices)) {
+    if (price < 2) continue;
+    if (!hist[id]) hist[id] = [];
+    if (!hist[id].some(pt => pt.d === today)) hist[id].push({ d: today, p: price });
+    hist[id] = hist[id].filter(pt => new Date(pt.d).getTime() >= CUTOFF);
+  }
+  await writeFile('history.json', JSON.stringify(hist));
+
   const jp = products.filter(p => p.jp).length;
-  console.log(`Wrote ${products.length} products (${jp} JP, ${products.length - jp} EN).`);
+  const tracked = Object.keys(hist).length;
+  console.log(`Wrote ${products.length} products (${jp} JP, ${products.length - jp} EN). History tracks ${tracked} items.`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

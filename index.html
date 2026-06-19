@@ -382,6 +382,7 @@ const PriceEngine=(function(){
       return out.slice(0,12);
     },
     getPrice(id){return cache[id]??0;},
+    hasPrice(id){return cache[id]!=null;},
     getItem(id){return catalog.find(c=>c.id===id);},
     getHistory(id){return history[id]||[];},
     loadData
@@ -425,6 +426,7 @@ function sparkline(pts,w,h){
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 }
 function pctChange(pts){if(!pts||pts.length<2)return null;const a=pts[0].p,b=pts[pts.length-1].p;return a>0?(b-a)/a*100:null;}
+function priceTag(id){return PriceEngine.hasPrice(id)?usd(PriceEngine.getPrice(id)):'\u2014';}
 function thumbHtml(it,cls){const u=it&&it.img;if(!u)return `<div class="${cls}"></div>`;
   return `<img class="${cls}" loading="lazy" src="${u}" onerror="this.style.visibility='hidden'">`;}
 const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$',a=Math.abs(v);
@@ -577,7 +579,7 @@ function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'
   inp.oninput=()=>{const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
     res.innerHTML=r.map(i=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
       const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
-      return `<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}${ch}</span></div>`;}).join('');res.classList.add('show');
+      return `<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
     res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});};}
 function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
 
@@ -868,7 +870,7 @@ $('#addHolding').onclick=()=>{
     if(!inp)return;
     inp.oninput=()=>{const r=PriceEngine.search(inp.value,lang);
       if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
-      res.innerHTML=r.map(i=>`<div class="res" data-pk="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`).join('');
+      res.innerHTML=r.map(i=>`<div class="res" data-pk="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`).join('');
       res.classList.add('show');
       res.querySelectorAll('[data-pk]').forEach(el=>el.onclick=()=>{
         const it=PriceEngine.getItem(el.dataset.pk);if(!it)return;
@@ -1144,21 +1146,18 @@ const Scanner=(function(){
     const m=$('#scanModal');m.classList.add('show');setMode(!!quick);
     $('#scanStatus').textContent='';$('#scanHint').style.display='';torchOn=false;
     try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+      // Minimal constraints — just the rear camera. Let the phone handle focus &
+      // resolution natively; over-constraining forces worse modes and fights autofocus.
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
       const v=$('#scanVideo');v.srcObject=stream;
       track=stream.getVideoTracks()[0];
-      const caps=track.getCapabilities?track.getCapabilities():{};
-      // continuous autofocus if available
-      try{if(caps.focusMode&&caps.focusMode.includes('continuous'))await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
-      // show torch button only if supported
-      const tb=$('#scanTorch');if(tb)tb.style.display=caps.torch?'flex':'none';
+      // torch button only if the device exposes it — but never touch focus.
+      try{const caps=track.getCapabilities?track.getCapabilities():{};const tb=$('#scanTorch');if(tb)tb.style.display=caps.torch?'flex':'none';}catch(e){}
     }catch(e){toast('Camera unavailable — check permissions');close();return;}
     loadTesseract().catch(()=>{});
   }
   async function toggleTorch(){if(!track)return;try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});$('#scanTorch').classList.toggle('on',torchOn);}catch(e){}}
-  async function tapFocus(ev){if(!track)return;const caps=track.getCapabilities?track.getCapabilities():{};
-    if(!caps.focusMode||!caps.focusMode.includes('manual'))return;
-    try{await track.applyConstraints({advanced:[{focusMode:'manual'}]});setTimeout(()=>{track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});},1500);}catch(e){}}
+  function tapFocus(ev){/* let native continuous autofocus do its job — no manual override */}
   function close(){const m=$('#scanModal');m.classList.remove('show');
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
   function parseNumber(text){
@@ -1251,7 +1250,7 @@ function showQuickCheck(hits,q){
 function showScanResults(hits,q){
   Sheet.open('Scanned'+(q?' \u2014 '+q:''),[
     {type:'static',html:'<div class="results show" style="max-height:300px">'+hits.slice(0,8).map(i=>
-      `<div class="res" data-scan="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${usd(PriceEngine.getPrice(i.id))}</span></div>`
+      `<div class="res" data-scan="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`
     ).join('')+'</div>'}
   ],'Close',()=>{});
   setTimeout(()=>{document.querySelectorAll('[data-scan]').forEach(el=>el.onclick=()=>{
