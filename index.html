@@ -1154,6 +1154,7 @@ const Scanner=(function(){
   function toggleTorch(){}
   function tapFocus(){}
   function close(){const m=$('#scanModal');m.classList.remove('show');}
+  function query0(c){return (c&&c[0])||'';}
   function parseNumber(text){
     // collector numbers like 125/094, 226/S-P, SWSH284, 073, TG12/TG30
     const m=text.match(/\b([A-Z]{0,5}\d{1,3}\s*\/\s*[A-Z0-9]{1,4}|[A-Z]{2,4}\d{2,4}|\d{1,3}\/\d{1,3})\b/i);
@@ -1161,13 +1162,12 @@ const Scanner=(function(){
   }
   function loadImage(file){return new Promise((res,rej)=>{const img=new Image();
     img.onload=()=>res(img);img.onerror=rej;img.src=URL.createObjectURL(file);});}
-  function enhance(cx,w,h){
-    try{const img=cx.getImageData(0,0,w,h),d=img.data;
-      // grayscale + local-ish contrast: compute mean, stretch around it (gentler than hard threshold)
-      let sum=0;for(let i=0;i<d.length;i+=4){const g=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11;d[i+1]=g;sum+=g;}
-      const mean=sum/(d.length/4);
-      for(let i=0;i<d.length;i+=4){let g=d[i+1];g=(g-mean)*1.6+mean;g=g<0?0:g>255?255:g;d[i]=d[i+1]=d[i+2]=g;}
-      cx.putImageData(img,0,0);}catch(e){}
+  // Downscale a big photo to a target width (keeps OCR fast & sharp enough). Returns a canvas.
+  function fitCanvas(img,targetW){
+    const scale=Math.min(1,targetW/img.naturalWidth);
+    const w=Math.round(img.naturalWidth*scale),h=Math.round(img.naturalHeight*scale);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);return c;
   }
   async function processPhoto(file){
     const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);
@@ -1175,35 +1175,51 @@ const Scanner=(function(){
     if(!window.Tesseract){$('#scanStatus').textContent='Loading scanner\u2026';await loadTesseract();}
     let full;
     try{full=await loadImage(file);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
-    // use the full native-resolution photo; OCR the whole thing (it's sharp now)
-    const cw=full.naturalWidth,ch=full.naturalHeight;
-    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
-    const cx=cv.getContext('2d');cx.drawImage(full,0,0);
-    const fw=cw,fh=ch;
-    enhance(cx,fw,fh);
-    // name lives in the top ~14% strip; number in the bottom ~12%. OCR those zones for accuracy.
+    // Resize to ~1400px wide — sharp enough for OCR, fast enough to not hang on 50MP.
+    const cv=fitCanvas(full,1400);const fw=cv.width,fh=cv.height;
+    // OCR the name strip (top ~18%), the number corner (bottom-right), and full card.
     function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=sw;c.height=sh;
       c.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);return c;}
-    const nameStrip=crop(0,0,fw,fh*0.16);
-    const numCorner=crop(fw*0.45,fh*0.86,fw*0.55,fh*0.14);
-    let text='',nameText='',numText='';
+    const nameStrip=crop(0,0,fw,fh*0.18);
+    let nameText='',fullText='';
     try{
-      const [rFull,rName,rNum]=await Promise.all([
-        Tesseract.recognize(cv,'eng'),
+      const [rName,rFull]=await Promise.all([
         Tesseract.recognize(nameStrip,'eng'),
-        Tesseract.recognize(numCorner,'eng')
+        Tesseract.recognize(cv,'eng')
       ]);
-      text=rFull.data.text||'';nameText=rName.data.text||'';numText=rNum.data.text||'';
-    }catch(e){$('#scanStatus').textContent='Could not read \u2014 try again';return;}
-    const num=parseNumber(numText)||parseNumber(text);
-    const nameGuess=((nameText.split(/\n/)[0]||'').trim()||(text.split(/\n/).find(l=>l.trim().length>2)||'')).replace(/[^A-Za-z'\u2019 .-]/g,'').trim();
-    const query=(nameGuess+' '+num).trim();
-    let hits=query?PriceEngine.search(query,lang):[];
-    if(!hits.length&&num)hits=PriceEngine.search(num,lang);
-    if(!hits.length&&nameGuess)hits=PriceEngine.search(nameGuess,lang);
-    if(!hits.length){$('#scanStatus').textContent='No match'+(num?' for '+num:'')+' \u2014 try again or + Manual';return;}
+      nameText=(rName.data.text||'');fullText=(rFull.data.text||'');
+    }catch(e){$('#scanStatus').textContent='Could not read — try again';return;}
+
+    // Build candidate name queries from cleanest sources, each searched INDEPENDENTLY.
+    const clean=t=>t.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
+    const candidates=[];
+    // longest word-run from the name strip
+    const nameLine=clean(nameText).split(/\n/).map(x=>x.trim()).filter(x=>x.length>2).sort((a,b)=>b.length-a.length)[0];
+    if(nameLine)candidates.push(nameLine);
+    // any capitalized words from full text (Pokémon names are capitalized)
+    const caps=(fullText.match(/[A-Z][a-z]{3,}/g)||[]);
+    caps.slice(0,6).forEach(w=>candidates.push(w));
+    // a collector number if we can find one
+    const num=parseNumber(fullText);
+    if(num)candidates.push(num);
+
+    // search each candidate; collect first non-empty, prefer name matches over number
+    let hits=[];
+    for(const q of candidates){
+      const r=PriceEngine.search(q,lang);
+      if(r.length){hits=r;break;}
+    }
+    // last resort: try pairing the best name with the number
+    if(!hits.length&&nameLine&&num)hits=PriceEngine.search(nameLine+' '+num,lang);
+
+    if(!hits.length){
+      $('#scanStatus').textContent='No match — try again or use + Manual';
+      $('#scanHint').textContent=nameLine?('Read: "'+nameLine+'"'):'Could not read the card name';
+      $('#scanHint').style.display='';
+      return;
+    }
     close();
-    if(quickMode)showQuickCheck(hits,query);else showScanResults(hits,query);
+    if(lastQuick)showQuickCheck(hits,query0(candidates));else showScanResults(hits,query0(candidates));
   }
   return{open,close,setMode,toggleTorch,tapFocus};
 })();
