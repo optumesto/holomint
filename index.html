@@ -98,6 +98,7 @@
   .scanbar{position:absolute;bottom:0;left:0;right:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.7))}
   .scancap{width:68px;height:68px;border-radius:50%;background:var(--gold);border:4px solid #1a1407;cursor:pointer}
   .scancap:active{transform:scale(.94)}
+  .scanx.on{background:var(--gold);color:#1a1407}
   .scanx{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid var(--line);color:#fff;font-size:20px;cursor:pointer;z-index:2}
   .scanstatus{position:absolute;top:calc(50% + 24vh);left:0;right:0;text-align:center;color:var(--gold);font-family:var(--mono);font-size:13px;text-shadow:0 1px 3px #000}
   .thumb{width:34px;height:48px;flex:0 0 auto;border-radius:4px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
@@ -169,7 +170,7 @@
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">\u25a3 Scan</button><button class="scanbtn" id="quickBtn">\u26a1 Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
@@ -318,9 +319,9 @@
   <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
 </div>
 <div id="scanModal">
-  <button class="scanx" id="scanClose">\u00d7</button>
+  <button class="scanx" id="scanClose">×</button><button class="scanx" id="scanTorch" style="right:64px;display:none" onclick="Scanner.toggleTorch()">⚡</button>
   <div class="seg" style="position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:3;width:88%;max-width:340px;margin:0"><button id="scanModeAdd" class="on" onclick="Scanner.setMode(false)">Add to pile</button><button id="scanModeQuick" onclick="Scanner.setMode(true)">Quick check</button></div>
-  <video id="scanVideo" autoplay playsinline muted></video>
+  <video id="scanVideo" autoplay playsinline muted onclick="Scanner.tapFocus(event)"></video>
   <div class="scanframe"></div>
   <div class="scanhint" id="scanHint">Fill the frame with the card\u2019s name &amp; number</div>
   <div class="scanstatus" id="scanStatus"></div>
@@ -1138,15 +1139,26 @@ const Scanner=(function(){
   let quickMode=false;
   function setMode(q){quickMode=q;const qb=$('#scanModeQuick'),ab=$('#scanModeAdd');
     if(qb&&ab){qb.classList.toggle('on',q);ab.classList.toggle('on',!q);}}
+  let track=null,torchOn=false;
   async function open(quick){
     const m=$('#scanModal');m.classList.add('show');setMode(!!quick);
-    $('#scanStatus').textContent='';$('#scanHint').style.display='';
+    $('#scanStatus').textContent='';$('#scanHint').style.display='';torchOn=false;
     try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-      $('#scanVideo').srcObject=stream;
-    }catch(e){toast('Camera unavailable');close();return;}
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}});
+      const v=$('#scanVideo');v.srcObject=stream;
+      track=stream.getVideoTracks()[0];
+      const caps=track.getCapabilities?track.getCapabilities():{};
+      // continuous autofocus if available
+      try{if(caps.focusMode&&caps.focusMode.includes('continuous'))await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
+      // show torch button only if supported
+      const tb=$('#scanTorch');if(tb)tb.style.display=caps.torch?'flex':'none';
+    }catch(e){toast('Camera unavailable — check permissions');close();return;}
     loadTesseract().catch(()=>{});
   }
+  async function toggleTorch(){if(!track)return;try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});$('#scanTorch').classList.toggle('on',torchOn);}catch(e){}}
+  async function tapFocus(ev){if(!track)return;const caps=track.getCapabilities?track.getCapabilities():{};
+    if(!caps.focusMode||!caps.focusMode.includes('manual'))return;
+    try{await track.applyConstraints({advanced:[{focusMode:'manual'}]});setTimeout(()=>{track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});},1500);}catch(e){}}
   function close(){const m=$('#scanModal');m.classList.remove('show');
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
   function parseNumber(text){
@@ -1161,7 +1173,12 @@ const Scanner=(function(){
     // grab the framed region (center card area) for a cleaner OCR
     const cw=v.videoWidth,ch=v.videoHeight,fw=cw*0.78,fh=fw*88/63,fx=(cw-fw)/2,fy=(ch-fh)/2;
     const cv=document.createElement('canvas');cv.width=fw;cv.height=fh;
-    cv.getContext('2d').drawImage(v,fx,fy,fw,fh,0,0,fw,fh);
+    const cx=cv.getContext('2d');cx.drawImage(v,fx,fy,fw,fh,0,0,fw,fh);
+    // preprocess: grayscale + contrast stretch sharpens text for OCR
+    try{const img=cx.getImageData(0,0,fw,fh),d=img.data;
+      for(let i=0;i<d.length;i+=4){const g=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11;
+        const c=g>140?255:(g<90?0:g);d[i]=d[i+1]=d[i+2]=c;}
+      cx.putImageData(img,0,0);}catch(e){}
     let text='';
     try{const r=await Tesseract.recognize(cv,'eng');text=r.data.text||'';}
     catch(e){$('#scanStatus').textContent='Could not read \u2014 try again';return;}
@@ -1176,7 +1193,7 @@ const Scanner=(function(){
     close();
     if(quickMode)showQuickCheck(hits,query);else showScanResults(hits,query);
   }
-  return{open,close,capture,setMode};
+  return{open,close,capture,setMode,toggleTorch,tapFocus};
 })();
 function ownedInfo(it){
   // match by catalog id first, else by normalized name
