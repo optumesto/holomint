@@ -1210,36 +1210,49 @@ const Scanner=(function(){
       const rName=await w.recognize(nameStrip);nameText=(rName.data.text||'');
     }catch(e){$('#scanStatus').textContent='Scanner error: '+(e.message||e);return;}
 
-    // Build candidate name queries from cleanest sources, each searched INDEPENDENTLY.
-    const clean=t=>t.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
-    const candidates=[];
-    // longest word-run from the name strip
-    const nameLine=clean(nameText).split(/\n/).map(x=>x.trim()).filter(x=>x.length>2).sort((a,b)=>b.length-a.length)[0];
-    if(nameLine)candidates.push(nameLine);
-    // any capitalized words from full text (Pokémon names are capitalized)
-    const caps=(fullText.match(/[A-Z][a-z]{3,}/g)||[]);
-    caps.slice(0,6).forEach(w=>candidates.push(w));
-    // a collector number if we can find one
-    const num=parseNumber(fullText);
-    if(num)candidates.push(num);
-
-    // search each candidate; collect first non-empty, prefer name matches over number
-    let hits=[];
-    for(const q of candidates){
-      const r=PriceEngine.search(q,lang);
-      if(r.length){hits=r;break;}
+    // The card NAME is the reliable signal and lives in the top strip. Extract it cleanly.
+    // A real name = consecutive capitalized words (e.g. "Sableye", "Black Belt's Training",
+    // "Mega Charizard EX"). Reject short fragments and noise.
+    function nameCandidatesFrom(t){
+      const out=[];
+      t.split(/\n/).forEach(line=>{
+        // keep letters, spaces, apostrophes, hyphens; collapse spaces
+        const cl=line.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
+        if(!cl)return;
+        // a plausible name: starts with a capital, total length >= 4, not all-caps noise
+        const words=cl.split(' ').filter(w=>w.length>=2);
+        // build runs of Capitalized words
+        let run=[];
+        const flush=()=>{if(run.length){const phrase=run.join(' ');if(phrase.length>=4)out.push(phrase);}run=[];};
+        words.forEach(w=>{ if(/^[A-Z][a-zA-Z'\u2019-]+$/.test(w)) run.push(w); else flush(); });
+        flush();
+      });
+      return out;
     }
-    // last resort: try pairing the best name with the number
-    if(!hits.length&&nameLine&&num)hits=PriceEngine.search(nameLine+' '+num,lang);
+    // Primary: name strip. Secondary: full text, but only well-formed capitalized words.
+    let names=nameCandidatesFrom(nameText);
+    if(!names.length)names=nameCandidatesFrom(fullText);
+    // dedupe, longest first (full names beat single words)
+    names=[...new Set(names)].sort((a,b)=>b.length-a.length).slice(0,5);
+    const num=parseNumber(fullText)||parseNumber(nameText);
+    const readLabel=names[0]||'(nothing readable)';
+
+    // Search strategy: name + number first (most precise), then name alone, longest names first.
+    let hits=[],used='';
+    for(const nm of names){
+      if(num){const r=PriceEngine.search(nm+' '+num,lang);if(r.length){hits=r;used=nm+' '+num;break;}}
+    }
+    if(!hits.length){for(const nm of names){const r=PriceEngine.search(nm,lang);if(r.length){hits=r;used=nm;break;}}}
+    if(!hits.length&&num){const r=PriceEngine.search(num,lang);if(r.length){hits=r;used=num;}}
 
     if(!hits.length){
       $('#scanStatus').textContent='No match — try again or use + Manual';
-      $('#scanHint').textContent=nameLine?('Read: "'+nameLine+'"'):'Could not read the card name';
+      $('#scanHint').textContent='Read: "'+readLabel+'"';
       $('#scanHint').style.display='';
       return;
     }
     close();
-    if(lastQuick)showQuickCheck(hits,query0(candidates));else showScanResults(hits,query0(candidates));
+    if(lastQuick)showQuickCheck(hits,used);else showScanResults(hits,used);
   }
   return{open,close,setMode,toggleTorch,tapFocus};
 })();
