@@ -51,6 +51,8 @@
   .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
   .seg button{flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
+  .seg.sm{width:fit-content;padding:3px;gap:3px;border-radius:8px}
+  .seg.sm button{flex:initial;padding:4px 9px;font-size:11px;border-radius:5px}
   .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
   .row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
   .hide{display:none}
@@ -173,7 +175,7 @@
 
   <!-- ============ TRADE BLOCK ============ -->
   <section class="panel on" id="block">
-    <div class="seg" id="langSeg" style="margin-bottom:8px"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
+    <div class="seg sm" id="langSeg" style="margin-bottom:8px"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
@@ -237,7 +239,7 @@
         <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
       <div class="row" style="gap:6px;margin-bottom:7px"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:8px 10px;font-size:13px"><select id="holdSort" style="padding:8px;font-size:12px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans)"><option value="roi">Top ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
-      <div class="seg" id="holdTypeSeg" style="margin-bottom:10px"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
+      <div class="seg sm" id="holdTypeSeg" style="margin-bottom:10px"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
     <div class="card hide" id="soldCard">
