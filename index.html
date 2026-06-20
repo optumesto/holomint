@@ -120,6 +120,12 @@
   .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 4px}
   .ch{padding:9px 4px;text-align:center;border-radius:9px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:.15s}
   .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:12px;font-weight:500}.ch .cf{font-family:var(--mono);font-size:10px;color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
+  .so{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--bg3);margin-bottom:6px}
+  .so.best{border-color:var(--gold);background:#1e1a36}
+  .so-l{display:flex;align-items:center;gap:2px}.so-n{font-size:13px;font-weight:500}
+  .so-r{text-align:right}.so-net{font-family:var(--mono);font-size:14px;display:block}.so.best .so-net{color:var(--up)}
+  .so-sub{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+  .chip.best{background:var(--gold);color:#101010}
   .feeEdit{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feeEdit>div{flex:1}.feeEdit input{font-size:14px;padding:9px 10px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 input,.grid2 select{font-size:14px;padding:9px 10px}
   table{width:100%;border-collapse:collapse;margin-top:6px}
@@ -186,6 +192,13 @@
     <div class="card" id="channelCard">
       <label>Resell channel</label><div class="channels" id="channels"></div>
       <div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
+    </div>
+    <div class="card" id="sellOptCard">
+      <div class="row between colhead" data-col="sellOptCard"><label style="margin:0">Net by channel</label><span class="chev">▾</span></div>
+      <div class="colbody">
+        <div class="row" style="gap:8px;margin-bottom:8px"><input class="num" id="sellOptPrice" type="number" step="0.01" inputmode="decimal" placeholder="Sale price" style="flex:1;padding:9px 10px;font-size:14px"><button class="ghost" id="sellOptPile" style="padding:9px 12px;white-space:nowrap">Use pile</button></div>
+        <div id="sellOptList"></div>
+      </div>
     </div>
     <div class="card" id="rateCard">
       <label>Rate</label>
@@ -570,6 +583,17 @@ function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(
 function syncFeeInputs(){const c=FeeCalc.channels[channel];$('#feePctLabel').textContent=c.label+' fee %';$('#feePct').value=c.pct;$('#feeFlat').value=c.flat;}
 $('#feePct').oninput=e=>{FeeCalc.channels[channel].pct=parseFloat(e.target.value)||0;Store.save('fees',FeeCalc.channels);renderChannels();recompute();};
 $('#feeFlat').oninput=e=>{FeeCalc.channels[channel].flat=parseFloat(e.target.value)||0;Store.save('fees',FeeCalc.channels);recompute();};
+/* ---- NET BY CHANNEL (sell-channel optimizer) ---- */
+const soPrice=$('#sellOptPrice'),soList=$('#sellOptList');
+function renderSellOpt(){
+  const p=parseFloat(soPrice.value)||0;
+  if(p<=0){soList.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);padding:2px 0">Enter a price, or tap Use pile.</div>';return;}
+  const rows=Object.entries(FeeCalc.channels).map(([k,c])=>{const r=FeeCalc.net(p,k);return{label:c.label,net:r.net,fees:r.fees,keep:r.net/p*100};}).sort((a,b)=>b.net-a.net);
+  soList.innerHTML=rows.map((r,i)=>`<div class="so${i===0?' best':''}"><div class="so-l"><span class="so-n">${r.label}</span>${i===0?'<span class="chip best">best</span>':''}</div><div class="so-r"><span class="so-net">${usd(r.net)}</span><span class="so-sub">${r.fees>0?'\u2212'+usd(r.fees)+' \u00b7 ':''}keep ${Math.round(r.keep)}%</span></div></div>`).join('');
+}
+soPrice.oninput=renderSellOpt;
+$('#sellOptPile').onclick=()=>{const v=pileValue(theirPile);soPrice.value=v>0?Math.round(v*100)/100:'';renderSellOpt();};
+renderSellOpt();
 $('#rate').oninput=e=>{buyRate=+e.target.value;$('#rateLabel').textContent=buyRate+'%';Store.save('buyRate',buyRate);recompute();};
 $('#creditTog').onclick=()=>{storeCredit.on=!storeCredit.on;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';Store.save('credit',storeCredit);recompute();};
 $('#creditBump').oninput=e=>{storeCredit.bump=parseFloat(e.target.value)||0;Store.save('credit',storeCredit);recompute();};
