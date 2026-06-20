@@ -365,6 +365,7 @@ const PriceEngine=(function(){
   ];
   let history={};
   let cache={'es-bb':480,'lo-bb':230,'cz-etb':92,'151-bb':40,'151-etb':74,'ss-bb':132,'pe-etb':90,'zard151':300,'moon':1100,'gira':250};
+  let catIndex=null,catIndexFor=null;
   async function loadData(){
     try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length)catalog=p;}}catch(e){}
     try{const r=await fetch('prices.json');if(r.ok){Object.assign(cache,await r.json());Store.save('pricesAt',new Date().toISOString());}}catch(e){}
@@ -381,10 +382,11 @@ const PriceEngine=(function(){
       for(const c of catalog){
         if(langFilter==='en'&&c.jp)continue;
         if(langFilter==='jp'&&!c.jp)continue;
-        const hay=norm(c.name+' '+(c.set||''));
+        let hay=c._h;if(hay===undefined)hay=c._h=norm(c.name+' '+(c.set||''));
         if(!toks.every(t=>hay.includes(t)))continue;
         let score=hay.indexOf(toks[0]);
-        if(norm(c.name).startsWith(toks[0]))score-=50;
+        let _nm=c._n;if(_nm===undefined)_nm=c._n=norm(c.name);
+        if(_nm.startsWith(toks[0]))score-=50;
         if(c.status!=='oop')score-=5;
         (c.jp?jp:en).push([score,c]);
         if(en.length+jp.length>1200)break;
@@ -399,7 +401,7 @@ const PriceEngine=(function(){
     },
     getPrice(id){return cache[id]??0;},
     hasPrice(id){return cache[id]!=null;},
-    getItem(id){return catalog.find(c=>c.id===id);},
+    getItem(id){if(catIndexFor!==catalog){catIndex=new Map();for(const c of catalog)catIndex.set(c.id,c);catIndexFor=catalog;}return catIndex.get(id);},
     getHistory(id){return history[id]||[];},
     loadData
   };
@@ -602,12 +604,12 @@ $('#creditBump').oninput=e=>{storeCredit.bump=parseFloat(e.target.value)||0;Stor
 $('#theirCash').oninput=e=>{theirCash=Math.max(0,parseFloat(e.target.value)||0);if(theirCash!=e.target.value)e.target.value=theirCash;recompute();};
 $('#yourCash').oninput=e=>{yourCash=Math.max(0,parseFloat(e.target.value)||0);if(yourCash!=e.target.value)e.target.value=yourCash;recompute();};
 
-function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);
-  inp.oninput=()=>{const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
+function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);let sd;
+  inp.oninput=()=>{clearTimeout(sd);sd=setTimeout(()=>{const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
     res.innerHTML=r.map(i=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
       const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
       return `<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
-    res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});};}
+    res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});},130);};}
 function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
 
 $('#manualBtn').onclick=()=>Sheet.open('Manual entry',[
@@ -744,6 +746,10 @@ function renderPortfolio(){
   const tot=sealedV+gradedV+rawV||1,sp=Math.round(sealedV/tot*100),gp=Math.round(gradedV/tot*100),rp=100-sp-gp;
   $('#weightBar').innerHTML=`<i style="width:${sp}%;background:var(--up)"></i><i style="width:${gp}%;background:#9fb6ff"></i><i style="width:${rp}%;background:#ff9ad2"></i>`;
   $('#weightLeg').innerHTML=`<span><i class="dot" style="background:var(--up)"></i>Sealed ${sp}%</span><span><i class="dot" style="background:#9fb6ff"></i>Graded ${gp}%</span>`+(rawV>0?`<span><i class="dot" style="background:#ff9ad2"></i>Raw ${rp}%</span>`:'');
+  renderSold();renderDeals();renderTax();renderDrops();
+  renderHoldings();
+}
+function renderHoldings(){
   let view=holdings.filter(h=>{
     if(holdTypeF!=='all'&&h.type!==holdTypeF)return false;
     if(holdQuery){const q=holdQuery.toLowerCase();if(!((h.name||'').toLowerCase().includes(q)||(h.location||'').toLowerCase().includes(q)))return false;}
@@ -757,7 +763,6 @@ function renderPortfolio(){
   $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
   $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
   $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
-  renderSold();renderDeals();renderTax();renderDrops();
 }
 function renderSold(){
   $('#soldCard').classList.toggle('hide',!soldLog.length);
@@ -977,9 +982,9 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
 };
 /* ---- HOLDINGS CONTROLS (search / sort / type filter) ---- */
 function wireHoldControls(){
-  const s=$('#holdSearch');if(s)s.oninput=e=>{holdQuery=e.target.value;renderPortfolio();};
-  const so=$('#holdSort');if(so)so.onchange=e=>{holdSort=e.target.value;renderPortfolio();};
-  $$('#holdTypeSeg button').forEach(b=>b.onclick=()=>{holdTypeF=b.dataset.ht;syncHoldTypeSeg();renderPortfolio();});
+  const s=$('#holdSearch');if(s)s.oninput=e=>{holdQuery=e.target.value;renderHoldings();};
+  const so=$('#holdSort');if(so)so.onchange=e=>{holdSort=e.target.value;renderHoldings();};
+  $$('#holdTypeSeg button').forEach(b=>b.onclick=()=>{holdTypeF=b.dataset.ht;syncHoldTypeSeg();renderHoldings();});
   syncHoldTypeSeg();
 }
 wireHoldControls();
