@@ -15,7 +15,7 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
-  #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease,visibility .5s}
+  #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .5s ease,visibility .5s}
   #splash.gone{opacity:0;visibility:hidden}
   #splash img{width:150px;height:150px;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 8px 30px rgba(125,240,200,.22));animation:sfloat 2.4s ease-in-out infinite}
   @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
@@ -23,7 +23,7 @@
   #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
   .brandrow{display:flex;align-items:center;gap:9px}
-  .brandrow img{width:26px;height:26px;flex:0 0 auto}
+  .brandrow img{width:26px;height:26px;flex:0 0 auto;object-fit:contain}
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
   .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -170,7 +170,7 @@
 <body>
 <div id="splash"><img src="leaf-splash.png" alt=""><div class="sname">Holomint</div><div class="sdot"></div></div>
 <div class="wrap">
-  <header><div class="brandrow"><img src="icon-192.png" alt=""><div class="brand">Holomint</div></div><button class="probtn" id="proBtn">PRO</button></header>
+  <header><div class="brandrow"><img src="leaf-splash.png" alt=""><div class="brand">Holomint</div></div><button class="probtn" id="proBtn">PRO</button></header>
   <div class="netpill" id="netPill"><span id="netPillText">Offline</span></div>
 
   <!-- ============ TRADE BLOCK ============ -->
@@ -238,7 +238,7 @@
       <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
         <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
-      <div class="row" style="gap:6px;margin-bottom:7px"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:8px 10px;font-size:13px"><select id="holdSort" style="padding:8px;font-size:12px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans)"><option value="roi">Top ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
+      <div class="row" style="gap:6px;margin-bottom:7px"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:9px 11px;font-size:14px"><select id="holdSort" style="padding:6px 7px;font-size:11px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
       <div class="seg sm" id="holdTypeSeg" style="margin-bottom:10px"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
@@ -1242,6 +1242,22 @@ const Scanner=(function(){
     const c=document.createElement('canvas');c.width=w;c.height=h;
     c.getContext('2d').drawImage(img,0,0,w,h);return c;
   }
+  // Grayscale + Otsu binarization to clean high-contrast B/W (what Tesseract needs for card text).
+  function otsuBinarize(src,invert,targetW){
+    const scale=Math.max(1,targetW/src.width);
+    const w=Math.round(src.width*scale),h=Math.round(src.height*scale);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const cx=c.getContext('2d');cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(src,0,0,w,h);
+    const im=cx.getImageData(0,0,w,h),d=im.data,n=w*h;
+    const hist=new Array(256).fill(0),gray=new Uint8Array(n);
+    for(let i=0,p=0;p<n;i+=4,p++){const v=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;gray[p]=v;hist[v]++;}
+    let sum=0;for(let t=0;t<256;t++)sum+=t*hist[t];
+    let sumB=0,wB=0,mx=0,thr=127;
+    for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=n-wB;if(!wF)break;sumB+=t*hist[t];const mB=sumB/wB,mF=(sum-sumB)/wF,bv=wB*wF*(mB-mF)*(mB-mF);if(bv>mx){mx=bv;thr=t;}}
+    for(let i=0,p=0;p<n;i+=4,p++){let on=gray[p]>thr;if(invert)on=!on;const v=on?255:0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}
+    cx.putImageData(im,0,0);return c;
+  }
   async function processPhoto(file){
     const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);
     $('#scanHint').style.display='none';$('#scanStatus').textContent='Reading\u2026';
@@ -1289,7 +1305,11 @@ const Scanner=(function(){
       // Restrict to letters for the name pass — kills numeric/symbol noise from foil & watermarks.
       // PSM 7 = treat the image as a single text line (the card name is one line).
       await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'7'});
-      const rName=await w.recognize(nameStrip);nameText=(rName.data.text||'');
+      // Binarize the name strip (grayscale + Otsu) in BOTH polarities and OCR each. Colored
+      // card text on busy/foil backgrounds is what garbled Tesseract; clean B/W is the fix.
+      const binA=otsuBinarize(nameStrip,false,1200),binB=otsuBinarize(nameStrip,true,1200);
+      const rA=await w.recognize(binA);const rB=await w.recognize(binB);
+      nameText=((rA.data.text||'')+String.fromCharCode(10)+(rB.data.text||''));
       // full pass with default params for the number + fallback
       await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'3'});
       const rFull=await w.recognize(cardCv);fullText=(rFull.data.text||'');
