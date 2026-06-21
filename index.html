@@ -1297,22 +1297,27 @@ const Scanner=(function(){
     // a card is a large, brighter, higher-variance region vs. a flat carpet/table.
     function cardRect(){
       try{const data=cv.getContext('2d').getImageData(0,0,fw,fh).data;
-        // brightness per sampled row & column; card edges = where brightness jumps
-        const colB=new Array(fw).fill(0),rowB=new Array(fh).fill(0);
-        for(let y=0;y<fh;y+=3)for(let x=0;x<fw;x+=3){const i=(y*fw+x)*4;const b=g(data,i);rowB[y]+=b;colB[x]+=b;}
-        function bounds(arr,step,len){
-          const vals=[];for(let i=0;i<len;i+=step)vals.push(arr[i]||0);
-          const mx=Math.max(...vals),mn=Math.min(...vals),thr=mn+(mx-mn)*0.35;
-          let lo=0,hi=len-1;
-          for(let i=0;i<len;i+=step){if((arr[i]||0)>thr){lo=i;break;}}
-          for(let i=len-1;i>=0;i-=step){if((arr[i]||0)>thr){hi=i;break;}}
+        // Localize the card by DETAIL DENSITY, not brightness. A card is packed with edges
+        // (text, art, border); a table/cloth/letterbox is smooth. Sum adjacent-pixel
+        // brightness deltas per row & column — the card is the high-energy band. Fixes the
+        // case where the card doesn't fill the frame and brightness grabbed the cloth.
+        const rowE=new Float32Array(fh),colE=new Float32Array(fw);
+        for(let y=0;y<fh;y+=2){let prev=g(data,(y*fw)*4);
+          for(let x=1;x<fw;x++){const v=g(data,(y*fw+x)*4),dd=v>prev?v-prev:prev-v;rowE[y]+=dd;colE[x]+=dd;prev=v;}}
+        function bounds(arr,len){
+          let mx=0;for(let i=0;i<len;i++)if(arr[i]>mx)mx=arr[i];
+          if(mx<=0)return [0,len-1];
+          const thr=mx*0.16;let lo=0,hi=len-1;
+          for(let i=0;i<len;i++){if(arr[i]>thr){lo=i;break;}}
+          for(let i=len-1;i>=0;i--){if(arr[i]>thr){hi=i;break;}}
           return [lo,hi];
         }
-        const [top,bot]=bounds(rowB,3,fh),[left,right]=bounds(colB,3,fw);
+        const [top,bot]=bounds(rowE,fh),[left,right]=bounds(colE,fw);
         // sanity: card should be a meaningful chunk; else use whole image
-        if(bot-top<fh*0.3||right-left<fw*0.3)return {x:0,y:0,w:fw,h:fh};
-        // pad inward slightly to drop the bright border glow
-        return {x:left,y:top,w:right-left,h:bot-top};
+        if(bot-top<fh*0.25||right-left<fw*0.22)return {x:0,y:0,w:fw,h:fh};
+        // small inward pad to drop the border glow
+        const px=(right-left)*0.012,py=(bot-top)*0.012;
+        return {x:left+px,y:top+py,w:(right-left)-2*px,h:(bot-top)-2*py};
       }catch(e){return {x:0,y:0,w:fw,h:fh};}
     }
     function g(d,i){return d[i]+d[i+1]+d[i+2];}
