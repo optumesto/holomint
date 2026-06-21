@@ -375,6 +375,31 @@ const PriceEngine=(function(){
     return true;
   }
   return{
+    // Fuzzy fallback for noisy OCR: rank catalog by character-bigram similarity (Dice).
+    // Runs only when exact search returns nothing, so the precise path stays fast.
+    fuzzy(q,langFilter,limit){
+      const norm=x=>x.toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'');
+      const qn=norm((q||'').trim());if(qn.length<3)return[];
+      const bg=z=>{const set=new Set();for(let i=0;i<z.length-1;i++)set.add(z.slice(i,i+2));return set;};
+      const qb=bg(qn);if(!qb.size)return[];
+      const en=[],jp=[];
+      for(const c of catalog){
+        if(langFilter==='en'&&c.jp)continue;
+        if(langFilter==='jp'&&!c.jp)continue;
+        let nm=c._n;if(nm===undefined)nm=c._n=norm(c.name);
+        let cb=c._bg;if(cb===undefined)cb=c._bg=bg(nm);
+        if(!cb.size)continue;
+        let inter=0;for(const g of qb)if(cb.has(g))inter++;
+        const sc=(2*inter)/(qb.size+cb.size);
+        if(sc>=0.45)(c.jp?jp:en).push([sc,c]);
+      }
+      const byScore=(a,b)=>b[0]-a[0];en.sort(byScore);jp.sort(byScore);
+      const lim=limit||8;
+      if(langFilter==='en')return en.slice(0,lim).map(x=>x[1]);
+      if(langFilter==='jp')return jp.slice(0,lim).map(x=>x[1]);
+      const out=[];for(let i=0;i<lim;i++){if(en[i])out.push(en[i][1]);if(jp[i])out.push(jp[i][1]);}
+      return out.slice(0,lim);
+    },
     search(q,langFilter){
       // punctuation-blind: "226/sp", "226/s-p", "226 sp" all collapse the same way
       const norm=x=>x.toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'');
@@ -1350,6 +1375,7 @@ const Scanner=(function(){
     if(!hits.length){for(const nm of names){const r=PriceEngine.search(nm,lang);if(r.length){hits=r;used=nm;break;}}}
     if(!hits.length&&num){const r=PriceEngine.search(num,lang);if(r.length){hits=r;used=num;}}
 
+    if(!hits.length){for(const nm of names){const r=PriceEngine.fuzzy(nm,lang,8);if(r.length){hits=r;used=nm;break;}}}
     if(!hits.length){
       $('#scanStatus').textContent='No match — try again or use + Manual';
       $('#scanHint').textContent='Read: "'+readLabel+'"';
