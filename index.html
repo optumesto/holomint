@@ -1354,6 +1354,9 @@ const Scanner=(function(){
         // keep letters, spaces, apostrophes, hyphens; collapse spaces
         const cl=line.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
         if(!cl)return;
+        // Reject sentence-length lines: a card name sits on its own short line, while rules
+        // text (e.g. "...Damage is not an effect.") is a long sentence and must not match.
+        if(cl.length>32)return;
         // a plausible name: starts with a capital, total length >= 4, not all-caps noise
         const words=cl.split(' ').filter(w=>w.length>=2);
         // build runs of Capitalized words
@@ -1365,10 +1368,11 @@ const Scanner=(function(){
       return out;
     }
     // Primary: name strip. Secondary: full text, but only well-formed capitalized words.
-    let names=nameCandidatesFrom(nameText);
-    if(!names.length)names=nameCandidatesFrom(fullText);
+    // Combine the name-strip read AND the card header from the full read. Even if the strip
+    // crop misses, the title still comes through the full read - and body text is filtered out.
+    let names=nameCandidatesFrom(nameText).concat(nameCandidatesFrom(fullText));
     // dedupe, longest first (full names beat single words)
-    names=[...new Set(names)].sort((a,b)=>b.length-a.length).slice(0,5);
+    names=[...new Set(names)].sort((a,b)=>b.length-a.length).slice(0,6);
     const num=parseNumber(fullText)||parseNumber(nameText);
     const readLabel=names[0]||'(nothing readable)';
 
