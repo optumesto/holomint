@@ -1334,7 +1334,7 @@ const Scanner=(function(){
       const w=await getWorker();
       // Restrict to letters for the name pass — kills numeric/symbol noise from foil & watermarks.
       // PSM 7 = treat the image as a single text line (the card name is one line).
-      await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'7'});
+      await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'6'});
       // Binarize the name strip (grayscale + Otsu) in BOTH polarities and OCR each. Colored
       // card text on busy/foil backgrounds is what garbled Tesseract; clean B/W is the fix.
       const binA=otsuBinarize(nameStrip,false,1200),binB=otsuBinarize(nameStrip,true,1200);
@@ -1342,7 +1342,7 @@ const Scanner=(function(){
       nameText=((rA.data.text||'')+String.fromCharCode(10)+(rB.data.text||''));
       // full pass with default params for the number + fallback
       await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'3'});
-      const rFull=await w.recognize(cardCv);fullText=(rFull.data.text||'');
+      const rFull=await w.recognize(otsuBinarize(cardCv,false,1400));fullText=(rFull.data.text||'');
     }catch(e){$('#scanStatus').textContent='Scanner error: '+(e.message||e);return;}
 
     // The card NAME is the reliable signal and lives in the top strip. Extract it cleanly.
@@ -1350,6 +1350,9 @@ const Scanner=(function(){
     // "Mega Charizard EX"). Reject short fragments and noise.
     function nameCandidatesFrom(t){
       const out=[];
+      // Card-frame vocabulary printed on every card (labels/keywords) - never a name on its
+      // own. Blocked only as a STANDALONE word; multi-word names ("Pokemon Center Lady") pass.
+      const BLOCK=new Set(['pokemon','trainer','item','tool','energy','supporter','stadium','stage','basic','special','ability','weakness','resistance','retreat','evolves','evolution','illus','damage','attack','defending','active','bench','prize','opponent','effect','attach','discard','search','flip','coin','play','rule']);
       t.split(/\n/).forEach(line=>{
         // keep letters, spaces, apostrophes, hyphens; collapse spaces
         const cl=line.replace(/[^A-Za-z'\u2019 -]/g,' ').replace(/\s+/g,' ').trim();
@@ -1361,7 +1364,7 @@ const Scanner=(function(){
         const words=cl.split(' ').filter(w=>w.length>=2);
         // build runs of Capitalized words
         let run=[];
-        const flush=()=>{if(run.length){const phrase=run.join(' ');if(phrase.length>=4)out.push(phrase);}run=[];};
+        const flush=()=>{if(run.length){const phrase=run.join(' ');if(phrase.length>=4&&!(run.length===1&&BLOCK.has(phrase.toLowerCase())))out.push(phrase);}run=[];};
         words.forEach(w=>{ if(/^[A-Z][a-zA-Z'\u2019-]+$/.test(w)) run.push(w); else flush(); });
         flush();
       });
