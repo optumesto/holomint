@@ -1283,6 +1283,34 @@ const Scanner=(function(){
     for(let i=0,p=0;p<n;i+=4,p++){let on=gray[p]>thr;if(invert)on=!on;const v=on?255:0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}
     cx.putImageData(im,0,0);return c;
   }
+  // Adaptive (local-mean) threshold - robust to glare and uneven lighting on foils, where a
+  // single global threshold flips. Each pixel compares to the mean of its local window via an
+  // integral image (fast). Additive to Otsu: can convert a missed read to a hit, never break one.
+  function adaptiveBinarize(src,invert,targetW){
+    const scale=Math.max(1,targetW/src.width);
+    const w=Math.round(src.width*scale),h=Math.round(src.height*scale);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const cx=c.getContext('2d');cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(src,0,0,w,h);
+    const im=cx.getImageData(0,0,w,h),d=im.data,n=w*h;
+    const gray=new Float64Array(n);
+    for(let i=0,p=0;p<n;i+=4,p++)gray[p]=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+    const W=w+1,integ=new Float64Array(W*(h+1));
+    for(let y=0;y<h;y++){let rs=0;for(let x=0;x<w;x++){rs+=gray[y*w+x];integ[(y+1)*W+(x+1)]=integ[y*W+(x+1)]+rs;}}
+    const rad=Math.max(12,Math.round(h*0.35)),Cf=0.86;
+    for(let y=0;y<h;y++){
+      const y0=y>rad?y-rad:0,y1=(y+rad<h-1)?y+rad:h-1;
+      for(let x=0;x<w;x++){
+        const x0=x>rad?x-rad:0,x1=(x+rad<w-1)?x+rad:w-1;
+        const area=(x1-x0+1)*(y1-y0+1);
+        const sum=integ[(y1+1)*W+(x1+1)]-integ[y0*W+(x1+1)]-integ[(y1+1)*W+x0]+integ[y0*W+x0];
+        const mean=sum/area;
+        let ink=gray[y*w+x]<mean*Cf;if(invert)ink=!ink;
+        const v=ink?0:255,idx=(y*w+x)*4;d[idx]=d[idx+1]=d[idx+2]=v;d[idx+3]=255;
+      }
+    }
+    cx.putImageData(im,0,0);return c;
+  }
   async function processPhoto(file){
     const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);
     $('#scanHint').style.display='none';$('#scanStatus').textContent='Reading\u2026';
@@ -1290,7 +1318,7 @@ const Scanner=(function(){
     let full;
     try{full=await loadImage(file);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
     // Resize to ~1400px wide — sharp enough for OCR, fast enough to not hang on 50MP.
-    const cv=fitCanvas(full,1400);const fw=cv.width,fh=cv.height;
+    const cv=fitCanvas(full,1700);const fw=cv.width,fh=cv.height;
     function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
       c.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);return c;}
     // No framing guide anymore (native camera). Detect the card rectangle on the background:
@@ -1337,9 +1365,10 @@ const Scanner=(function(){
       await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'6'});
       // Binarize the name strip (grayscale + Otsu) in BOTH polarities and OCR each. Colored
       // card text on busy/foil backgrounds is what garbled Tesseract; clean B/W is the fix.
-      const binA=otsuBinarize(nameStrip,false,1200),binB=otsuBinarize(nameStrip,true,1200);
-      const rA=await w.recognize(binA);const rB=await w.recognize(binB);
-      nameText=((rA.data.text||'')+String.fromCharCode(10)+(rB.data.text||''));
+      const binA=otsuBinarize(nameStrip,false,1200),binB=otsuBinarize(nameStrip,true,1200),binC=adaptiveBinarize(nameStrip,false,1200);
+      const rA=await w.recognize(binA);const rB=await w.recognize(binB);const rC=await w.recognize(binC);
+      const _nl=String.fromCharCode(10);
+      nameText=((rA.data.text||'')+_nl+(rB.data.text||'')+_nl+(rC.data.text||''));
       // full pass with default params for the number + fallback
       await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'3'});
       const rFull=await w.recognize(otsuBinarize(cardCv,false,1400));fullText=(rFull.data.text||'');
