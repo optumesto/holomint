@@ -1272,17 +1272,35 @@ const Scanner=(function(){
     try{const tr=stream.getVideoTracks()[0],caps=tr.getCapabilities&&tr.getCapabilities();$('#scanTorch').style.display=(caps&&caps.torch)?'':'none';$('#scanTorch').classList.remove('on');}catch(_){$('#scanTorch').style.display='none';}
   }
   // Map the on-screen guide box to the video frame (object-fit:cover) and crop that region.
-  function capture(){
+  async function capture(){
     const v=$('#scanVideo');if(!v||!v.videoWidth)return;
     const vw=v.videoWidth,vh=v.videoHeight;
-    const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;fc.getContext('2d').drawImage(v,0,0,vw,vh);
+    // The guide box was only for framing. Video FRAMES are soft (getUserMedia caps them), so pull a
+    // real full-resolution STILL from the same camera via ImageCapture. Sharp photo -> readable strip.
     const vr=v.getBoundingClientRect(),fr=$('#scanFrame').getBoundingClientRect();
-    const scale=Math.max(vr.width/vw,vr.height/vh);
-    const offX=(vw*scale-vr.width)/2,offY=(vh*scale-vr.height)/2;
-    let sx=(fr.left-vr.left+offX)/scale,sy=(fr.top-vr.top+offY)/scale,sW=fr.width/scale,sH=fr.height/scale;
-    sx=Math.max(0,sx);sy=Math.max(0,sy);sW=Math.min(sW,vw-sx);sH=Math.min(sH,vh-sy);
-    const card=document.createElement('canvas');card.width=Math.max(1,Math.round(sW));card.height=Math.max(1,Math.round(sH));
-    card.getContext('2d').drawImage(fc,sx,sy,sW,sH,0,0,card.width,card.height);
+    const cover=Math.max(vr.width/vw,vr.height/vh);
+    const fW=fr.width/cover/vw, fH=fr.height/cover/vh; // guide box as fractions of the video frame
+    let SC=null,W=0,H=0;
+    if(stream&&window.ImageCapture){
+      try{
+        const ic=new ImageCapture(stream.getVideoTracks()[0]);
+        let opts={};try{const pc=await ic.getPhotoCapabilities();if(pc&&pc.imageWidth&&pc.imageWidth.max)opts={imageWidth:pc.imageWidth.max,imageHeight:pc.imageHeight.max};}catch(_){}
+        const blob=await ic.takePhoto(opts);
+        SC=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(blob);});
+        W=SC.naturalWidth;H=SC.naturalHeight;
+      }catch(_){SC=null;}
+    }
+    if(!SC){const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;fc.getContext('2d').drawImage(v,0,0,vw,vh);SC=fc;W=vw;H=vh;}
+    // Centered crop sized to the card's fixed 63:88 ratio. Deriving the second dimension from the card
+    // shape (instead of mapping the box across a possibly-different photo aspect) avoids FOV mismatch.
+    const vAsp=vw/vh,pAsp=W/H; let cropW,cropH;
+    if(vAsp>=pAsp){cropW=fW*W;cropH=cropW*88/63;} else {cropH=fH*H;cropW=cropH*63/88;}
+    cropW=Math.min(cropW,W);cropH=Math.min(cropH,H);
+    const sx=Math.max(0,(W-cropW)/2),sy=Math.max(0,(H-cropH)/2);
+    const scl=Math.min(1,1800/cropW); // cap OCR input size; sharp source downscales cleanly
+    const card=document.createElement('canvas');card.width=Math.max(1,Math.round(cropW*scl));card.height=Math.max(1,Math.round(cropH*scl));
+    const cx=card.getContext('2d');cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(SC,sx,sy,cropW,cropH,0,0,card.width,card.height);
     stopStream();processPhoto(card);
   }
   camIn.onchange=()=>{const file=camIn.files&&camIn.files[0];if(file)processPhoto(file);};
@@ -1460,7 +1478,7 @@ const Scanner=(function(){
     if(!hits.length){for(const nm of names){const r=PriceEngine.fuzzy(nm,lang,8);if(r.length){hits=r;used=nm;break;}}}
     if(!hits.length){
       $('#scanStatus').textContent='No match — try again or use + Manual';
-      $('#scanHint').textContent='Read: "'+readLabel+'"';
+      $('#scanHint').textContent='Read: "'+readLabel+'" ('+cw+'×'+ch+')';
       $('#scanHint').style.display='';
       return;
     }
