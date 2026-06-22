@@ -98,6 +98,9 @@
   #scanStatus{font-family:var(--mono);font-size:15px;color:var(--gold)}
   #scanHint{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-top:8px;max-width:300px}
   .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
+  #scanVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+  #scanCapture{position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom));transform:translateX(-50%);width:auto;min-width:210px;z-index:3;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:12.5px;text-shadow:0 1px 4px #000;z-index:3}
   .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:12px;text-shadow:0 1px 3px #000}
   .scanbar{position:absolute;bottom:0;left:0;right:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.7))}
   .scancap{width:68px;height:68px;border-radius:50%;background:var(--gold);border:4px solid #1a1407;cursor:pointer}
@@ -339,10 +342,14 @@
 </div>
 <div id="scanModal">
   <button class="scanx" id="scanClose">×</button><button class="scanx" id="scanTorch" style="right:64px;display:none" onclick="Scanner.toggleTorch()">⚡</button>
+  <video id="scanVideo" playsinline muted autoplay style="display:none"></video>
+  <div class="scanframe" id="scanFrame" style="display:none"></div>
+  <div id="scanVHint" style="display:none">Fill the box with the card, then tap Scan</div>
+  <button class="act" id="scanCapture" style="display:none">◉ Scan card</button>
   <div class="scanpanel">
     <div class="scanstatus" id="scanStatus">Reading…</div>
     <div class="scanhint" id="scanHint"></div>
-    <button class="act" id="scanRetake" style="max-width:260px;margin-top:18px">Take another photo</button>
+    <button class="act" id="scanRetake" style="max-width:260px;margin-top:18px">Scan again</button>
   </div>
 </div>
 <div class="toast" id="toast">Done</div>
@@ -1247,11 +1254,40 @@ const Scanner=(function(){
   const camIn=document.createElement('input');
   camIn.type='file';camIn.accept='image/*';camIn.setAttribute('capture','environment');
   camIn.style.display='none';document.body.appendChild(camIn);
-  function open(quick){lastQuick=!!quick;loadTesseract().catch(()=>{});camIn.value='';camIn.click();}
+  function setPhase(p){const view=p==='view';
+    ['#scanVideo','#scanFrame','#scanVHint','#scanCapture'].forEach(id=>{const el=$(id);if(el)el.style.display=view?'block':'none';});
+    const pan=document.querySelector('.scanpanel');if(pan)pan.style.display=view?'none':'';}
+  function stopStream(){try{if(stream)stream.getTracks().forEach(t=>t.stop());}catch(_){}stream=null;const v=$('#scanVideo');if(v)v.srcObject=null;}
+  // Live viewfinder: the user fills a card-shaped guide box, we crop exactly that box and OCR it
+  // (no background detection). Falls back to the native camera if getUserMedia is blocked/absent.
+  async function open(quick){
+    lastQuick=!!quick;loadTesseract().catch(()=>{});
+    const m=$('#scanModal');
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camIn.value='';camIn.click();return;}
+    m.classList.add('show');setPhase('view');$('#scanStatus').textContent='';$('#scanHint').style.display='none';
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});}
+    catch(e){stopStream();m.classList.remove('show');camIn.value='';camIn.click();return;}
+    const v=$('#scanVideo');v.srcObject=stream;v.muted=true;v.setAttribute('playsinline','');try{await v.play();}catch(_){}
+    try{const tr=stream.getVideoTracks()[0],caps=tr.getCapabilities&&tr.getCapabilities();$('#scanTorch').style.display=(caps&&caps.torch)?'':'none';$('#scanTorch').classList.remove('on');}catch(_){$('#scanTorch').style.display='none';}
+  }
+  // Map the on-screen guide box to the video frame (object-fit:cover) and crop that region.
+  function capture(){
+    const v=$('#scanVideo');if(!v||!v.videoWidth)return;
+    const vw=v.videoWidth,vh=v.videoHeight;
+    const fc=document.createElement('canvas');fc.width=vw;fc.height=vh;fc.getContext('2d').drawImage(v,0,0,vw,vh);
+    const vr=v.getBoundingClientRect(),fr=$('#scanFrame').getBoundingClientRect();
+    const scale=Math.max(vr.width/vw,vr.height/vh);
+    const offX=(vw*scale-vr.width)/2,offY=(vh*scale-vr.height)/2;
+    let sx=(fr.left-vr.left+offX)/scale,sy=(fr.top-vr.top+offY)/scale,sW=fr.width/scale,sH=fr.height/scale;
+    sx=Math.max(0,sx);sy=Math.max(0,sy);sW=Math.min(sW,vw-sx);sH=Math.min(sH,vh-sy);
+    const card=document.createElement('canvas');card.width=Math.max(1,Math.round(sW));card.height=Math.max(1,Math.round(sH));
+    card.getContext('2d').drawImage(fc,sx,sy,sW,sH,0,0,card.width,card.height);
+    stopStream();processPhoto(card);
+  }
   camIn.onchange=()=>{const file=camIn.files&&camIn.files[0];if(file)processPhoto(file);};
-  function toggleTorch(){}
+  function toggleTorch(){try{if(!stream)return;const tr=stream.getVideoTracks()[0],on=$('#scanTorch').classList.toggle('on');tr.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});}catch(_){}}
   function tapFocus(){}
-  function close(){const m=$('#scanModal');m.classList.remove('show');}
+  function close(){const m=$('#scanModal');m.classList.remove('show');stopStream();}
   function query0(c){return (c&&c[0])||'';}
   function parseNumber(text){
     // collector numbers like 125/094, 226/S-P, SWSH284, 073, TG12/TG30
@@ -1311,12 +1347,15 @@ const Scanner=(function(){
     }
     cx.putImageData(im,0,0);return c;
   }
-  async function processPhoto(file){
-    const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);
+  async function processPhoto(src){
+    const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);setPhase('read');
     $('#scanHint').style.display='none';$('#scanStatus').textContent='Reading\u2026';
     if(!window.Tesseract){$('#scanStatus').textContent='Loading scanner\u2026';await loadTesseract();}
+    let cardCv,cw,ch;
+    if(src instanceof HTMLCanvasElement){cardCv=src;cw=cardCv.width;ch=cardCv.height;}
+    else{
     let full;
-    try{full=await loadImage(file);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
+    try{full=await loadImage(src);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
     // Resize to ~1400px wide — sharp enough for OCR, fast enough to not hang on 50MP.
     const cv=fitCanvas(full,1700);const fw=cv.width,fh=cv.height;
     function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
@@ -1352,11 +1391,12 @@ const Scanner=(function(){
     const cr=cardRect();
     // crop to just the card, then the name strip is the top ~15% of THAT
     const cardImg=crop(cr.x,cr.y,cr.w,cr.h);
-    const cardCv=document.createElement('canvas');cardCv.width=cr.w;cardCv.height=cr.h;
-    cardCv.getContext('2d').drawImage(cardImg,0,0);
+    cardCv=document.createElement('canvas');cardCv.width=cr.w;cardCv.height=cr.h;
+    cardCv.getContext('2d').drawImage(cardImg,0,0);cw=cr.w;ch=cr.h;
+    }
     function cropFrom(src,sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
       c.getContext('2d').drawImage(src,sx,sy,sw,sh,0,0,sw,sh);return c;}
-    const nameStrip=cropFrom(cardCv,0,0,cr.w,cr.h*0.15);
+    const nameStrip=cropFrom(cardCv,0,0,cw,ch*0.15);
     let nameText='',fullText='';
     try{
       const w=await getWorker();
@@ -1426,7 +1466,7 @@ const Scanner=(function(){
     close();
     if(lastQuick)showQuickCheck(hits,used);else showScanResults(hits,used);
   }
-  return{open,close,setMode,toggleTorch,tapFocus};
+  return{open,close,setMode,toggleTorch,tapFocus,capture};
 })();
 function ownedInfo(it){
   // match by catalog id first, else by normalized name
@@ -1473,6 +1513,7 @@ $('#scanBtn').onclick=()=>Scanner.open(false);
 $('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
 document.getElementById('scanRetake').onclick=()=>Scanner.open(false);
+document.getElementById('scanCapture').onclick=()=>Scanner.capture();
 /* native capture: no on-screen shutter needed */
 
 /* ---- FLOATING PRICE (Document Picture-in-Picture) ---- */
