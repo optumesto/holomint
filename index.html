@@ -1265,9 +1265,10 @@ const Scanner=(function(){
     const m=$('#scanModal');
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camIn.value='';camIn.click();return;}
     m.classList.add('show');setPhase('view');$('#scanStatus').textContent='';$('#scanHint').style.display='none';
-    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});}
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}},audio:false});}
     catch(e){stopStream();m.classList.remove('show');camIn.value='';camIn.click();return;}
     const v=$('#scanVideo');v.srcObject=stream;v.muted=true;v.setAttribute('playsinline','');try{await v.play();}catch(_){}
+    try{await stream.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(_){}
     try{const tr=stream.getVideoTracks()[0],caps=tr.getCapabilities&&tr.getCapabilities();$('#scanTorch').style.display=(caps&&caps.torch)?'':'none';$('#scanTorch').classList.remove('on');}catch(_){$('#scanTorch').style.display='none';}
   }
   // Map the on-screen guide box to the video frame (object-fit:cover) and crop that region.
