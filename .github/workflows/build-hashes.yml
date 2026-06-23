@@ -1,0 +1,54 @@
+name: Build card hashes
+
+# Generates hashes.json (the scanner's perceptual-hash database) in the cloud and
+# commits it back to the repo, so the live app serves it to every user — no local
+# Python, no manual step. Runs on demand, and weekly to pick up newly released sets.
+#
+# SETUP (one time):
+#   1. Commit make_hashes.py to the repo root.
+#   2. Commit this file at  .github/workflows/build-hashes.yml
+#   3. GitHub -> Actions tab -> "Build card hashes" -> Run workflow.
+# The script is resumable: if a run gets throttled and finishes partial, just run it
+# again and it fills the gaps. Once complete, weekly runs only hash brand-new cards.
+
+on:
+  workflow_dispatch:            # manual "Run workflow" button
+  schedule:
+    - cron: '0 7 * * 1'         # weekly, Mondays 07:00 UTC (catches new sets; cheap once complete)
+
+permissions:
+  contents: write               # lets the Action commit hashes.json back
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330        # well under GitHub's 6h cap; full build is ~1h
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install --upgrade pip pillow
+
+      - name: Build hashes.json
+        run: python make_hashes.py
+
+      - name: Commit hashes.json if changed
+        run: |
+          if [ -z "$(git status --porcelain hashes.json)" ]; then
+            echo "hashes.json unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hashes.json
+          git commit -m "Update card hash database [skip ci]"
+          git pull --rebase
+          git push
