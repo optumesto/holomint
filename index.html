@@ -1369,27 +1369,49 @@ const Scanner=(function(){
   function showRead(){const w=$('#cropWrap'),b=$('#cropBar'),p=document.querySelector('.scanpanel');if(w)w.style.display='none';if(b)b.style.display='none';if(p)p.style.display='';}
   function drawBox(){const b=$('#cropBox');if(!b||!cropRect)return;b.style.left=cropRect.x+'px';b.style.top=cropRect.y+'px';b.style.width=cropRect.w+'px';b.style.height=cropRect.h+'px';}
   function detectCardRect(){
-    // Auto-fit: localize the card by DETAIL DENSITY (edges per row/col). A card is
-    // packed with edges; a table/cloth/letterbox is smooth. Returns a box in IMAGE
-    // coords, or null if not confident (caller falls back to the centered default).
+    // Find the card's OUTER edge. Detail density (art/text) reliably locates the card's
+    // INNER content box, but the smooth colored border (yellow/grey/ex/mega-ex) reads as
+    // low detail, so density alone snaps to the inside of the border. Fix: anchor on the
+    // detail box, then for each side scan outward across the border for the next strong
+    // edge (border->background) = the true card edge. Keys on edge geometry, so border
+    // colour is irrelevant — every border style behaves the same.
     try{
       const iw=cropImg.naturalWidth,ih=cropImg.naturalHeight;
-      const md=300,scl=Math.min(1,md/Math.max(iw,ih));
+      const md=320,scl=Math.min(1,md/Math.max(iw,ih));
       const fw=Math.max(8,Math.round(iw*scl)),fh=Math.max(8,Math.round(ih*scl));
       const wc=document.createElement('canvas');wc.width=fw;wc.height=fh;
-      const wx=wc.getContext('2d');wx.drawImage(cropImg,0,0,fw,fh);
-      const data=wx.getImageData(0,0,fw,fh).data,G=(i)=>data[i]+data[i+1]+data[i+2];
+      wc.getContext('2d').drawImage(cropImg,0,0,fw,fh);
+      const d=wc.getContext('2d').getImageData(0,0,fw,fh).data;
+      const S=(i)=>d[i]+d[i+1]+d[i+2];
+      // 1. inner content box via detail density
       const rowE=new Float32Array(fh),colE=new Float32Array(fw);
-      for(let y=0;y<fh;y+=2){let prev=G((y*fw)*4);
-        for(let x=1;x<fw;x++){const v=G((y*fw+x)*4),dd=v>prev?v-prev:prev-v;rowE[y]+=dd;colE[x]+=dd;prev=v;}}
-      function bounds(arr,len){let mx=0;for(let i=0;i<len;i++)if(arr[i]>mx)mx=arr[i];
-        if(mx<=0)return null;const thr=mx*0.16;let lo=0,hi=len-1;
-        for(let i=0;i<len;i++){if(arr[i]>thr){lo=i;break;}}
-        for(let i=len-1;i>=0;i--){if(arr[i]>thr){hi=i;break;}}return [lo,hi];}
-      const rb=bounds(rowE,fh),cb=bounds(colE,fw);if(!rb||!cb)return null;
-      const top=rb[0],bot=rb[1],left=cb[0],right=cb[1];
-      if(bot-top<fh*0.25||right-left<fw*0.22)return null;
-      return {x:left/scl,y:top/scl,w:(right-left)/scl,h:(bot-top)/scl};
+      for(let y=0;y<fh;y+=2){let prev=S((y*fw)*4);
+        for(let x=1;x<fw;x++){const v=S((y*fw+x)*4),dd=v>prev?v-prev:prev-v;rowE[y]+=dd;colE[x]+=dd;prev=v;}}
+      function band(arr,n){let mx=0;for(let i=0;i<n;i++)if(arr[i]>mx)mx=arr[i];
+        if(mx<=0)return null;const thr=mx*0.16;let lo=0,hi=n-1;
+        for(let i=0;i<n;i++){if(arr[i]>thr){lo=i;break;}}
+        for(let i=n-1;i>=0;i--){if(arr[i]>thr){hi=i;break;}}return [lo,hi];}
+      const rb=band(rowE,fh),cb=band(colE,fw);if(!rb||!cb)return null;
+      const it=rb[0],ib=rb[1],il=cb[0],ir=cb[1];
+      if(ib-it<fh*0.25||ir-il<fw*0.22)return null;
+      // 2. colour-aware edge gradient projections (peaks at vertical/horizontal edges)
+      const colG=new Float32Array(fw),rowG=new Float32Array(fh),W4=fw*4;
+      for(let y=1;y<fh-1;y++){const r=y*fw;
+        for(let x=1;x<fw-1;x++){const i=(r+x)*4;
+          colG[x]+=Math.abs(d[i+4]-d[i-4])+Math.abs(d[i+5]-d[i-3])+Math.abs(d[i+6]-d[i-2]);
+          rowG[y]+=Math.abs(d[i+W4]-d[i-W4])+Math.abs(d[i+W4+1]-d[i-W4+1])+Math.abs(d[i+W4+2]-d[i-W4+2]);}}
+      let gmaxC=0;for(let i=0;i<fw;i++)if(colG[i]>gmaxC)gmaxC=colG[i];
+      let gmaxR=0;for(let i=0;i<fh;i++)if(rowG[i]>gmaxR)gmaxR=rowG[i];
+      // 3. expand each side outward across the border to the strongest edge
+      function outward(grad,gmax,inner,dir,limit,lo,hi){
+        const thr=gmax*0.14;let best=-1,bestv=thr;
+        for(let dd=2;dd<=limit;dd++){const p=inner+dir*dd;if(p<lo||p>hi)break;
+          if(grad[p]>bestv){bestv=grad[p];best=p;}}
+        return best<0?inner:best;}
+      const mX=Math.round((ir-il)*0.14),mY=Math.round((ib-it)*0.14);
+      const oL=outward(colG,gmaxC,il,-1,mX,0,fw-1),oR=outward(colG,gmaxC,ir,1,mX,0,fw-1);
+      const oT=outward(rowG,gmaxR,it,-1,mY,0,fh-1),oB=outward(rowG,gmaxR,ib,1,mY,0,fh-1);
+      return {x:oL/scl,y:oT/scl,w:(oR-oL)/scl,h:(oB-oT)/scl};
     }catch(e){return null;}
   }
   function layoutCrop(){
@@ -1402,7 +1424,7 @@ const Scanner=(function(){
     if(det){
       const cx=ox+(det.x+det.w/2)*scale,cy=oy+(det.y+det.h/2)*scale;
       let bw=det.h*scale*63/88;if(bw>det.w*scale)bw=det.w*scale;let bh=bw*88/63;
-      bw*=1.05;bh*=1.05;
+      bw*=1.02;bh*=1.02;
       if(bw>dw*0.98){bw=dw*0.98;bh=bw*88/63;}if(bh>dh*0.98){bh=dh*0.98;bw=bh*63/88;}
       let bx=cx-bw/2,by=cy-bh/2;
       bx=Math.max(ox,Math.min(bx,ox+dw-bw));by=Math.max(oy,Math.min(by,oy+dh-bh));
