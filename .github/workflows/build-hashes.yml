@@ -2,22 +2,30 @@ name: Build card hashes
 
 # Generates hashes.json (the scanner's perceptual-hash database) in the cloud and
 # commits it back to the repo, so the live app serves it to every user — no local
-# Python, no manual step. Runs on demand, and weekly to pick up newly released sets.
+# Python, no manual step.
+#
+# Runs daily, ~90 min after prices.yml refreshes products.json, so brand-new cards
+# become image-scannable within a day of hitting the catalog. The build is
+# incremental: it skips every card already hashed and only downloads new ones, so
+# day-to-day runs finish in a couple of minutes. The first run (full ~57k) takes ~1h.
 #
 # SETUP (one time):
-#   1. Commit make_hashes.py to the repo root.
-#   2. Commit this file at  .github/workflows/build-hashes.yml
-#   3. GitHub -> Actions tab -> "Build card hashes" -> Run workflow.
-# The script is resumable: if a run gets throttled and finishes partial, just run it
-# again and it fills the gaps. Once complete, weekly runs only hash brand-new cards.
+#   1. make_hashes.py in the repo root.
+#   2. This file at  .github/workflows/build-hashes.yml
+#   3. GitHub -> Actions -> "Build card hashes" -> Run workflow (for the initial build).
+# Resumable: if a run is throttled and finishes partial, just run it again to fill gaps.
 
 on:
   workflow_dispatch:            # manual "Run workflow" button
   schedule:
-    - cron: '0 7 * * 1'         # weekly, Mondays 07:00 UTC (catches new sets; cheap once complete)
+    - cron: '0 1 * * *'         # daily 01:00 UTC — after prices.yml's 23:30 catalog refresh
 
 permissions:
   contents: write               # lets the Action commit hashes.json back
+
+concurrency:
+  group: build-hashes           # never let two hash builds run at once
+  cancel-in-progress: false     # let an in-flight build finish; queue the next
 
 jobs:
   build:
