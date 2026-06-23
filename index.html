@@ -95,6 +95,14 @@
   #scanModal{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column}
   #scanModal.show{display:flex}
   .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  #cropWrap{position:absolute;inset:0;background:#000;z-index:2}
+  #cropCanvas{position:absolute;display:block}
+  #cropBox{position:absolute;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
+  #cropHandle{position:absolute;right:-15px;bottom:-15px;width:36px;height:36px;border-radius:50%;background:var(--gold);border:3px solid #000;touch-action:none}
+  #cropBar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;z-index:4}
+  #cropMsg{color:#fff;font-family:var(--mono);font-size:12.5px;text-align:center;text-shadow:0 1px 3px #000}
+  #cropGo{max-width:280px}
+  #scanClose{z-index:7}
   #scanStatus{font-family:var(--mono);font-size:15px;color:var(--gold)}
   #scanHint{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-top:8px;max-width:300px}
   .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
@@ -346,6 +354,8 @@
   <div class="scanframe" id="scanFrame" style="display:none"></div>
   <div id="scanVHint" style="display:none">Fill the box with the card, then tap Scan</div>
   <button class="act" id="scanCapture" style="display:none">◉ Scan card</button>
+  <div id="cropWrap" style="display:none"><canvas id="cropCanvas"></canvas><div id="cropBox"><div id="cropHandle"></div></div></div>
+  <div id="cropBar" style="display:none"><div id="cropMsg">Drag / resize the box over the card, then tap Scan</div><button class="act" id="cropGo">◉ Scan this card</button></div>
   <div class="scanpanel">
     <div class="scanstatus" id="scanStatus">Reading…</div>
     <div class="scanhint" id="scanHint"></div>
@@ -1213,6 +1223,60 @@ renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
+/* ---- PERCEPTUAL-HASH CARD MATCH ----------------------------------------
+   Identifies a cropped card photo by image fingerprint (256-bit dHash), robust
+   to blur/lighting where OCR fails. Loads hashes.json (built by make_hashes.py)
+   and compares the crop against every catalog single by Hamming distance.
+   The dHash here MUST stay byte-identical to make_hashes.py: same 17x16 grid,
+   same 0.299/0.587/0.114 luminance, same row-major MSB-first bit order. */
+const CardHash=(function(){
+  const W=17,H=16,BYTES=32;
+  let ids=null,data=null,loaded=false,loading=null;
+  const POP=new Uint8Array(256);for(let i=0;i<256;i++)POP[i]=(i&1)+POP[i>>1];
+  const HEXV=new Int8Array(128);
+  for(let i=0;i<10;i++)HEXV[48+i]=i;
+  for(let i=0;i<6;i++){HEXV[97+i]=10+i;HEXV[65+i]=10+i;}
+  function dHashBytes(src){
+    const c=document.createElement('canvas');c.width=W;c.height=H;
+    const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+    ctx.drawImage(src,0,0,W,H);
+    const d=ctx.getImageData(0,0,W,H).data;
+    const out=new Uint8Array(BYTES);let bit=0;
+    for(let row=0;row<H;row++){
+      let i0=(row*W)*4,prev=0.299*d[i0]+0.587*d[i0+1]+0.114*d[i0+2];
+      for(let col=0;col<H;col++){
+        const i=(row*W+col+1)*4,cur=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+        if(prev<cur)out[bit>>3]|=(1<<(7-(bit&7)));
+        prev=cur;bit++;
+      }
+    }
+    return out;
+  }
+  function ready(){
+    if(loaded)return Promise.resolve(true);
+    if(loading)return loading;
+    loading=fetch('hashes.json').then(r=>{if(!r.ok)throw 0;return r.json();}).then(obj=>{
+      ids=Object.keys(obj);const n=ids.length;data=new Uint8Array(n*BYTES);
+      for(let k=0;k<n;k++){const hex=obj[ids[k]],off=k*BYTES;
+        for(let b=0;b<BYTES;b++)data[off+b]=(HEXV[hex.charCodeAt(b*2)]<<4)|HEXV[hex.charCodeAt(b*2+1)];}
+      loaded=true;return true;
+    });
+    return loading;
+  }
+  function match(src,topN){
+    if(!loaded)return [];
+    const q=dHashBytes(src),n=ids.length,dists=new Uint16Array(n);
+    for(let i=0;i<n;i++){const off=i*BYTES;let dd=0;
+      for(let b=0;b<BYTES;b++)dd+=POP[q[b]^data[off+b]];
+      dists[i]=dd;}
+    const idx=new Array(n);for(let i=0;i<n;i++)idx[i]=i;
+    idx.sort((a,b)=>dists[a]-dists[b]);
+    const out=[],lim=Math.min(topN,n);
+    for(let i=0;i<lim;i++)out.push({id:ids[idx[i]],dist:dists[idx[i]]});
+    return out;
+  }
+  return {ready,match,dHashBytes,get loaded(){return loaded;},get size(){return ids?ids.length:0;}};
+})();
 const Scanner=(function(){
   let stream=null,tScriptP=null,worker=null,workerP=null,_shot='';
   function loadScript(){
@@ -1260,17 +1324,9 @@ const Scanner=(function(){
   function stopStream(){try{if(stream)stream.getTracks().forEach(t=>t.stop());}catch(_){}stream=null;const v=$('#scanVideo');if(v)v.srcObject=null;}
   // Live viewfinder: the user fills a card-shaped guide box, we crop exactly that box and OCR it
   // (no background detection). Falls back to the native camera if getUserMedia is blocked/absent.
-  async function open(quick){
-    lastQuick=!!quick;loadTesseract().catch(()=>{});
-    const m=$('#scanModal');
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camIn.value='';camIn.click();return;}
-    m.classList.add('show');setPhase('view');$('#scanStatus').textContent='';$('#scanHint').style.display='none';
-    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}},audio:false});}
-    catch(e){stopStream();m.classList.remove('show');camIn.value='';camIn.click();return;}
-    const v=$('#scanVideo');v.srcObject=stream;v.muted=true;v.setAttribute('playsinline','');try{await v.play();}catch(_){}
-    try{await stream.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(_){}
-    try{const tr=stream.getVideoTracks()[0],caps=tr.getCapabilities&&tr.getCapabilities();$('#scanTorch').style.display=(caps&&caps.torch)?'':'none';$('#scanTorch').classList.remove('on');}catch(_){$('#scanTorch').style.display='none';}
-  }
+  // Native camera: the phone's real camera shoots sharp & in-focus (the live web stream could not). The
+  // user frames the card with a crop box on the captured photo, so OCR gets a sharp, well-framed image.
+  function open(quick){lastQuick=!!quick;loadTesseract().catch(()=>{});camIn.value='';camIn.click();}
   // Map the on-screen guide box to the video frame (object-fit:cover) and crop that region.
   async function capture(){
     const v=$('#scanVideo');if(!v||!v.videoWidth)return;
@@ -1299,10 +1355,56 @@ const Scanner=(function(){
     _shot='video '+vw+'×'+vh;
     stopStream();processPhoto(card);
   }
-  camIn.onchange=()=>{_shot='';const file=camIn.files&&camIn.files[0];if(file)processPhoto(file);};
+  camIn.onchange=async()=>{const file=camIn.files&&camIn.files[0];if(!file)return;
+    _shot='photo';const m=$('#scanModal');m.classList.add('show');showCrop();$('#scanStatus').textContent='';$('#scanHint').style.display='none';
+    try{cropImg=await loadImage(file);}catch(e){showRead();$('#scanStatus').textContent='Could not load photo';return;}
+    layoutCrop();};
   function toggleTorch(){try{if(!stream)return;const tr=stream.getVideoTracks()[0],on=$('#scanTorch').classList.toggle('on');tr.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});}catch(_){}}
   function tapFocus(){}
-  function close(){const m=$('#scanModal');m.classList.remove('show');stopStream();}
+  function close(){const m=$('#scanModal');m.classList.remove('show');stopStream();const w=$('#cropWrap'),b=$('#cropBar');if(w)w.style.display='none';if(b)b.style.display='none';}
+  // ---- Crop UI: frame the card on a sharp native photo, then OCR exactly that region ----
+  let cropImg=null,cropDisp=null,cropRect=null,cropDrag=null;
+  function showCrop(){const w=$('#cropWrap'),b=$('#cropBar'),p=document.querySelector('.scanpanel');if(w)w.style.display='block';if(b)b.style.display='flex';if(p)p.style.display='none';}
+  function showRead(){const w=$('#cropWrap'),b=$('#cropBar'),p=document.querySelector('.scanpanel');if(w)w.style.display='none';if(b)b.style.display='none';if(p)p.style.display='';}
+  function drawBox(){const b=$('#cropBox');if(!b||!cropRect)return;b.style.left=cropRect.x+'px';b.style.top=cropRect.y+'px';b.style.width=cropRect.w+'px';b.style.height=cropRect.h+'px';}
+  function layoutCrop(){
+    if(!cropImg)return;const wrap=$('#cropWrap');const W=wrap.clientWidth,H=wrap.clientHeight;
+    const pw=cropImg.naturalWidth,ph=cropImg.naturalHeight,scale=Math.min(W/pw,H/ph);
+    const dw=pw*scale,dh=ph*scale,ox=(W-dw)/2,oy=(H-dh)/2;cropDisp={x:ox,y:oy,w:dw,h:dh,scale:scale};
+    const cv=$('#cropCanvas');cv.width=Math.round(dw);cv.height=Math.round(dh);cv.style.left=ox+'px';cv.style.top=oy+'px';
+    cv.getContext('2d').drawImage(cropImg,0,0,dw,dh);
+    let bh=dh*0.74,bw=bh*63/88;if(bw>dw*0.92){bw=dw*0.92;bh=bw*88/63;}
+    cropRect={x:ox+(dw-bw)/2,y:oy+(dh-bh)/2,w:bw,h:bh};drawBox();
+  }
+  function doCrop(){
+    if(!cropImg||!cropDisp||!cropRect)return;const d=cropDisp;
+    const sx=(cropRect.x-d.x)/d.scale,sy=(cropRect.y-d.y)/d.scale,sw=cropRect.w/d.scale,sh=cropRect.h/d.scale;
+    const k=Math.min(1,1700/sw);const card=document.createElement('canvas');
+    card.width=Math.max(1,Math.round(sw*k));card.height=Math.max(1,Math.round(sh*k));
+    const cx=card.getContext('2d');cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(cropImg,sx,sy,sw,sh,0,0,card.width,card.height);
+    recognize(card);
+  }
+  (function bindCrop(){
+    const box=$('#cropBox'),handle=$('#cropHandle'),go=$('#cropGo');if(!box)return;
+    box.addEventListener('pointerdown',function(e){if(e.target&&e.target.id==='cropHandle')return;cropDrag={mode:'move',sx:e.clientX,sy:e.clientY,ox:cropRect.x,oy:cropRect.y};if(box.setPointerCapture)box.setPointerCapture(e.pointerId);e.preventDefault();});
+    handle.addEventListener('pointerdown',function(e){cropDrag={mode:'resize',sx:e.clientX,sw:cropRect.w};if(handle.setPointerCapture)handle.setPointerCapture(e.pointerId);e.preventDefault();e.stopPropagation();});
+    document.addEventListener('pointermove',function(e){
+      if(!cropDrag||!cropDisp||!cropRect)return;const d=cropDisp;
+      if(cropDrag.mode==='move'){
+        let nx=cropDrag.ox+(e.clientX-cropDrag.sx),ny=cropDrag.oy+(e.clientY-cropDrag.sy);
+        nx=Math.max(d.x,Math.min(nx,d.x+d.w-cropRect.w));ny=Math.max(d.y,Math.min(ny,d.y+d.h-cropRect.h));
+        cropRect.x=nx;cropRect.y=ny;drawBox();
+      }else{
+        let nw=cropDrag.sw+(e.clientX-cropDrag.sx);if(nw<64)nw=64;
+        if(cropRect.x+nw>d.x+d.w)nw=d.x+d.w-cropRect.x;let nh=nw*88/63;
+        if(cropRect.y+nh>d.y+d.h){nh=d.y+d.h-cropRect.y;nw=nh*63/88;}
+        cropRect.w=nw;cropRect.h=nh;drawBox();
+      }
+    });
+    document.addEventListener('pointerup',function(){cropDrag=null;});
+    if(go)go.addEventListener('click',doCrop);
+  })();
   function query0(c){return (c&&c[0])||'';}
   function parseNumber(text){
     // collector numbers like 125/094, 226/S-P, SWSH284, 073, TG12/TG30
@@ -1361,6 +1463,46 @@ const Scanner=(function(){
       }
     }
     cx.putImageData(im,0,0);return c;
+  }
+  // dHash distance below this = confident image match. 256-bit space: identical~0,
+  // phone-photo-vs-clean ~30-70, unrelated cards ~110+. Tune with real photos.
+  const HASH_OK=84,AMBIG_BAND=10;
+  function numMatchId(id,num,key){const it=PriceEngine.getItem(id);if(!it||!it.name)return false;
+    const nm=it.name.replace(/[\s\u2019']/g,'');return (num&&nm.includes(num))||(key&&nm.includes(key));}
+  async function readNumberStrip(card){
+    try{
+      if(!window.Tesseract){await loadTesseract();}
+      const cw=card.width,ch=card.height,hh=Math.max(8,Math.round(ch*0.14));
+      const strip=document.createElement('canvas');strip.width=cw;strip.height=hh;
+      strip.getContext('2d').drawImage(card,0,ch-hh,cw,hh,0,0,cw,hh);
+      const w=await getWorker();
+      await w.setParameters({tessedit_char_whitelist:'0123456789/ ',tessedit_pageseg_mode:'7'});
+      const r=await w.recognize(otsuBinarize(strip,false,1100));
+      await w.setParameters({tessedit_char_whitelist:'',tessedit_pageseg_mode:'3'});
+      return parseNumber(r.data.text||'');
+    }catch(e){return '';}
+  }
+  // Primary recognition: image-hash match, number-OCR tiebreak, OCR-name fallback.
+  async function recognize(card){
+    const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);setPhase('read');showRead();
+    $('#scanHint').style.display='none';$('#scanStatus').textContent='Matching\u2026';
+    let dbOk=false;try{dbOk=await CardHash.ready();}catch(e){dbOk=false;}
+    if(dbOk){
+      const hits=CardHash.match(card,12);
+      if(hits.length&&hits[0].dist<=HASH_OK){
+        let ordered=hits;
+        const band=hits.filter(h=>h.dist<=hits[0].dist+AMBIG_BAND);
+        if(band.length>1){
+          $('#scanStatus').textContent='Reading number\u2026';
+          const num=await readNumberStrip(card);
+          if(num){const key=num.split('/')[0];
+            ordered=hits.slice().sort((a,b)=>((numMatchId(a.id,num,key)?0:1)-(numMatchId(b.id,num,key)?0:1))||(a.dist-b.dist));}
+        }
+        const items=[];for(const h of ordered){const it=PriceEngine.getItem(h.id);if(it)items.push(it);}
+        if(items.length){close();showScanResults(items,'image match');return;}
+      }
+    }
+    processPhoto(card);
   }
   async function processPhoto(src){
     const m=$('#scanModal');m.classList.add('show');setMode(lastQuick);setPhase('read');
