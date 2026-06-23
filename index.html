@@ -97,8 +97,9 @@
   .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
   #cropWrap{position:absolute;inset:0;background:#000;z-index:2}
   #cropCanvas{position:absolute;display:block}
-  #cropBox{position:absolute;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
-  #cropHandle{position:absolute;right:-15px;bottom:-15px;width:36px;height:36px;border-radius:50%;background:var(--gold);border:3px solid #000;touch-action:none}
+  #cropBox{position:absolute;border:0;border-radius:9px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
+  #cropBox::before{content:'';position:absolute;inset:0;border-radius:9px;padding:2px;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  #cropHandle{position:absolute;right:-15px;bottom:-15px;width:36px;height:36px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;border:3px solid var(--bg);box-shadow:0 2px 10px rgba(125,240,200,.35);touch-action:none}
   #cropBar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;z-index:4}
   #cropMsg{color:#fff;font-family:var(--mono);font-size:12.5px;text-align:center;text-shadow:0 1px 3px #000}
   #cropGo{max-width:280px}
@@ -1367,14 +1368,50 @@ const Scanner=(function(){
   function showCrop(){const w=$('#cropWrap'),b=$('#cropBar'),p=document.querySelector('.scanpanel');if(w)w.style.display='block';if(b)b.style.display='flex';if(p)p.style.display='none';}
   function showRead(){const w=$('#cropWrap'),b=$('#cropBar'),p=document.querySelector('.scanpanel');if(w)w.style.display='none';if(b)b.style.display='none';if(p)p.style.display='';}
   function drawBox(){const b=$('#cropBox');if(!b||!cropRect)return;b.style.left=cropRect.x+'px';b.style.top=cropRect.y+'px';b.style.width=cropRect.w+'px';b.style.height=cropRect.h+'px';}
+  function detectCardRect(){
+    // Auto-fit: localize the card by DETAIL DENSITY (edges per row/col). A card is
+    // packed with edges; a table/cloth/letterbox is smooth. Returns a box in IMAGE
+    // coords, or null if not confident (caller falls back to the centered default).
+    try{
+      const iw=cropImg.naturalWidth,ih=cropImg.naturalHeight;
+      const md=300,scl=Math.min(1,md/Math.max(iw,ih));
+      const fw=Math.max(8,Math.round(iw*scl)),fh=Math.max(8,Math.round(ih*scl));
+      const wc=document.createElement('canvas');wc.width=fw;wc.height=fh;
+      const wx=wc.getContext('2d');wx.drawImage(cropImg,0,0,fw,fh);
+      const data=wx.getImageData(0,0,fw,fh).data,G=(i)=>data[i]+data[i+1]+data[i+2];
+      const rowE=new Float32Array(fh),colE=new Float32Array(fw);
+      for(let y=0;y<fh;y+=2){let prev=G((y*fw)*4);
+        for(let x=1;x<fw;x++){const v=G((y*fw+x)*4),dd=v>prev?v-prev:prev-v;rowE[y]+=dd;colE[x]+=dd;prev=v;}}
+      function bounds(arr,len){let mx=0;for(let i=0;i<len;i++)if(arr[i]>mx)mx=arr[i];
+        if(mx<=0)return null;const thr=mx*0.16;let lo=0,hi=len-1;
+        for(let i=0;i<len;i++){if(arr[i]>thr){lo=i;break;}}
+        for(let i=len-1;i>=0;i--){if(arr[i]>thr){hi=i;break;}}return [lo,hi];}
+      const rb=bounds(rowE,fh),cb=bounds(colE,fw);if(!rb||!cb)return null;
+      const top=rb[0],bot=rb[1],left=cb[0],right=cb[1];
+      if(bot-top<fh*0.25||right-left<fw*0.22)return null;
+      return {x:left/scl,y:top/scl,w:(right-left)/scl,h:(bot-top)/scl};
+    }catch(e){return null;}
+  }
   function layoutCrop(){
     if(!cropImg)return;const wrap=$('#cropWrap');const W=wrap.clientWidth,H=wrap.clientHeight;
     const pw=cropImg.naturalWidth,ph=cropImg.naturalHeight,scale=Math.min(W/pw,H/ph);
     const dw=pw*scale,dh=ph*scale,ox=(W-dw)/2,oy=(H-dh)/2;cropDisp={x:ox,y:oy,w:dw,h:dh,scale:scale};
     const cv=$('#cropCanvas');cv.width=Math.round(dw);cv.height=Math.round(dh);cv.style.left=ox+'px';cv.style.top=oy+'px';
     cv.getContext('2d').drawImage(cropImg,0,0,dw,dh);
-    let bh=dh*0.74,bw=bh*63/88;if(bw>dw*0.92){bw=dw*0.92;bh=bw*88/63;}
-    cropRect={x:ox+(dw-bw)/2,y:oy+(dh-bh)/2,w:bw,h:bh};drawBox();
+    const det=detectCardRect();
+    if(det){
+      const cx=ox+(det.x+det.w/2)*scale,cy=oy+(det.y+det.h/2)*scale;
+      let bw=det.h*scale*63/88;if(bw>det.w*scale)bw=det.w*scale;let bh=bw*88/63;
+      bw*=1.05;bh*=1.05;
+      if(bw>dw*0.98){bw=dw*0.98;bh=bw*88/63;}if(bh>dh*0.98){bh=dh*0.98;bw=bh*63/88;}
+      let bx=cx-bw/2,by=cy-bh/2;
+      bx=Math.max(ox,Math.min(bx,ox+dw-bw));by=Math.max(oy,Math.min(by,oy+dh-bh));
+      cropRect={x:bx,y:by,w:bw,h:bh};
+    }else{
+      let bh=dh*0.74,bw=bh*63/88;if(bw>dw*0.92){bw=dw*0.92;bh=bw*88/63;}
+      cropRect={x:ox+(dw-bw)/2,y:oy+(dh-bh)/2,w:bw,h:bh};
+    }
+    drawBox();
   }
   function doCrop(){
     if(!cropImg||!cropDisp||!cropRect)return;const d=cropDisp;
