@@ -456,7 +456,8 @@ const FeeCalc=(function(){
   function net(a,k){const c=channels[k];if(!c||a<=0)return{fees:0,net:a};const fees=a*(c.pct/100)+c.flat;return{fees,net:a-fees};}
   return{channels,net};
 })();
-const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
+let _stWarn=false;
+const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){if(!_stWarn){_stWarn=true;try{if(typeof toast==='function')toast('Storage full - export a backup to avoid losing data.');}catch(_){}}}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
 
 /* ===== PREMIUM ===== */
 const Premium=(function(){
@@ -614,7 +615,7 @@ let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
 const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{const c=FeeCalc.channels[k],v=savedFees[k];if(c&&v){if(typeof v.pct==='number')c.pct=v.pct;if(typeof v.flat==='number')c.flat=v.flat;}});
 
 function resolveItem(key){return manualItems[key]||PriceEngine.getItem(key);}
-function priceOf(key){return manualItems[key]?manualItems[key].price:PriceEngine.getPrice(key);}
+function priceOf(key){const v=manualItems[key]?manualItems[key].price:PriceEngine.getPrice(key);return +v||0;}
 function pileValue(arr){return arr.reduce((s,p)=>s+priceOf(p.key)*p.qty,0);}
 
 function syncLangSeg(){$$('#langSeg button').forEach(x=>x.classList.toggle('on',x.dataset.lang===lang));}
@@ -1084,7 +1085,7 @@ $('#gBrand').innerHTML=Object.entries(SLAB_BRANDS).map(([k,b])=>`<option value="
 function tierLabel(t){return t.label+(t.paused?' · paused':'');}
 function applyTier(){const tiers=SLAB_BRANDS[gBrandSel].tiers,cur=$('#gService').value,t=tiers[cur];
   Slab.fee=t.fee;Slab.days=t.days;
-  $('#tFee').textContent='$'+t.fee;
+  $('#tFee').textContent=usd(t.fee);
   $('#tDays').textContent=t.days+(t.paused?' ⏸':'');
   renderGrade();}
 function fillTiers(sel){const tiers=SLAB_BRANDS[gBrandSel].tiers;
@@ -1203,7 +1204,7 @@ function renderGrade(){
   grades.forEach(([g,v,id])=>{
     const f=effectiveFee(v),up=f>(Slab.fee||0);if(up)anyUp=true;
     const delta=(v-(f+ship))-raw;
-    const el=$('#'+id);el.textContent=(delta>=0?'+':'\u2212')+'$'+Math.abs(Math.round(delta)).toLocaleString()+(up?' ⚠':'');
+    const el=$('#'+id);el.textContent=(delta>=0?'+':'\u2212')+usd(Math.abs(Math.round(delta)))+(up?' ⚠':'');
     el.className=delta>=0?'pos':'neg';
     if(delta>=0)breakeven=g;
   });
@@ -1310,8 +1311,7 @@ const Scanner=(function(){
   }
   function loadTesseract(){return loadScript();}
   let quickMode=false;
-  function setMode(q){quickMode=q;const qb=$('#scanModeQuick'),ab=$('#scanModeAdd');
-    if(qb&&ab){qb.classList.toggle('on',q);ab.classList.toggle('on',!q);}}
+  function setMode(q){quickMode=q;}
   let lastQuick=false;
   // Native camera capture: launches the phone's real camera app for a full-res photo.
   // This is the ONLY way to get the S24's actual 50MP sensor + processing on the web —
@@ -1558,7 +1558,7 @@ const Scanner=(function(){
             ordered=hits.slice().sort((a,b)=>((numMatchId(a.id,num,key)?0:1)-(numMatchId(b.id,num,key)?0:1))||(a.dist-b.dist));}
         }
         const items=[];for(const h of ordered){const it=PriceEngine.getItem(h.id);if(it)items.push(it);}
-        if(items.length){close();showScanResults(items,'image match');return;}
+        if(items.length){close();(lastQuick?showQuickCheck:showScanResults)(items,'image match');return;}
       }
     }
     processPhoto(card);
