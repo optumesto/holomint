@@ -155,6 +155,20 @@
   .weight{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
   .wleg{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
   .empty{text-align:center;color:var(--ink3);font-size:13px;padding:18px 0;font-style:italic}
+  .live-head{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:12px 2px 6px;font-family:var(--mono)}
+  .live-head:first-child{margin-top:2px}
+  .drop-live{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+  .drop-live:last-child{border-bottom:none}
+  .dl-body{flex:1;min-width:0}
+  .dl-t{display:block;color:var(--ink);font-weight:600;font-size:13.5px;text-decoration:none;line-height:1.3;overflow-wrap:anywhere}
+  a.dl-t:hover,a.dl-t:active{color:var(--gold)}
+  .dl-sub{color:var(--ink2);font-size:11.5px;margin-top:2px;font-family:var(--mono)}
+  .dl-meta{color:var(--ink3);font-size:10.5px;margin-top:3px;font-family:var(--mono)}
+  .dl-empty{color:var(--ink3);font-size:12.5px;padding:8px 2px;line-height:1.45}
+  .lk{flex:none;font-size:8.5px;font-weight:700;letter-spacing:.05em;padding:3px 6px;border-radius:5px;margin-top:1px;font-family:var(--mono)}
+  .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
+  .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
+  .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
   .banner{background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
   .banner p{flex:1;font-size:13px;color:var(--ink2);margin:0}
   .lockcard{position:relative;overflow:hidden}
@@ -856,6 +870,52 @@ function renderTax(){
 /* Drops — local release reminders; day-before alarm ships as a calendar event */
 let drops=Store.load('drops',[]);
 function saveDrops(){Store.save('drops',drops);}
+/* HTML-escape + relative time — used by the live drops feed (scraped titles) */
+function esc(s){s=String(s==null?'':s);return s.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;').split("'").join('&#39;');}
+function timeAgo(ms){var x=Math.max(0,(Date.now()-ms)/1000);if(x<45)return'just now';var m=x/60;if(m<60)return Math.floor(m)+'m ago';var h=m/60;if(h<24)return Math.floor(h)+'h ago';return Math.floor(h/24)+'d ago';}
+/* Live drops — pulls the restock / queue / signal feed from the Holomint Worker */
+const LiveDrops=(function(){
+  const FEED_URL='https://holomint-feed.mmilliard2516.workers.dev/api/drops';
+  const MAXAGE=7*24*3600; // seconds — hide events older than a week (also hides the old test event)
+  let cache=Store.load('liveDrops',[]),timer=null;
+  function recent(){
+    var now=Date.now()/1000;
+    return (cache||[]).filter(function(e){return e&&typeof e.ts==='number'&&(now-e.ts)<MAXAGE;})
+      .sort(function(a,b){return (b.received_at||b.ts*1000)-(a.received_at||a.ts*1000);});
+  }
+  function changed(a,b){a=a||[];b=b||[];if(a.length!==b.length)return true;return ((a[0]||{}).event_id)!==((b[0]||{}).event_id);}
+  async function refresh(){
+    try{
+      var r=await fetch(FEED_URL,{cache:'no-store'});
+      if(!r.ok)return;
+      var j=await r.json();
+      var next=(j&&j.drops)||[];
+      if(changed(cache,next)){cache=next;Store.save('liveDrops',cache);if(typeof renderDrops==='function')renderDrops();}
+    }catch(e){/* offline — keep the cached feed */}
+  }
+  function badge(k){return k==='queue'?'QUEUE':k==='restock'?'RESTOCK':'SIGNAL';}
+  function kc(k){return (k==='queue'||k==='restock'||k==='signal')?k:'signal';}
+  function row(e){
+    var url=String(e.url||''),safe=(url.slice(0,8)==='https://'||url.slice(0,7)==='http://')?url:'';
+    var title=esc(e.title||'Drop');
+    var when=e.received_at?timeAgo(e.received_at):(e.ts?timeAgo(e.ts*1000):'');
+    var meta=[esc(e.source||''),when].filter(Boolean).join(' · ');
+    var sub='';
+    if(e.kind==='restock'&&e.product){
+      var pt=esc(e.product.type||''),rt=(typeof e.product.retail==='number')?(' · ~$'+e.product.retail.toFixed(2)):'';
+      if(pt||rt)sub='<div class="dl-sub">'+pt+rt+'</div>';
+    }
+    var tt=safe?('<a class="dl-t" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+title+'</a>'):('<span class="dl-t">'+title+'</span>');
+    return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+'<div class="dl-meta">'+meta+'</div></div></div>';
+  }
+  function html(){
+    var list=recent();
+    if(!list.length)return '<div class="dl-empty">No live drops right now — Pokémon Center restocks, queues, and signals land here automatically.</div>';
+    return list.map(row).join('');
+  }
+  function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(function(){if(document.visibilityState==='visible')refresh();},60000);}
+  return {refresh:refresh,html:html,start:start,recent:recent};
+})();
 function icsFor(d){
   const dt=d.date.replace(/-/g,'');
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Holomint//EN','BEGIN:VEVENT',
@@ -868,15 +928,15 @@ function icsFor(d){
 }
 function renderDrops(){
   const body=$('#dropsBody');
-  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases and restocks with day-before calendar reminders. Live retail drops (Pok\u00e9mon Center and more) coming.');wireLocks();return;}
-  if(!drops.length){body.innerHTML='<div class="empty">No drops tracked</div>';return;}
+  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases with day-before calendar reminders \u2014 plus a live feed of Pok\u00e9mon Center restocks, queues, and signals the moment they hit.');wireLocks();return;}
   const today=new Date();today.setHours(0,0,0,0);
-  body.innerHTML=[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
+  const manualHtml=!drops.length?'<div class="empty">No releases tracked yet</div>':[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
     const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
     const when=days<0?'passed':days===0?'today':days===1?'tomorrow':'in '+days+'d';
     const hot=days>=0&&days<=1;
     return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:10px;color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:8px"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
   }).join('');
+  body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="live-head">Tracked releases</div>'+manualHtml;
   body.querySelectorAll('[data-ics]').forEach(b=>b.onclick=()=>{const d=drops.find(x=>x.id===b.dataset.ics);if(d){icsFor(d);toast('Calendar event saved — alarm set for the day before');}});
   body.querySelectorAll('[data-deldrop]').forEach(b=>b.onclick=()=>{drops=drops.filter(x=>x.id!==b.dataset.deldrop);saveDrops();renderDrops();});
 }
@@ -1221,7 +1281,7 @@ $$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrad
 $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
-renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
