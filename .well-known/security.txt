@@ -1,0 +1,15 @@
+# Holomint (Optume Ventures LLC)
+# https://holomint.app
+
+Contact: mailto:mmmilliard@optumeventures.com
+Expires: 2027-07-12T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://holomint.app/.well-known/security.txt
+Policy: https://holomint.app/terms.html
+
+# Holomint is a local-first PWA. Collection and portfolio data are stored in the
+# browser on the user's own device and are never transmitted to us. Payments are
+# handled by Polar as merchant of record; we never receive card details.
+#
+# If you have found a vulnerability, please email the address above before
+# disclosing publicly. We will respond.
