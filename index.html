@@ -536,19 +536,40 @@ const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))
 
 /* ===== PREMIUM ===== */
 const Premium=(function(){
+  const API='https://holomint-feed.mmilliard2516.workers.dev';
   let lic=Store.load('license',null);
   function active(){return !!(lic&&lic.valid);}
-  /* DROP-IN: replace validate() with a Lemon Squeezy license call:
-     POST https://api.lemonsqueezy.com/v1/licenses/validate {license_key}
-     -> set valid from response. Local format check stands in until then. */
+
+  // Server-side. A client-side regex was never a licence check, it was a suggestion.
   async function validate(key){
     key=(key||'').trim();
-    const ok=/^HF-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(key);
-    if(ok){lic={key,valid:true,at:Date.now()};Store.save('license',lic);}
-    return ok;
+    if(!key)return false;
+    try{
+      const r=await fetch(API+'/api/license?k='+encodeURIComponent(key),{cache:'no-store'});
+      const d=await r.json();
+      if(d&&d.valid){lic={key,valid:true,at:Date.now()};Store.save('license',lic);return true;}
+      return false;
+    }catch(e){return false;}   // cannot reach the server: cannot activate
   }
+
+  // Re-check a cached licence on boot. This is how a cancelled subscription stops working.
+  // FAILS OPEN on a network error: an offline user must never lose Pro just for being offline.
+  // Only an explicit valid:false from the server clears it.
+  async function recheck(){
+    if(!lic||!lic.key)return;
+    try{
+      const r=await fetch(API+'/api/license?k='+encodeURIComponent(lic.key),{cache:'no-store'});
+      const d=await r.json();
+      if(d&&d.valid===false){
+        clear();
+        try{renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();}catch(e){}
+        toast('Pro key is no longer valid.');
+      }
+    }catch(e){/* offline: keep Pro */}
+  }
+
   function clear(){lic=null;Store.save('license',null);}
-  return{active,validate,clear,key:()=>lic&&lic.key};
+  return{active,validate,clear,recheck,key:()=>lic&&lic.key};
 })();
 let acct=Store.load('acct',{method:'fifo'});
 
@@ -728,6 +749,18 @@ const Alerts=(function(){
     render();
   }
 
+  // Called whenever the license changes. The tier is written server-side at subscribe
+  // time, so without this a user who upgrades stays tier='free' in D1 and keeps getting
+  // 10-minute-late alerts after paying. Works in reverse too, if a license lapses.
+  async function resync(){
+    const sub=await current();
+    if(!sub){render();return;}
+    try{
+      await fetch(FEED_API+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload(sub))});
+    }catch(e){}
+    render();
+  }
+
   async function push(){
     const sub=await current();
     if(!sub)return;
@@ -774,7 +807,7 @@ const Alerts=(function(){
       if(e.data&&e.data.type==='drop-open'&&e.data.url)location.href=e.data.url;
     });
   }
-  return {render,wire,enable,disable};
+  return {render,wire,enable,disable,resync};
 })();
 
 /* ---- PRO sheet ---- */
@@ -807,17 +840,23 @@ $('#proBtn').onclick=()=>{
         '<div class="feat"><i>✓</i> Drop tracker with day-before reminders</div>'+
         '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
       {key:'key',label:'License key',placeholder:'HF-XXXX-XXXX-XXXX'},
+      {type:'static',html:Premium.active()?'<button class="ghost" id="proClear" style="width:100%;margin-top:-4px">Remove Pro key</button>':''},
       {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
       {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
       {type:'static',html:DATA_ROW}
     ],'Save',async out=>{
       FX={code:out.cur,rate:out.rate>0?out.rate:1};Store.save('fx',FX);
       recompute();renderPortfolio();renderGrade();
-      if(out.key){const ok=await Premium.validate(out.key);toast(ok?'Pro activated':'Invalid key');renderProBtn();renderPortfolio();}
+      if(out.key){const ok=await Premium.validate(out.key);toast(ok?'Pro activated':'Invalid key');renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();}
       else toast('Saved');
     });
   }
   wireData();
+  const pc=$('#proClear');
+  if(pc)pc.onclick=()=>{
+    Premium.clear();Sheet.close();toast('Pro key removed');
+    renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();
+  };
 };
 
 /* ---- TRADE BLOCK ---- */
@@ -1585,7 +1624,7 @@ $$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrad
 $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
-renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
