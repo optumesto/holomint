@@ -180,6 +180,10 @@
   .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
   .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
   .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
+  .dl-lock{opacity:.72}
+  .lk-locked{background:rgba(255,255,255,.05);color:var(--ink3);border:1px dashed var(--line)}
+  .dl-lock .dl-title{color:var(--ink3);font-style:italic}
+  .dl-cd{font-family:var(--mono);color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums}
   .dl-flip{margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--ink2);line-height:1.35}
   .dl-flip.pos{color:var(--up)}
   .dl-flip .mk{color:var(--ink3)}
@@ -312,6 +316,39 @@
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Back up / restore</span><div class="row" style="gap:6px"><button class="ghost" id="setBkBtn" style="padding:8px 12px">Back up</button><button class="ghost" id="setRsBtn" style="padding:8px 12px">Restore</button></div></div>
     </div>
+
+    <div class="card" id="alertCard">
+      <div class="row between colhead" data-col="alertCard"><label style="margin:0">Drop alerts <span class="chip pro">pro</span><button class="hint" data-hint="alerts" aria-label="What is this?">i</button></label><span class="chev">&#9662;</span></div>
+      <div class="colbody">
+        <div id="alertState"></div>
+        <div id="alertPrefs" style="display:none">
+          <div class="field">
+            <label>Only wake me above</label>
+            <div class="row" style="gap:8px">
+              <div style="flex:1"><input id="alMinProfit" type="number" inputmode="decimal" step="1" placeholder="25"><div class="sub">$ net profit</div></div>
+              <div style="flex:1"><input id="alMinRoi" type="number" inputmode="decimal" step="1" placeholder="20"><div class="sub">% ROI</div></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Quiet hours</label>
+            <div class="row" style="gap:8px">
+              <div style="flex:1"><input id="alQs" type="number" inputmode="numeric" min="0" max="23" placeholder="23"><div class="sub">from (24h)</div></div>
+              <div style="flex:1"><input id="alQe" type="number" inputmode="numeric" min="0" max="23" placeholder="7"><div class="sub">to (24h)</div></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Max alerts per day</label>
+            <input id="alCap" type="number" inputmode="numeric" min="1" max="20" placeholder="8">
+            <div class="sub">A hard ceiling. Protects the alert permission from a threshold set too low.</div>
+          </div>
+          <div class="row" style="gap:8px;margin-top:4px">
+            <button class="ghost" id="alSave" style="flex:1">Save</button>
+            <button class="ghost" id="alOff" style="flex:1">Turn off alerts</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="row between" style="padding:6px 0"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -615,9 +652,130 @@ const HINTS={
   fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>12.5% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:10px'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
   flip:["Flip margin","<p>For each restock, Holomint matches the product to its sealed listing in the catalog, takes the current market price, subtracts your channel fees, and compares the result against the listed retail.</p><p style='margin-top:8px'><b>Green</b> means it clears fees at today's market. <b>Dim</b> means it does not.</p><p style='margin-top:8px'>Market prices come from third-party data and refresh daily, so they can move before you sell. Pre-orders are the least reliable. If Holomint cannot match a product with confidence, it shows no margin at all rather than guessing.</p><p style='margin-top:8px'><b>Estimates only. Not financial advice.</b></p>"],
   tax:["Tax summary","<p>Realized profit and loss by year, using the cost basis you entered and the net you actually received after fees.</p><p style='margin-top:8px'>Only sold items count. Holdings you still own are unrealized and do not appear here.</p><p style='margin-top:8px'>Lot accounting (FIFO or LIFO) is set in Pro settings. It decides which cost basis is used when you sell part of a stack.</p><p style='margin-top:8px'>This is a summary for your own records. It is not tax advice.</p>"],
+  alerts:["Drop alerts","<p>Your phone buzzes when a restock lands with real margin in it, <b>even when Holomint is closed</b>. No need to keep the app open.</p><p style='margin-top:8px'>Holomint matches the drop to its sealed listing, prices it against your fee channel, and only wakes you if it clears <b>both</b> of your floors: net profit and ROI.</p><p style='margin-top:8px'>Free restock bots ping you for everything. This one stays quiet unless there is money in it.</p><p style='margin-top:8px'>A hard daily cap applies no matter how low you set the floors, so a bad setting cannot spam you into muting the app.</p>"],
   deal:["Deal log","<p>Every buy and trade you archive, with the date and what you paid or received.</p><p style='margin-top:8px'>Useful for reconstructing a deal months later, or exporting your full history to CSV.</p>"],
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hint]');if(!b)return;e.preventDefault();e.stopPropagation();const h=HINTS[b.dataset.hint];if(h)Sheet.info(h[0],h[1]);},true);
+
+/* ---- Drop alerts (Web Push) --------------------------------------------
+   The service worker receives these with the app CLOSED. That is the whole
+   point: a restock feed you have to sit and watch is not a product.        */
+const VAPID_PUBLIC = 'BARRiGidgkZWMEBkg9-q8sQVB_w5g7N5JUczl6JJSDpmFJkl-ctu4brTEutHbpABSDh9A6rhV932BUNG3CfqJqo';
+const FEED_API = 'https://holomint-feed.mmilliard2516.workers.dev';
+
+const Alerts=(function(){
+  const b64=s=>{const pad='='.repeat((4-s.length%4)%4);const b=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;};
+  const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
+  const capable=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+
+  const prefs=()=>Object.assign({minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
+  const savePrefs=p=>Store.save('alertPrefs',p);
+
+  function payload(sub){
+    const p=prefs();
+    return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',
+      prefs:{channel:channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'],
+        quietStart:+p.quietStart,quietEnd:+p.quietEnd,dailyCap:+p.dailyCap,
+        tzOffset:-new Date().getTimezoneOffset()}};
+  }
+
+  async function current(){
+    if(!capable())return null;
+    try{
+      // serviceWorker.ready never rejects: if registration failed it just hangs
+      // forever, which would leave the alerts card silently blank. Time it out.
+      const reg=await Promise.race([navigator.serviceWorker.ready,
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('sw timeout')),3000))]);
+      return await reg.pushManager.getSubscription();
+    }catch(e){return null;}
+  }
+
+  // 'unsupported' | 'ios-install' | 'ios-safari' | 'pro' | 'blocked' | 'off' | 'on'
+  async function status(){
+    if(isIOS()&&inApp())return 'ios-safari';
+    if(isIOS()&&!standalone())return 'ios-install';
+    if(!capable())return 'unsupported';
+    if(Notification.permission==='denied')return 'blocked';
+    if(!(await current()))return 'off';
+    return Premium.active()?'on-pro':'on-free';
+  }
+
+  async function enable(){
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){toast('Alerts not allowed. You can change this in browser settings.');render();return;}
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID_PUBLIC)});
+    const r=await fetch(FEED_API+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload(sub))});
+    if(!r.ok){
+      toast('Could not turn on alerts. Try again.');
+      try{await sub.unsubscribe();}catch(e){}
+      render();return;
+    }
+    toast(Premium.active()?'Drop alerts on. Holomint can be closed.':'Alerts on. Free alerts arrive 10 minutes late.');
+    render();
+  }
+
+  async function disable(){
+    const sub=await current();
+    if(sub){
+      try{await fetch(FEED_API+'/api/unsubscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})});}catch(e){}
+      try{await sub.unsubscribe();}catch(e){}
+    }
+    toast('Drop alerts off.');
+    render();
+  }
+
+  async function push(){
+    const sub=await current();
+    if(!sub)return;
+    try{
+      const r=await fetch(FEED_API+'/api/prefs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint,prefs:payload(sub).prefs})});
+      toast(r.ok?'Alert settings saved.':'Could not save settings.');
+    }catch(e){toast('Could not save settings.');}
+  }
+
+  async function render(){
+    const box=$('#alertState'),pane=$('#alertPrefs');
+    if(!box)return;
+    let st,p;
+    try{ st=await status(); p=prefs(); }
+    catch(e){ box.innerHTML='<div class="sub">Alerts are unavailable right now.</div>'; return; }
+    pane.style.display=(st==='on-pro')?'':'none';
+    if(st==='on-pro'){
+      $('#alMinProfit').value=p.minProfit;$('#alMinRoi').value=p.minRoi;
+      $('#alQs').value=p.quietStart;$('#alQe').value=p.quietEnd;$('#alCap').value=p.dailyCap;
+    }
+    const msg={
+      'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
+      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes</b>. By the time a free alert reaches you, the drop is usually gone. Pro gets the same alert the second it lands.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>',
+      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free alerts arrive 10 minutes late.</b> Pro alerts are instant.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>',
+      'blocked':'<div class="sub">Notifications are blocked for this site. Re-allow them in your browser settings, then come back.</div>',
+      'unsupported':'<div class="sub">This browser cannot receive push notifications.</div>',
+      'ios-install':'<div class="sub"><b style="color:var(--ink2)">Add Holomint to your Home Screen first.</b><br>On iPhone, alerts only work for installed apps.<br><br>1. Tap the Share button in Safari<br>2. Scroll and tap <b style="color:var(--ink2)">Add to Home Screen</b><br>3. Open Holomint from the new icon<br>4. Come back here and turn alerts on</div>',
+      'ios-safari':'<div class="sub"><b style="color:var(--ink2)">Open Holomint in Safari first.</b><br>You are in an in-app browser, which cannot install apps or receive alerts.<br><br>Tap the menu and choose <b style="color:var(--ink2)">Open in Safari</b>, then add Holomint to your Home Screen.</div>'
+    }[st]||'';
+    box.innerHTML=msg;
+    const on=$('#alOn'); if(on)on.onclick=enable;
+    const pro=$('#alPro'); if(pro)pro.onclick=()=>$('#proBtn').click();
+    const off2=$('#alOff2'); if(off2)off2.onclick=disable;
+  }
+
+  function wire(){
+    const s=$('#alSave'),o=$('#alOff');
+    if(s)s.onclick=()=>{savePrefs({minProfit:+$('#alMinProfit').value||25,minRoi:+$('#alMinRoi').value||20,
+      quietStart:+$('#alQs').value||0,quietEnd:+$('#alQe').value||0,dailyCap:Math.min(20,Math.max(1,+$('#alCap').value||8))});push();};
+    if(o)o.onclick=disable;
+    // the SW tells us when the browser rotates a subscription out from under us
+    if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{
+      if(e.data&&e.data.type==='push-resubscribe'&&Premium.active())enable();
+      if(e.data&&e.data.type==='drop-open'&&e.data.url)location.href=e.data.url;
+    });
+  }
+  return {render,wire,enable,disable};
+})();
 
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
@@ -993,18 +1151,24 @@ const SetMatch=(function(){
   return {match:match, flip:flip};
 })();
 const LiveDrops=(function(){
+  let cdTimer=null;
   const FEED_URL='https://holomint-feed.mmilliard2516.workers.dev/api/drops';
+  const feedUrl=()=>FEED_URL+(Premium.key()?'?k='+encodeURIComponent(Premium.key()):'');
   const MAXAGE=7*24*3600; // seconds. hide events older than a week (also hides the old test event)
   let cache=Store.load('liveDrops',[]),timer=null;
   function recent(){
     var now=Date.now()/1000;
-    return (cache||[]).filter(function(e){return e&&typeof e.ts==='number'&&(now-e.ts)<MAXAGE;})
-      .sort(function(a,b){return (b.received_at||b.ts*1000)-(a.received_at||a.ts*1000);});
+    return (cache||[]).filter(function(e){
+      if(!e)return false;
+      // redacted stubs carry no ts on purpose: the Worker strips everything but the clock
+      if(e.redacted)return typeof e.received_at==='number'&&(Date.now()-e.received_at)<MAXAGE*1000;
+      return typeof e.ts==='number'&&(now-e.ts)<MAXAGE;
+    }).sort(function(a,b){return (b.received_at||b.ts*1000)-(a.received_at||a.ts*1000);});
   }
   function changed(a,b){a=a||[];b=b||[];if(a.length!==b.length)return true;return ((a[0]||{}).event_id)!==((b[0]||{}).event_id);}
   async function refresh(){
     try{
-      var r=await fetch(FEED_URL,{cache:'no-store'});
+      var r=await fetch(feedUrl(),{cache:'no-store'});
       if(!r.ok)return;
       var j=await r.json();
       var next=(j&&j.drops)||[];
@@ -1014,6 +1178,13 @@ const LiveDrops=(function(){
   function badge(k){return k==='queue'?'QUEUE':k==='restock'?'RESTOCK':'SIGNAL';}
   function kc(k){return (k==='queue'||k==='restock'||k==='signal')?k:'signal';}
   function row(e){
+    if(e.redacted){
+      return '<div class="drop-live dl-lock" data-unlock="'+e.unlocks_at+'">'
+        +'<span class="lk lk-locked">LOCKED</span>'
+        +'<div class="dl-body"><div class="dl-title">A drop occurred</div>'
+        +'<div class="dl-sub">Unlocking in <b class="dl-cd" data-cd="'+e.unlocks_at+'">--:--</b></div>'
+        +'<div class="dl-meta">Pro sees this the second it lands</div></div></div>';
+    }
     var url=String(e.url||''),safe=(url.slice(0,8)==='https://'||url.slice(0,7)==='http://')?url:'';
     var title=esc(e.title||'Drop');
     var when=e.received_at?timeAgo(e.received_at):(e.ts?timeAgo(e.ts*1000):'');
@@ -1033,8 +1204,22 @@ const LiveDrops=(function(){
     if(!list.length)return '<div class="dl-empty">No live drops right now. Pokémon Center restocks, queues, and signals land here automatically.</div>';
     return list.map(row).join('');
   }
-  function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(function(){if(document.visibilityState==='visible')refresh();},60000);}
-  return {refresh:refresh,html:html,start:start,recent:recent};
+  function tick(){
+    document.querySelectorAll('.dl-cd').forEach(el=>{
+      const left=(+el.dataset.cd)-Date.now();
+      if(left<=0){el.textContent='now';refresh();return;}
+      const m=Math.floor(left/60000),sec=Math.floor((left%60000)/1000);
+      el.textContent=m+':'+String(sec).padStart(2,'0');
+    });
+  }
+  function start(){
+    refresh();
+    if(timer)clearInterval(timer);
+    timer=setInterval(function(){if(document.visibilityState==='visible')refresh();},60000);
+    if(cdTimer)clearInterval(cdTimer);
+    cdTimer=setInterval(function(){if(document.visibilityState==='visible')tick();},1000);
+  }
+  return {refresh:refresh,html:html,start:start,recent:recent,tick:tick};
 })();
 function icsFor(d){
   const dt=d.date.replace(/-/g,'');
@@ -1048,7 +1233,6 @@ function icsFor(d){
 }
 function renderDrops(){
   const body=$('#dropsBody');
-  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases with day-before calendar reminders, plus a live feed of Pok\u00e9mon Center restocks, queues, and signals the moment they hit.');wireLocks();return;}
   const today=new Date();today.setHours(0,0,0,0);
   const manualHtml=!drops.length?'<div class="empty">No releases tracked yet</div>':[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
     const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
@@ -1401,7 +1585,7 @@ $$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrad
 $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
-renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */

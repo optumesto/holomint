@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v54';        // app shell, replaced on every release
+const CACHE = 'holomint-v57';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin — persists across releases
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
@@ -69,5 +69,58 @@ self.addEventListener('fetch', e => {
       caches.open(CACHE).then(c => c.put(e.request, copy)).catch(()=>{});
       return res;
     }).catch(() => hit))
+  );
+});
+
+/* ---------------------------------------------------------------------------
+   Drop alerts (Web Push).
+   This is why the service worker matters: these two handlers fire even when the
+   app is completely closed. The Worker sends an encrypted payload, the browser
+   wakes this SW, and we surface a notification.
+   Note: Chrome requires userVisibleOnly, so every push MUST show something.
+--------------------------------------------------------------------------- */
+
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) {}
+
+  const title = d.title || 'Holomint';
+  const opts = {
+    body: d.body || 'A tracked drop just landed.',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    tag: d.tag || 'holomint-drop',   // collapses repeats for the same product
+    renotify: true,
+    timestamp: d.ts || Date.now(),
+    data: { url: d.url || './' },
+    actions: [{ action: 'open', title: 'Open listing' }]
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      // Prefer an already-open Holomint window over spawning another one.
+      for (const c of list) {
+        if (c.url.includes(self.location.origin) && 'focus' in c) {
+          c.focus();
+          c.postMessage({ type: 'drop-open', url: target });
+          return;
+        }
+      }
+      return self.clients.openWindow(target);
+    })
+  );
+});
+
+/* If the browser rotates a subscription out from under us, tell the app so it
+   can re-register with the Worker instead of silently going dead. */
+self.addEventListener('pushsubscriptionchange', e => {
+  e.waitUntil(
+    self.clients.matchAll({ includeUncontrolled: true })
+      .then(list => list.forEach(c => c.postMessage({ type: 'push-resubscribe' })))
   );
 });
