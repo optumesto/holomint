@@ -12,8 +12,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+  /* type scale: every size in the app is one of these twelve steps */
+  :root{--t1:10px;--t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
+  .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:11px;font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
+  .hint::after{content:'';position:absolute;inset:-9px}   /* 35px touch target, 17px visual */
+  .hint:active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+  .hintbody{font-size:13px;line-height:1.65;color:var(--ink2)}
+  .hintbody b{color:var(--ink);font-weight:600}
+  .hintbody .hrow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
   #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .5s ease,visibility .5s}
   #splash.gone{opacity:0;visibility:hidden}
@@ -37,7 +45,7 @@
   .brand{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.02em;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
   @keyframes holo{to{background-position:240% center}}
-  .probtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:18px;padding:7px 14px;cursor:pointer}
+  .probtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:18px;padding:9px 14px;min-height:34px;cursor:pointer}
   .probtn.on{border-color:transparent;background:var(--holo);background-size:240% auto;color:#101010;font-weight:600;animation:holo 7s linear infinite}
   .netpill{display:none;margin:-6px 0 12px;text-align:center}
   .netpill span{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:4px 12px}
@@ -49,14 +57,15 @@
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .panel.on{animation:fade .32s cubic-bezier(.22,.8,.3,1)}
   .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
-  .seg button{flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+  .seg button{position:relative;flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+  .seg.sm button::after{content:"";position:absolute;inset:-6px 0}  /* touch target without changing the look */
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .seg.sm{width:fit-content;padding:3px;gap:3px;border-radius:8px}
   .seg.sm button{flex:initial;padding:4px 9px;font-size:11px;border-radius:5px}
   .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
   .row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
   .hide{display:none}
-  input,select{font-family:var(--sans);font-size:15px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;outline:none;transition:.15s}
+  input,select{font-family:var(--sans);font-size:14px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;outline:none;transition:.15s}
   input:focus,select:focus{border-color:var(--gold-dim)}input::placeholder{color:var(--ink3)}
   select option{background:var(--bg2);color:var(--ink)}
   .choice{display:flex;flex-direction:column;gap:8px}
@@ -67,13 +76,13 @@
   .choice button.danger b{color:var(--down)}
   .num{font-family:var(--mono);text-align:right}
   label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:5px}
-  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:10px 12px;cursor:pointer;font-size:13px;font-family:var(--sans)}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:10px 12px;min-height:34px;cursor:pointer;font-size:13px;font-family:var(--sans)}
   button.ghost:active{transform:scale(.98)}
   button.ghost.proglow{border:1.5px solid transparent;background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--holo) border-box;background-size:auto,240% auto;color:var(--ink);animation:holo 7s linear infinite}
-  button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:11px;padding:14px;font-family:var(--sans);font-weight:600;font-size:15px;cursor:pointer}
+  button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:11px;padding:14px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
   button.act:active{transform:scale(.99)}button.act:disabled{opacity:.4;cursor:default}
   .btnrow{display:flex;gap:8px}
-  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:20px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:20px;padding:8px 16px;min-height:34px;font-family:var(--mono);font-size:12px;cursor:pointer}
   .swbtn.on{border-color:var(--gold);color:var(--gold);background:#1e1a36}
   .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
   .sidehead .st{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
@@ -81,7 +90,7 @@
   .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.pile-item:last-child{border-bottom:none}
   .pi-name{flex:1;min-width:0}.pi-name .n{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
-  .chip{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
+  .chip{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
   .chip.oop{background:#2a2410;color:var(--gold)}.chip.ip{background:var(--bg3);color:var(--ink3)}
   .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}.chip.raw{background:#2a1626;color:#ff9ad2}.chip.jp{background:#2a1016;color:#ff7e8a}
   .chip.pro{background:var(--holo);background-size:240% auto;color:#101010;animation:holo 7s linear infinite}
@@ -90,7 +99,7 @@
   .results{margin-top:8px;max-height:230px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;display:none}.results.show{display:block}
   .res{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
     .res .rn{font-size:13px}.res .rp{font-family:var(--mono);font-size:12px;color:var(--gold)}
-    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:9px;padding:7px 12px;font-size:13px;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;gap:6px}
+    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:9px;padding:8px 12px;min-height:34px;font-size:13px;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
   .scanbtn:active{transform:scale(.97)}
   #scanModal{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column}
   #scanModal.show{display:flex}
@@ -101,15 +110,15 @@
   #cropBox::before{content:'';position:absolute;inset:0;border-radius:9px;padding:2px;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
   #cropHandle{position:absolute;right:-15px;bottom:-15px;width:36px;height:36px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;border:3px solid var(--bg);box-shadow:0 2px 10px rgba(125,240,200,.35);touch-action:none}
   #cropBar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;z-index:4}
-  #cropMsg{color:#fff;font-family:var(--mono);font-size:12.5px;text-align:center;text-shadow:0 1px 3px #000}
+  #cropMsg{color:#fff;font-family:var(--mono);font-size:12px;text-align:center;text-shadow:0 1px 3px #000}
   #cropGo{max-width:280px}
   #scanClose{z-index:7}
-  #scanStatus{font-family:var(--mono);font-size:15px;color:var(--gold)}
+  #scanStatus{font-family:var(--mono);font-size:14px;color:var(--gold)}
   #scanHint{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-top:8px;max-width:300px}
   .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
   #scanVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
   #scanCapture{position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom));transform:translateX(-50%);width:auto;min-width:210px;z-index:3;box-shadow:0 6px 24px rgba(0,0,0,.5)}
-  #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:12.5px;text-shadow:0 1px 4px #000;z-index:3}
+  #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:12px;text-shadow:0 1px 4px #000;z-index:3}
   .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:12px;text-shadow:0 1px 3px #000}
   .scanbar{position:absolute;bottom:0;left:0;right:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.7))}
   .scancap{width:68px;height:68px;border-radius:50%;background:var(--gold);border:4px solid #1a1407;cursor:pointer}
@@ -129,8 +138,8 @@
   .bigrate{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
   .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}.anchor:last-of-type{border-bottom:none}
   .anchor .al{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
-  .anchor .av{font-family:var(--mono);font-size:17px;font-weight:600}
-  .anchor.hero .av{font-size:22px;color:var(--gold)}
+  .anchor 
+  .anchor.hero .av{font-family:var(--mono);font-size:20px;font-weight:600}
   .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 4px}
   .ch{padding:9px 4px;text-align:center;border-radius:9px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:.15s}
   .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:12px;font-weight:500}.ch .cf{font-family:var(--mono);font-size:10px;color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
@@ -143,32 +152,37 @@
   .feeEdit{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feeEdit>div{flex:1}.feeEdit input{font-size:14px;padding:9px 10px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 input,.grid2 select{font-size:14px;padding:9px 10px}
   table{width:100%;border-collapse:collapse;margin-top:6px}
-  th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
-  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:15px}tr:last-child td{border-bottom:none}
+  th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
+  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:14px}tr:last-child td{border-bottom:none}
   .pos{color:var(--up)}.neg{color:var(--down)}
-  .toolbtn{color:var(--ink3);cursor:pointer;font-size:15px;padding:0 4px}.toolbtn:active{color:var(--ink)}
-  .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:28px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
+  .toolbtn{color:var(--ink3);cursor:pointer;font-size:14px;padding:0 4px}.toolbtn:active{color:var(--ink)}
+  .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:26px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
   .verdict{text-align:center;padding:10px 0 4px}.verdict .vv{font-family:var(--serif);font-size:24px;font-weight:600}.verdict .ve{font-family:var(--mono);font-size:14px;margin-top:4px}
   .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.stat .sl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:5px}.stat .sv{font-family:var(--mono);font-size:21px;font-weight:600}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.stat .sl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:5px}.stat .sv{font-family:var(--mono);font-size:20px;font-weight:600}
   .weight{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
   .wleg{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
   .empty{text-align:center;color:var(--ink3);font-size:13px;padding:18px 0;font-style:italic}
+  a.ghost{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  .dl-note{font-family:var(--mono);font-size:10px;color:var(--ink3);line-height:1.5;margin:8px 2px 2px}
   .live-head{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:12px 2px 6px;font-family:var(--mono)}
   .live-head:first-child{margin-top:2px}
   .drop-live{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
   .drop-live:last-child{border-bottom:none}
   .dl-body{flex:1;min-width:0}
-  .dl-t{display:block;color:var(--ink);font-weight:600;font-size:13.5px;text-decoration:none;line-height:1.3;overflow-wrap:anywhere}
+  .dl-t{display:block;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none;line-height:1.3;overflow-wrap:anywhere}
   a.dl-t:hover,a.dl-t:active{color:var(--gold)}
-  .dl-sub{color:var(--ink2);font-size:11.5px;margin-top:2px;font-family:var(--mono)}
-  .dl-meta{color:var(--ink3);font-size:10.5px;margin-top:3px;font-family:var(--mono)}
-  .dl-empty{color:var(--ink3);font-size:12.5px;padding:8px 2px;line-height:1.45}
-  .lk{flex:none;font-size:8.5px;font-weight:700;letter-spacing:.05em;padding:3px 6px;border-radius:5px;margin-top:1px;font-family:var(--mono)}
+  .dl-sub{color:var(--ink2);font-size:11px;margin-top:2px;font-family:var(--mono)}
+  .dl-meta{color:var(--ink3);font-size:11px;margin-top:3px;font-family:var(--mono)}
+  .dl-empty{color:var(--ink3);font-size:12px;padding:8px 2px;line-height:1.45}
+  .lk{flex:none;font-size:10px;font-weight:600;letter-spacing:.05em;padding:3px 6px;border-radius:5px;margin-top:1px;font-family:var(--mono)}
   .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
   .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
   .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
+  .dl-flip{margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--ink2);line-height:1.35}
+  .dl-flip.pos{color:var(--up)}
+  .dl-flip .mk{color:var(--ink3)}
   .banner{background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
   .banner p{flex:1;font-size:13px;color:var(--ink2);margin:0}
   .lockcard{position:relative;overflow:hidden}
@@ -180,7 +194,7 @@
   .sheetbg.show{opacity:1;pointer-events:auto}
   .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:.3s cubic-bezier(.3,.9,.3,1);z-index:65;max-height:82vh;overflow-y:auto}
   .sheet.show{transform:translateY(0)}
-  .sheet h3{font-family:var(--serif);font-size:19px;font-weight:500;margin-bottom:14px}
+  .sheet h3{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:14px}
   .sheet .field{margin-bottom:12px}
   .holo-line{height:2px;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2);border-radius:2px;width:44px;margin:0 auto 16px}
   .feat{display:flex;gap:10px;align-items:baseline;padding:7px 0;font-size:14px;color:var(--ink2)}
@@ -222,7 +236,7 @@
       <div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
     </div>
     <div class="card" id="sellOptCard">
-      <div class="row between colhead" data-col="sellOptCard"><label style="margin:0">Net by channel</label><span class="chev">▾</span></div>
+      <div class="row between colhead" data-col="sellOptCard"><label style="margin:0">Net by channel<button class="hint" data-hint="fees" aria-label="What is this?">i</button></label><span class="chev">▾</span></div>
       <div class="colbody">
         <div class="row" style="gap:8px;margin-bottom:8px"><input class="num" id="sellOptPrice" type="number" step="0.01" inputmode="decimal" placeholder="Sale price" style="flex:1;padding:9px 10px;font-size:14px"><button class="ghost" id="sellOptPile" style="padding:9px 12px;white-space:nowrap">Use pile</button></div>
         <div id="sellOptList"></div>
@@ -273,15 +287,15 @@
       <div class="colbody"><table><thead><tr><th>Item</th><th>Basis</th><th>Net</th><th>P&amp;L</th><th></th></tr></thead><tbody id="soldBody"></tbody></table></div>
     </div>
     <div class="card" id="dealCard">
-      <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
+      <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span><button class="hint" data-hint="deal" aria-label="What is this?">i</button></label><span class="row" style="gap:8px"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
       <div class="colbody" id="dealBody"></div>
     </div>
     <div class="card" id="dropsCard">
-      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">Drops <span class="chip pro">pro</span></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
+      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">Drops <span class="chip pro">pro</span><button class="hint" data-hint="flip" aria-label="What is this?">i</button></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
       <div class="colbody" id="dropsBody"></div>
     </div>
     <div class="card" id="taxCard">
-      <div class="row between colhead" data-col="taxCard"><label style="margin:0">Tax summary <span class="chip pro">pro</span></label><span class="chev">▾</span></div>
+      <div class="row between colhead" data-col="taxCard"><label style="margin:0">Tax summary <span class="chip pro">pro</span><button class="hint" data-hint="tax" aria-label="What is this?">i</button></label><span class="chev">▾</span></div>
       <div class="colbody" id="taxBody"></div>
     </div>
   </section>
@@ -298,8 +312,17 @@
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Back up / restore</span><div class="row" style="gap:6px"><button class="ghost" id="setBkBtn" style="padding:8px 12px">Back up</button><button class="ghost" id="setRsBtn" style="padding:8px 12px">Restore</button></div></div>
     </div>
+    <div class="card">
+      <div class="row between" style="padding:6px 0"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:8px 14px">Open</a></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:8px 14px">Email</a></div>
+    </div>
     <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.7">
-      Prices from TCGplayer via TCGcsv, refreshed daily. Card data from pokemontcg.io.<br>Independent tool — not affiliated with Nintendo, The Pokémon Company, PSA, CGC, eBay, or TCGplayer.
+      <b style="color:var(--ink2)">Estimates only. Not financial advice.</b> Prices, margins, and profit figures are estimates derived from third-party data and may be inaccurate, incomplete, or out of date. You are solely responsible for your own buying and selling decisions.<br><br>
+      Prices from TCGplayer via TCGcsv, refreshed daily. Card data from pokemontcg.io.<br>
+      Independent tool. Not affiliated with Nintendo, The Pokémon Company, PSA, CGC, eBay, Whatnot, or TCGplayer. All card names, images, and trademarks are the property of their respective owners.<br><br>
+      © Optume Ventures LLC
     </div>
   </section>
 
@@ -462,6 +485,7 @@ const PriceEngine=(function(){
     hasPrice(id){return cache[id]!=null;},
     getItem(id){if(catIndexFor!==catalog){catIndex=new Map();for(const c of catalog)catIndex.set(c.id,c);catIndexFor=catalog;}return catIndex.get(id);},
     getHistory(id){return history[id]||[];},
+    list(){return catalog;},
     loadData
   };
 })();
@@ -564,6 +588,7 @@ const Sheet=(function(){
     return `<div class="field"><label>${f.label}</label><input id="sf-${f.key}" type="${f.type||'text'}" ${f.type==='number'?'inputmode="decimal" class="num"':''} value="${f.value!=null?String(f.value).replace(/"/g,'&quot;'):''}" placeholder="${f.placeholder||''}"></div>`;
   }
   function open(title,fields,okLabel,cb){
+    $('#sheetCancel').textContent='Cancel';
     $('#sheetTitle').textContent=title;
     $('#sheetBody').innerHTML=fields.map(field).join('');
     $('#sheetOk').textContent=okLabel||'Save';$('#sheetOk').style.display=(okLabel==='Cancel')?'none':'';$('#sheetCancel').style.flex=(okLabel==='Cancel')?'1':'';
@@ -574,8 +599,25 @@ const Sheet=(function(){
   function close(){$('#sheetbg').classList.remove('show');$('#sheet').classList.remove('show');okFn=null;}
   $('#sheetCancel').onclick=close;$('#sheetbg').onclick=close;
   $('#sheetOk').onclick=()=>{if(okFn)okFn();};
-  return{open,close};
+  function info(title,html){
+    $('#sheetTitle').textContent=title;
+    $('#sheetBody').innerHTML='<div class="hintbody">'+html+'</div>';
+    $('#sheetOk').style.display='none';
+    $('#sheetCancel').textContent='Got it';$('#sheetCancel').style.flex='1';
+    okFn=null;
+    $('#sheetbg').classList.add('show');$('#sheet').classList.add('show');
+  }
+  return{open,close,info};
 })();
+
+/* ---- Hints: tap-to-open explainers (hover tooltips do not exist on touch) ---- */
+const HINTS={
+  fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>12.5% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:10px'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
+  flip:["Flip margin","<p>For each restock, Holomint matches the product to its sealed listing in the catalog, takes the current market price, subtracts your channel fees, and compares the result against the listed retail.</p><p style='margin-top:8px'><b>Green</b> means it clears fees at today's market. <b>Dim</b> means it does not.</p><p style='margin-top:8px'>Market prices come from third-party data and refresh daily, so they can move before you sell. Pre-orders are the least reliable. If Holomint cannot match a product with confidence, it shows no margin at all rather than guessing.</p><p style='margin-top:8px'><b>Estimates only. Not financial advice.</b></p>"],
+  tax:["Tax summary","<p>Realized profit and loss by year, using the cost basis you entered and the net you actually received after fees.</p><p style='margin-top:8px'>Only sold items count. Holdings you still own are unrealized and do not appear here.</p><p style='margin-top:8px'>Lot accounting (FIFO or LIFO) is set in Pro settings. It decides which cost basis is used when you sell part of a stack.</p><p style='margin-top:8px'>This is a summary for your own records. It is not tax advice.</p>"],
+  deal:["Deal log","<p>Every buy and trade you archive, with the date and what you paid or received.</p><p style='margin-top:8px'>Useful for reconstructing a deal months later, or exporting your full history to CSV.</p>"],
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-hint]');if(!b)return;e.preventDefault();e.stopPropagation();const h=HINTS[b.dataset.hint];if(h)Sheet.info(h[0],h[1]);},true);
 
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
@@ -589,8 +631,8 @@ const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();co
 $('#proBtn').onclick=()=>{
   if(Premium.active()){
     Sheet.open('Settings',[
-      {type:'static',html:`<div class="feat"><i>✓</i> Pro active — ${Premium.key()}</div>`},
-      {key:'method',label:'Lot accounting',type:'select',value:acct.method,options:[['fifo','FIFO — first in, first out'],['lifo','LIFO — last in, first out']]},
+      {type:'static',html:`<div class="feat"><i>✓</i> Pro active · ${Premium.key()}</div>`},
+      {key:'method',label:'Lot accounting',type:'select',value:acct.method,options:[['fifo','FIFO (first in, first out)'],['lifo','LIFO (last in, first out)']]},
       {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
       {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
       {type:'static',html:DATA_ROW}
@@ -600,9 +642,9 @@ $('#proBtn').onclick=()=>{
   }else{
     Sheet.open('Settings',[
       {type:'static',html:
-        '<div class="feat"><i>✓</i> Deal log — every buy and trade archived</div>'+
-        '<div class="feat"><i>✓</i> Tax summary — realized P&L by year</div>'+
-        '<div class="feat"><i>✓</i> CSV export &amp; import — holdings, sales, deals</div>'+
+        '<div class="feat"><i>✓</i> Deal log: every buy and trade archived</div>'+
+        '<div class="feat"><i>✓</i> Tax summary: realized P&L by year</div>'+
+        '<div class="feat"><i>✓</i> CSV export and import: holdings, sales, deals</div>'+
         '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
         '<div class="feat"><i>✓</i> Drop tracker with day-before reminders</div>'+
         '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
@@ -720,8 +762,8 @@ function renderBalance(){const T=pileValue(theirPile)+theirCash,Y=pileValue(your
   if(T<=0&&Y<=0){bv.textContent='$0';bv.className='bv';bt.innerHTML='Add to both sides.';return;}
   if(spread<=3){bv.textContent='Even';bv.className='bv pos';bt.innerHTML=`Within <b>${Math.round(spread)}%</b>.`;return;}
   bv.textContent=usd(Math.abs(diff));
-  if(diff>0){bv.className='bv neg';bt.innerHTML=`Their side is heavier — <b>you add ${usd(Math.abs(diff))}</b>.`;}
-  else{bv.className='bv pos';bt.innerHTML=`Your side is heavier — <b>they owe ${usd(Math.abs(diff))}</b>.`;}}
+  if(diff>0){bv.className='bv neg';bt.innerHTML=`Their side is heavier. <b>You add ${usd(Math.abs(diff))}</b>.`;}
+  else{bv.className='bv pos';bt.innerHTML=`Your side is heavier. <b>They owe ${usd(Math.abs(diff))}</b>.`;}}
 function recompute(){$('#pileTotal').textContent=usd(pileValue(theirPile));$('#pileTotal2').textContent=usd(pileValue(yourPile));
   renderPile(theirPile,'pile',mode==='cash');renderPile(yourPile,'pile2',false);
   if(mode==='trade')renderBalance();else renderCash();}
@@ -762,7 +804,7 @@ $('#copyReceipt').onclick=()=>{
   if(mode==='trade'){
     const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash;
     if(T<=0&&Y<=0)return;
-    const L=['HOLOMINT — TRADE',new Date().toLocaleString(),'','THEY GIVE:'];
+    const L=['HOLOMINT TRADE',new Date().toLocaleString(),'','THEY GIVE:'];
     theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push('  '+p.qty+'x '+it.name+'  '+usd(pr*p.qty));});
     if(theirCash>0)L.push('  + '+usd(theirCash)+' cash');
     L.push('','YOU GIVE:');
@@ -775,7 +817,7 @@ $('#copyReceipt').onclick=()=>{
     shareText(L.join('\n'),'Trade ready to share');return;
   }
   const n=cashNumbers();if(n.market<=0)return;
-  const L=['HOLOMINT — DEAL RECEIPT',new Date().toLocaleString(),''];
+  const L=['HOLOMINT DEAL RECEIPT',new Date().toLocaleString(),''];
   theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push((p.qty+'x '+it.name).slice(0,30).padEnd(31)+usd(pr*p.qty).padStart(9));});
   L.push('');L.push('Market total'.padEnd(22)+usd(n.market).padStart(9));
   L.push((storeCredit.on?'Credit offer':'Cash offer').padEnd(22)+usd(n.offer).padStart(9));
@@ -821,7 +863,7 @@ function renderHoldings(){
   $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
     const chip=(h.grade)?`<span class="chip graded">${(h.grader||'').toUpperCase()} ${h.grade}</span>`:(h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>')));
     return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
-    :(holdings.length?'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">No matches.</td></tr>':'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty — buy something in the Trade Block.</td></tr>');
+    :(holdings.length?'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">No matches.</td></tr>':'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty. Buy something in the Trade Block.</td></tr>');
   $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
   $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
   $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
@@ -852,7 +894,7 @@ function wireLocks(){$$('#port [data-pro-up]').forEach(b=>b.onclick=()=>$('#proB
 function renderDeals(){
   const body=$('#dealBody');
   $('#dealCount').textContent=dealLog.length?dealLog.length+' logged':'';
-  if(!Premium.active()){body.innerHTML=lockHtml(dealLog.length?dealLog.length+' deal'+(dealLog.length>1?'s':'')+' archived and waiting — unlock to view them.':'Every buy and trade, archived with date and payout.');wireLocks();return;}
+  if(!Premium.active()){body.innerHTML=lockHtml(dealLog.length?dealLog.length+' deal'+(dealLog.length>1?'s':'')+' archived and waiting. Unlock to view them.':'Every buy and trade, archived with date and payout.');wireLocks();return;}
   if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet</div>';return;}
   body.innerHTML='<table><thead><tr><th>Deal</th><th>Market</th><th>Paid</th></tr></thead><tbody>'+[...dealLog].reverse().slice(0,30).map(d=>{
     const names=d.items.map(i=>i.qty+'× '+i.name).join(', ');
@@ -867,16 +909,92 @@ function renderTax(){
     const cls=v.realized>=0?'pos':'neg';
     return `<tr><td>${y}</td><td>${v.n}</td><td>${usd(v.basis)}</td><td>${usd(v.net)}</td><td class="${cls}">${usd(v.realized)}</td></tr>`;}).join('')+'</tbody></table>';
 }
-/* Drops — local release reminders; day-before alarm ships as a calendar event */
+/* Drops: local release reminders; day-before alarm ships as a calendar event */
 let drops=Store.load('drops',[]);
 function saveDrops(){Store.save('drops',drops);}
-/* HTML-escape + relative time — used by the live drops feed (scraped titles) */
+/* HTML-escape + relative time: used by the live drops feed (scraped titles) */
 function esc(s){s=String(s==null?'':s);return s.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;').split("'").join('&#39;');}
 function timeAgo(ms){var x=Math.max(0,(Date.now()-ms)/1000);if(x<45)return'just now';var m=x/60;if(m<60)return Math.floor(m)+'m ago';var h=m/60;if(h<24)return Math.floor(h)+'h ago';return Math.floor(h/24)+'d ago';}
-/* Live drops — pulls the restock / queue / signal feed from the Holomint Worker */
+/* Live drops: pulls the restock / queue / signal feed from the Holomint Worker */
+/* Set-matcher: maps a scraped drop title to a sealed catalog product + market price (Pro flip math).
+   Precision over recall: only fires on a confident set+form match, else returns null (no margin shown). */
+const SetMatch=(function(){
+  var idx=null, idxFor=null;
+  var GENERIC={'mega evolution':1};                 // era label in ME titles, never match on it alone
+  var ALIAS={'30th anniversary':'ME: 30th Celebration','30th celebration':'ME: 30th Celebration'};
+  var NONPKMN=['one piece','lorcana','disney','yugioh','yu-gi-oh','yu gi oh','magic the gathering','digimon','weiss','flesh and blood','gundam','dragon ball','metazoo','union arena','star wars unlimited'];
+  function norm(t){
+    t=String(t||'').toLowerCase();
+    t=t.replace(/https?:\/\/\S+/g,' ').replace(/#\w+/g,' ').replace(/\([\d:.\s]*[ap]m[^)]*\)/g,' ').replace(/[^a-z0-9]+/g,' ');
+    return t.replace(/\s+/g,' ').trim();
+  }
+  function baseName(s){var i=s.indexOf(': ');return norm(i>=0?s.slice(i+2):s);}  // "ME05: Pitch Black" -> "pitch black"
+  function build(){
+    var cat=(PriceEngine.list?PriceEngine.list():[])||[];
+    if(idx&&idxFor===cat)return idx;
+    var tokens={}, meByNum={}, seen={};
+    for(var i=0;i<cat.length;i++){
+      var x=cat[i];
+      if(!x||x.type!=='sealed'||!x.set||seen[x.set])continue;
+      seen[x.set]=1;
+      var tok=baseName(x.set);
+      if(tok&&!GENERIC[tok]&&!(tok in tokens))tokens[tok]=x.set;
+      var m=/^ME0(\d):/.exec(x.set); if(m)meByNum[m[1]]=x.set;
+    }
+    for(var a in ALIAS)tokens[a]=ALIAS[a];
+    idx={tokens:tokens,meByNum:meByNum,cat:cat}; idxFor=cat; return idx;
+  }
+  function formKw(ptype){
+    var t=String(ptype||'').toLowerCase();
+    if(t.indexOf('elite trainer')>=0||t.indexOf('etb')>=0)return'elite trainer box';
+    if(t.indexOf('booster box')>=0)return'booster box';
+    if(t.indexOf('booster bundle')>=0)return'booster bundle';
+    if(t.indexOf('battle deck')>=0)return'battle deck';
+    if(t.indexOf('illustration')>=0)return'illustration collection';
+    if(t.indexOf('ultra')>=0&&t.indexOf('premium')>=0)return'ultra-premium collection';
+    if(t.indexOf('premium collection')>=0)return'premium collection';
+    if(t.indexOf('booster pack')>=0)return'booster pack';
+    return null;
+  }
+  function match(title, product){
+    var n=norm(title);
+    for(var i=0;i<NONPKMN.length;i++){if(n.indexOf(NONPKMN[i])>=0)return null;}
+    var ix=build(), setname=null;
+    var m=/set\s*(\d)/.exec(n);
+    if(m&&ix.meByNum[m[1]])setname=ix.meByNum[m[1]];
+    if(!setname){var best='';for(var tok in ix.tokens){if(tok.length>best.length&&n.indexOf(tok)>=0)best=tok;}if(best)setname=ix.tokens[best];}
+    if(!setname)return null;
+    var kw=formKw(product&&product.type);
+    if(!kw)return null;
+    var found=null, fp=Infinity;
+    for(var j=0;j<ix.cat.length;j++){
+      var x=ix.cat[j];
+      if(!x||x.type!=='sealed'||x.set!==setname)continue;
+      var nm=String(x.name||'').toLowerCase();
+      if(nm.indexOf(kw)<0)continue;
+      if((kw==='booster box'||kw==='booster bundle')&&(nm.indexOf('case')>=0||nm.indexOf('display')>=0))continue;
+      if(!PriceEngine.hasPrice(x.id))continue;
+      var p=PriceEngine.getPrice(x.id);
+      if(p>0&&p<fp){fp=p;found=x;}                    // cheapest base SKU in the set avoids case/set-of-2 inflation
+    }
+    if(!found)return null;
+    return {id:found.id,name:found.name,set:setname,market:PriceEngine.getPrice(found.id)};
+  }
+  function flip(e, ch){
+    if(!e||e.kind!=='restock'||!e.product)return null;
+    var mm=match(e.title,e.product);
+    if(!mm)return null;
+    var r=FeeCalc.net(mm.market, ch||'cash');
+    var out={market:mm.market,name:mm.name,set:mm.set,net:r.net,fees:r.fees,profit:null,roi:null};
+    var retail=(typeof e.product.retail==='number')?e.product.retail:null;
+    if(retail!=null){out.retail=retail;out.profit=r.net-retail;out.roi=retail>0?(out.profit/retail*100):null;}
+    return out;
+  }
+  return {match:match, flip:flip};
+})();
 const LiveDrops=(function(){
   const FEED_URL='https://holomint-feed.mmilliard2516.workers.dev/api/drops';
-  const MAXAGE=7*24*3600; // seconds — hide events older than a week (also hides the old test event)
+  const MAXAGE=7*24*3600; // seconds. hide events older than a week (also hides the old test event)
   let cache=Store.load('liveDrops',[]),timer=null;
   function recent(){
     var now=Date.now()/1000;
@@ -891,7 +1009,7 @@ const LiveDrops=(function(){
       var j=await r.json();
       var next=(j&&j.drops)||[];
       if(changed(cache,next)){cache=next;Store.save('liveDrops',cache);if(typeof renderDrops==='function')renderDrops();}
-    }catch(e){/* offline — keep the cached feed */}
+    }catch(e){/* offline, keep the cached feed */}
   }
   function badge(k){return k==='queue'?'QUEUE':k==='restock'?'RESTOCK':'SIGNAL';}
   function kc(k){return (k==='queue'||k==='restock'||k==='signal')?k:'signal';}
@@ -906,11 +1024,13 @@ const LiveDrops=(function(){
       if(pt||rt)sub='<div class="dl-sub">'+pt+rt+'</div>';
     }
     var tt=safe?('<a class="dl-t" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+title+'</a>'):('<span class="dl-t">'+title+'</span>');
-    return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+'<div class="dl-meta">'+meta+'</div></div></div>';
+    var flipHtml='';
+    try{var _ch=(typeof channel!=='undefined')?channel:'cash';var fl=SetMatch.flip(e,_ch);if(fl){var lbl=esc(((FeeCalc.channels[_ch]||{}).label)||'');var mk='$'+fl.market.toFixed(2);if(fl.profit!=null&&fl.profit>0.5){flipHtml='<div class="dl-flip pos"><span class="mk">market '+mk+'</span> · flip +$'+Math.round(fl.profit)+' ('+Math.round(fl.roi)+'%) via '+lbl+'</div>';}else if(fl.profit!=null){flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span> · '+(fl.profit>=0?'+':'-')+'$'+Math.abs(Math.round(fl.profit))+' via '+lbl+'</div>';}else{flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span></div>';}}}catch(_e){}
+    return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+flipHtml+'<div class="dl-meta">'+meta+'</div></div></div>';
   }
   function html(){
     var list=recent();
-    if(!list.length)return '<div class="dl-empty">No live drops right now — Pokémon Center restocks, queues, and signals land here automatically.</div>';
+    if(!list.length)return '<div class="dl-empty">No live drops right now. Pokémon Center restocks, queues, and signals land here automatically.</div>';
     return list.map(row).join('');
   }
   function start(){refresh();if(timer)clearInterval(timer);timer=setInterval(function(){if(document.visibilityState==='visible')refresh();},60000);}
@@ -928,7 +1048,7 @@ function icsFor(d){
 }
 function renderDrops(){
   const body=$('#dropsBody');
-  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases with day-before calendar reminders \u2014 plus a live feed of Pok\u00e9mon Center restocks, queues, and signals the moment they hit.');wireLocks();return;}
+  if(!Premium.active()){body.innerHTML=lockHtml('Track local releases with day-before calendar reminders, plus a live feed of Pok\u00e9mon Center restocks, queues, and signals the moment they hit.');wireLocks();return;}
   const today=new Date();today.setHours(0,0,0,0);
   const manualHtml=!drops.length?'<div class="empty">No releases tracked yet</div>':[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
     const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
@@ -936,8 +1056,8 @@ function renderDrops(){
     const hot=days>=0&&days<=1;
     return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:10px;color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:8px"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
   }).join('');
-  body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="live-head">Tracked releases</div>'+manualHtml;
-  body.querySelectorAll('[data-ics]').forEach(b=>b.onclick=()=>{const d=drops.find(x=>x.id===b.dataset.ics);if(d){icsFor(d);toast('Calendar event saved — alarm set for the day before');}});
+  body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="dl-note">Flip figures are estimates: market price from third-party data, net of channel fees, vs. listed retail. Market may move before you sell. Not financial advice.</div>'+'<div class="live-head">Tracked releases</div>'+manualHtml;
+  body.querySelectorAll('[data-ics]').forEach(b=>b.onclick=()=>{const d=drops.find(x=>x.id===b.dataset.ics);if(d){icsFor(d);toast('Calendar event saved. Alarm set for the day before');}});
   body.querySelectorAll('[data-deldrop]').forEach(b=>b.onclick=()=>{drops=drops.filter(x=>x.id!==b.dataset.deldrop);saveDrops();renderDrops();});
 }
 $('#addDrop').onclick=()=>{
@@ -949,7 +1069,7 @@ $('#addDrop').onclick=()=>{
   ],'Track',out=>{
     if(!out.name||!out.date){toast('Needs a name and date');return;}
     drops.push({id:'dr'+Math.random().toString(36).slice(2,8),name:out.name,date:out.date,where:out.where||''});
-    saveDrops();renderDrops();toast('Tracking — tap \ud83d\udcc5 for the day-before reminder');
+    saveDrops();renderDrops();toast('Tracking. Tap \ud83d\udcc5 for the day-before reminder');
   });
 };
 
@@ -959,7 +1079,7 @@ function lotsFor(h){return holdings.filter(x=>x.name===h.name&&x.type===h.type).
   return (Premium.active()&&acct.method==='lifo')?-cmp:cmp;});}
 function sellHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
   const lots=lotsFor(h),totalQty=lots.reduce((s,l)=>s+l.qty,0);
-  Sheet.open('Sell — '+h.name,[
+  Sheet.open('Sell '+h.name,[
     {key:'qty',label:'Quantity (of '+totalQty+')',type:'number',value:Math.min(h.qty,totalQty)},
     {key:'price',label:'Sale price / unit',type:'number',value:h.currentValue},
     {key:'channel',label:'Channel',type:'select',value:'ebay',options:Object.entries(FeeCalc.channels).map(([k,c])=>[k,c.label])}
@@ -973,7 +1093,7 @@ function sellHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
     saveHoldings();saveSold();renderPortfolio();toast(usd(net-basis)+' realized');
   });}
 function editHolding(id){const h=holdings.find(x=>x.id===id);if(!h)return;
-  Sheet.open('Edit — '+h.name,[
+  Sheet.open('Edit '+h.name,[
     {key:'name',label:'Name',value:h.name},
     {key:'qty',label:'Quantity',type:'number',value:h.qty},
     {key:'costBasis',label:'Cost basis / unit',type:'number',value:h.costBasis},
@@ -1098,7 +1218,7 @@ function wireHoldControls(){
 wireHoldControls();
 
 /* ---- SLAB MATH ---- */
-/* Grading fees/days/caps/paused — seed copy; grading.json overrides on load
+/* Grading fees/days/caps/paused: seed copy; grading.json overrides on load
    so pauses and price changes ship as a data edit, no app update. */
 const SLAB_BRANDS={
   psa:{label:'PSA',tiers:{
@@ -1168,9 +1288,9 @@ fetch('grading.json').then(r=>r.ok?r.json():null).then(d=>{
   fillTiers($('#gService').value);
 }).catch(()=>{});
 
-/* SlabData — graded-market adapter.
+/* SlabData: graded-market adapter.
    lookupCards is LIVE (pokemontcg.io). gradeData is the drop-in for graded values + pop + sales:
-   pop via PSA Public API (free 100/day, no browser CORS — route through the daily build step or proxy)
+   pop via PSA Public API (free 100/day, no browser CORS, route through the daily build step or proxy)
    or GemRate developer API; graded prices + sales via a paid source (e.g. PriceCharting).
    Returns {prices:{g10,g9,g8}, pop:{g10,g9,g8}, sales:[{date,grade,price}]} or null. */
 const FINISH_LABELS={normal:'Normal',holofoil:'Holo',reverseHolofoil:'Reverse Holo','1stEditionHolofoil':'1st Ed Holo','1stEditionNormal':'1st Ed',unlimitedHolofoil:'Unltd Holo'};
@@ -1244,7 +1364,7 @@ $('#findCard').onclick=async()=>{
       res.classList.add('show');
       res.querySelectorAll('[data-pick]').forEach(el=>el.onclick=()=>{res.classList.remove('show');pickCard(hits[+el.dataset.pick]);});
     }
-  }catch(e){toast('Lookup failed — offline?');}
+  }catch(e){toast('Lookup failed. Are you offline?');}
   btn.textContent='Find card';btn.disabled=false;
 };
 function renderGrade(){
@@ -1374,7 +1494,7 @@ const Scanner=(function(){
   function setMode(q){quickMode=q;}
   let lastQuick=false;
   // Native camera capture: launches the phone's real camera app for a full-res photo.
-  // This is the ONLY way to get the S24's actual 50MP sensor + processing on the web —
+  // This is the ONLY way to get the S24's actual 50MP sensor + processing on the web,
   // getUserMedia only exposes a low-res video stream, not the real camera.
   const camIn=document.createElement('input');
   camIn.type='file';camIn.accept='image/*';camIn.setAttribute('capture','environment');
@@ -1434,7 +1554,7 @@ const Scanner=(function(){
     // low detail, so density alone snaps to the inside of the border. Fix: anchor on the
     // detail box, then for each side scan outward across the border for the next strong
     // edge (border->background) = the true card edge. Keys on edge geometry, so border
-    // colour is irrelevant — every border style behaves the same.
+    // colour is irrelevant, every border style behaves the same.
     try{
       const iw=cropImg.naturalWidth,ih=cropImg.naturalHeight;
       const md=320,scl=Math.min(1,md/Math.max(iw,ih));
@@ -1633,7 +1753,7 @@ const Scanner=(function(){
     let full;
     try{full=await loadImage(src);}catch(e){$('#scanStatus').textContent='Could not load photo';return;}
     _shot=(_shot==='still'?'still ':'file ')+full.naturalWidth+'×'+full.naturalHeight;
-    // Resize to ~1400px wide — sharp enough for OCR, fast enough to not hang on 50MP.
+    // Resize to ~1400px wide: sharp enough for OCR, fast enough to not hang on 50MP.
     const cv=fitCanvas(full,1700);const fw=cv.width,fh=cv.height;
     function crop(sx,sy,sw,sh){const c=document.createElement('canvas');c.width=Math.max(1,sw);c.height=Math.max(1,sh);
       c.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);return c;}
@@ -1643,7 +1763,7 @@ const Scanner=(function(){
       try{const data=cv.getContext('2d').getImageData(0,0,fw,fh).data;
         // Localize the card by DETAIL DENSITY, not brightness. A card is packed with edges
         // (text, art, border); a table/cloth/letterbox is smooth. Sum adjacent-pixel
-        // brightness deltas per row & column — the card is the high-energy band. Fixes the
+        // brightness deltas per row & column, the card is the high-energy band. Fixes the
         // case where the card doesn't fill the frame and brightness grabbed the cloth.
         const rowE=new Float32Array(fh),colE=new Float32Array(fw);
         for(let y=0;y<fh;y+=2){let prev=g(data,(y*fw)*4);
@@ -1677,7 +1797,7 @@ const Scanner=(function(){
     let nameText='',fullText='';
     try{
       const w=await getWorker();
-      // Restrict to letters for the name pass — kills numeric/symbol noise from foil & watermarks.
+      // Restrict to letters for the name pass: kills numeric/symbol noise from foil & watermarks.
       // PSM 7 = treat the image as a single text line (the card name is one line).
       await w.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' -",tessedit_pageseg_mode:'6'});
       // Binarize the name strip (grayscale + Otsu) in BOTH polarities and OCR each. Colored
@@ -1735,7 +1855,7 @@ const Scanner=(function(){
 
     if(!hits.length){for(const nm of names){const r=PriceEngine.fuzzy(nm,lang,8);if(r.length){hits=r;used=nm;break;}}}
     if(!hits.length){
-      $('#scanStatus').textContent='No match — try again or use + Manual';
+      $('#scanStatus').textContent='No match. Try again, or use + Manual';
       $('#scanHint').textContent='Read: "'+readLabel+'" · '+_shot+' → '+cw+'×'+ch;
       $('#scanHint').style.display='';
       return;
@@ -1769,7 +1889,7 @@ function showQuickCheck(hits,q){
       `<div class="row" style="gap:12px;align-items:flex-start">${thumbHtml(it,'thumb')}
         <div style="flex:1;min-width:0"><div style="font-weight:500">${it.name}${it.jp?' <span class="chip jp">JP</span>':''}</div>
         <div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${it.set||''}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--gold)">${usd(price)}</div>${chgHtml}</div></div>`+
+        <div style="text-align:right"><div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gold)">${usd(price)}</div>${chgHtml}</div></div>`+
       (hist.length>1?`<div style="margin-top:12px">${sparkline(hist,300,52)}</div>`:'')+
       ownHtml+
       (hits.length>1?`<div style="margin-top:12px"><label>Other matches</label>${hits.slice(1,5).map(h=>`<div class="res" data-qc="${h.id}"><span class="rmeta"><span class="rn">${h.name}</span></span><span class="rp">${usd(PriceEngine.getPrice(h.id))}</span></div>`).join('')}</div>`:'')}
@@ -1812,7 +1932,7 @@ const PiP=(function(){
       d.body.innerHTML=
         '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
         '<div style="font-family:monospace;font-size:11px;color:#5d6480">'+(it.set||'')+'</div>'+
-        '<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><div style="font-family:monospace;font-size:26px;font-weight:700;color:#d8a93f">'+price+'</div><div style="font-family:monospace;font-size:12px;color:'+chgCol+'">'+chgTxt+'</div></div>';
+        '<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><div style="font-family:monospace;font-size:26px;font-weight:600;color:#d8a93f">'+price+'</div><div style="font-family:monospace;font-size:12px;color:'+chgCol+'">'+chgTxt+'</div></div>';
     }catch(e){pinnedChip(it,price,chgTxt,chgCol);}
   }
   function pinnedChip(it,price,chgTxt,chgCol){
@@ -1820,7 +1940,7 @@ const PiP=(function(){
     if(!chip){chip=document.createElement('div');chip.id='pinChip';document.body.appendChild(chip);
       chip.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:#0e1122;border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;max-width:90vw';}
     chip.innerHTML='<div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div><div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">'+(it.set||'')+'</div></div>'+
-      '<div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--gold)">'+price+'</div>'+
+      '<div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gold)">'+price+'</div>'+
       (chgTxt?'<div style="font-family:var(--mono);font-size:11px;color:'+chgCol+'">'+chgTxt+'</div>':'')+
       '<span style="color:var(--ink3);cursor:pointer;font-size:18px;padding-left:4px" onclick="document.getElementById(\'pinChip\').remove()">\u00d7</span>';
   }
