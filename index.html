@@ -24,6 +24,17 @@
   :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   /* type scale: every size in the app is one of these twelve steps */
   :root{--t1:10px;--t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
+  .ck-founder{background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink2)}
+  .ck-founder b{color:var(--gold)}
+  .ck-founder span{color:var(--ink3)}
+  .ck-price em{font-size:16px;color:var(--ink3);font-family:var(--sans);font-style:normal;text-decoration:line-through;margin-left:8px;font-weight:400}
+  .ck-price{font-family:var(--serif);font-size:34px;font-weight:600;color:var(--ink);margin:2px 0 8px}
+  .ck-price span{font-size:16px;color:var(--ink3);font-family:var(--sans);font-weight:400}
+  .ck-terms{font-size:12.5px;line-height:1.6;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:12px}
+  .ck-terms b{color:var(--ink)}
+  .ck-chk{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--ink2);margin-bottom:10px;cursor:pointer}
+  .ck-chk input{margin-top:2px;flex:none;width:17px;height:17px;accent-color:var(--gold)}
+  .ck-chk b{color:var(--ink)}
   .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:11px;font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
   .hint::after{content:'';position:absolute;inset:-9px}   /* 35px touch target, 17px visual */
   .hint:active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
@@ -556,10 +567,11 @@ const Premium=(function(){
     if(!key)return false;
     try{
       const r=await fetch(API+'/api/license?k='+encodeURIComponent(key),{cache:'no-store'});
+      if(r.status===503)return 'unknown';   // authority unreachable: not the key's fault
       const d=await r.json();
       if(d&&d.valid){lic={key,valid:true,at:Date.now()};Store.save('license',lic);return true;}
       return false;
-    }catch(e){return false;}   // cannot reach the server: cannot activate
+    }catch(e){return 'unknown';}   // cannot reach the server: cannot say
   }
 
   // Re-check a cached licence on boot. This is how a cancelled subscription stops working.
@@ -820,6 +832,70 @@ const Alerts=(function(){
   return {render,wire,enable,disable,resync};
 })();
 
+/* ---- Checkout ------------------------------------------------------------
+   The price is fetched from the Worker, which reads it from Polar. It is never
+   hardcoded here. ROSCA requires the ACTUAL price, the auto-renewal, and the
+   cancellation method to be disclosed BEFORE any payment field appears, so a
+   stale hardcoded number is a compliance problem, not a typo. If the price
+   cannot be fetched, we show no price and disable the button. Fail closed. */
+const Checkout=(function(){
+  let P=null;
+  async function load(){
+    if(P)return P;
+    try{
+      const r=await fetch(FEED_API+'/api/pricing',{cache:'no-store'});
+      P=await r.json();
+    }catch(e){P={configured:false};}
+    return P;
+  }
+  function money(p){return '$'+Number(p.amount).toFixed(2);}
+  // The active offer: founder while seats remain, list price after. Whatever we return
+  // here is what the disclosure, the consent box, the button and the checkout all use,
+  // so the price shown can never drift from the price charged.
+  function offer(p){
+    if(!p||!p.configured)return null;
+    if(p.founder&&p.founder.left>0&&p.founder.checkout)
+      return {amount:p.founder.amount,checkout:p.founder.checkout,founder:p.founder,list:p.amount};
+    if(!p.checkout)return null;
+    return {amount:p.amount,checkout:p.checkout,founder:null,list:p.amount};
+  }
+  function offerHtml(p){
+    const o=offer(p);
+    if(!o){
+      return '<div class="feat" style="color:var(--ink3)">Subscriptions are not open yet.</div>';
+    }
+    const m=money(o), per=p.interval==='year'?'year':'month';
+    const f=o.founder;
+    return ''
+      +(f?'<div class="ck-founder"><b>Founder pricing</b> &middot; locked at '+m+'/'+per+' for as long as you stay subscribed.<br><span>'+f.left+' of '+f.total+' seats left. After that it is $'+Number(o.list).toFixed(2)+'/'+per+'.</span></div>':'')
+      +'<div class="ck-price">'+m+'<span>/'+per+'</span>'+(f?'<em>$'+Number(o.list).toFixed(2)+'</em>':'')+'</div>'
+      +'<div class="ck-terms">'
+        +'Billed <b>'+(per==='year'?'yearly':'monthly')+'</b>. Your subscription <b>automatically renews every '+per+' at '+m+' and you will be charged until you cancel.</b><br>'
+        +'<b>Cancel anytime</b> in Settings or from the link in your receipt email. Cancelling stops future charges; Pro runs to the end of the '+per+' you paid for.<br>'
+        +'No partial refunds for unused time. See the <a href="terms.html" target="_blank">Terms</a> and <a href="refunds.html" target="_blank">Refund Policy</a>.'
+      +'</div>'
+      +'<label class="ck-chk"><input type="checkbox" id="ckRenew"><span>I understand this is a <b>'+m+'/'+per+' subscription that automatically renews</b> until I cancel.</span></label>'
+      +'<label class="ck-chk"><input type="checkbox" id="ckTos"><span>I agree to the <a href="terms.html" target="_blank">Terms of Service</a>, <a href="privacy.html" target="_blank">Privacy Policy</a>, and <a href="refunds.html" target="_blank">Refund Policy</a>.</span></label>'
+      +'<button class="act" id="ckGo" disabled style="opacity:.45">Subscribe &middot; '+m+'/'+per+'</button>';
+  }
+  function wire(p){
+    const o=offer(p);
+    if(!o)return;
+    const a=$('#ckRenew'),b=$('#ckTos'),g=$('#ckGo');
+    if(!a||!b||!g)return;
+    const sync=()=>{const ok=a.checked&&b.checked;g.disabled=!ok;g.style.opacity=ok?'1':'.45';};
+    a.onchange=sync;b.onchange=sync;
+    g.onclick=()=>{
+      if(g.disabled)return;
+      // record the consent: timestamp + the exact terms shown. Without this a ToS is
+      // decoration; clickwrap is enforceable, browsewrap routinely is not.
+      Store.save('consent',{at:Date.now(),price:o.amount,list:o.list,founder:!!o.founder,currency:p.currency,interval:p.interval,terms:'1.0',renew:true,tos:true});
+      window.open(o.checkout,'_blank','noopener');
+    };
+  }
+  return {load,offer,offerHtml,wire,money,get:()=>P};
+})();
+
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
 const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:14px"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
@@ -829,10 +905,12 @@ function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
   if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
 ['setProBtn','setCurBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.onclick=()=>$('#proBtn').click();});
 const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();const _sr=document.getElementById('setRsBtn');if(_sr)_sr.onclick=()=>fileIn.click();
-$('#proBtn').onclick=()=>{
+$('#proBtn').onclick=async()=>{
+  const PR=await Checkout.load();
   if(Premium.active()){
     Sheet.open('Settings',[
-      {type:'static',html:`<div class="feat"><i>✓</i> Pro active · ${Premium.key()}</div>`},
+      {type:'static',html:`<div class="feat"><i>✓</i> Pro active · ${Premium.key()}</div>`
+        +((PR&&PR.portal)?'<a class="ghost" href="'+PR.portal+'" target="_blank" rel="noopener" style="width:100%;margin:8px 0 2px;text-align:center">Manage subscription &middot; cancel anytime</a>':'')},
       {key:'method',label:'Lot accounting',type:'select',value:acct.method,options:[['fifo','FIFO (first in, first out)'],['lifo','LIFO (last in, first out)']]},
       {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
       {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
@@ -843,13 +921,14 @@ $('#proBtn').onclick=()=>{
   }else{
     Sheet.open('Settings',[
       {type:'static',html:
-        '<div class="feat"><i>✓</i> Deal log: every buy and trade archived</div>'+
-        '<div class="feat"><i>✓</i> Tax summary: realized P&L by year</div>'+
-        '<div class="feat"><i>✓</i> CSV export and import: holdings, sales, deals</div>'+
+        '<div class="feat"><i>✓</i> <b>Drops the second they land.</b> Free waits 10 minutes.</div>'+
+        '<div class="feat"><i>✓</i> <b>Alerts with the app closed.</b> Only when it clears your floors.</div>'+
+        '<div class="feat"><i>✓</i> Flip margin on every drop, net of your fees</div>'+
+        '<div class="feat"><i>✓</i> Deal log, tax summary, CSV export</div>'+
         '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
-        '<div class="feat"><i>✓</i> Drop tracker with day-before reminders</div>'+
-        '<div class="feat" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px"><i>→</i> Get a key at holomint.app/pro</div>'},
-      {key:'key',label:'License key',placeholder:'HF-XXXX-XXXX-XXXX'},
+        Checkout.offerHtml(PR)},
+      {type:'static',html:'<div class="sub" style="text-align:center;margin:2px 0 -2px">Already bought? Paste your key below.</div>'},
+      {key:'key',label:'License key',placeholder:'HMP-XXXX-XXXX-XXXX'},
       {type:'static',html:Premium.active()?'<button class="ghost" id="proClear" style="width:100%;margin-top:-4px">Remove Pro key</button>':''},
       {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
       {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
@@ -857,11 +936,12 @@ $('#proBtn').onclick=()=>{
     ],'Save',async out=>{
       FX={code:out.cur,rate:out.rate>0?out.rate:1};Store.save('fx',FX);
       recompute();renderPortfolio();renderGrade();
-      if(out.key){const ok=await Premium.validate(out.key);toast(ok?'Pro activated':'Invalid key');renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();}
+      if(out.key){const ok=await Premium.validate(out.key);toast(ok===true?'Pro activated':(ok==='unknown'?'Could not verify right now. Try again in a minute.':'Invalid key'));renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();}
       else toast('Saved');
     });
   }
   wireData();
+  Checkout.wire(PR);
   const pc=$('#proClear');
   if(pc)pc.onclick=()=>{
     Premium.clear();Sheet.close();toast('Pro key removed');
@@ -1635,6 +1715,22 @@ $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
 renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
+(async function(){
+  const co=new URLSearchParams(location.search).get('co');
+  if(!co)return;
+  history.replaceState(null,'',location.pathname);   // never re-claim on refresh
+  toast('Finalizing your purchase\u2026');
+  try{
+    const r=await fetch('https://holomint-feed.mmilliard2516.workers.dev/api/claim?id='+encodeURIComponent(co),{cache:'no-store'});
+    const d=await r.json();
+    if(d&&d.ok&&d.key&&(await Premium.validate(d.key))===true){
+      toast('Pro activated. Welcome aboard.');
+      renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();
+      return;
+    }
+  }catch(e){}
+  toast('Payment received. Your license key is in your email; paste it in the PRO menu.');
+})();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
