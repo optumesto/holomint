@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Holomint</title>
 <meta name="theme-color" content="#070916">
+<meta name="description" content="Pokemon restock drops with the flip margin computed net of your fees. Free live feed, instant Pro alerts even with the app closed.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Holomint">
+<meta property="og:title" content="Holomint: restock alerts that do the math">
+<meta property="og:description" content="Every Pokemon restock, priced net of your fees the moment it lands. Free feed. Instant alerts on Pro.">
+<meta property="og:url" content="https://holomint.app/">
+<meta property="og:image" content="https://holomint.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Holomint: restock alerts that do the math">
+<meta name="twitter:description" content="Every Pokemon restock, priced net of your fees the moment it lands. Free feed. Instant alerts on Pro.">
+<meta name="twitter:image" content="https://holomint.app/og.png">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -201,6 +214,8 @@
   .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
   .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
   .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
+  .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:9px 12px;margin:10px 0 2px;font-size:12px;line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
+  .dl-founder b{color:var(--gold)}
   .dl-lock{opacity:.72}
   .lk-locked{background:rgba(255,255,255,.05);color:var(--ink3);border:1px dashed var(--line)}
   .dl-lock .dl-title{color:var(--ink3);font-style:italic}
@@ -351,8 +366,18 @@
             </div>
           </div>
           <div class="field">
-            <label>Quiet hours</label>
-            <div class="row" style="gap:8px">
+            <label>Price against</label>
+            <select id="alChannel" style="width:100%">
+              <option value="ebay">eBay (13.6% + $0.40)</option>
+              <option value="tcgplayer">TCGplayer (12.5% + $0.30)</option>
+              <option value="whatnot">Whatnot (11% + $0.30)</option>
+              <option value="cash">Cash (no fees)</option>
+            </select>
+            <div class="sub">Alert profit floors are computed net of this channel's fees.</div>
+          </div>
+          <div class="field">
+            <label class="ck-chk" style="margin-bottom:6px"><input type="checkbox" id="alQuiet"><span><b>Quiet hours</b> (no alerts overnight)</span></label>
+            <div class="row" style="gap:8px" id="alQuietRow">
               <div style="flex:1"><input id="alQs" type="number" inputmode="numeric" min="0" max="23" placeholder="23"><div class="sub">from (24h)</div></div>
               <div style="flex:1"><input id="alQe" type="number" inputmode="numeric" min="0" max="23" placeholder="7"><div class="sub">to (24h)</div></div>
             </div>
@@ -713,14 +738,14 @@ const Alerts=(function(){
   const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
   const capable=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
 
-  const prefs=()=>Object.assign({minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
+  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
   const savePrefs=p=>Store.save('alertPrefs',p);
 
   function payload(sub){
     const p=prefs();
     return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',
-      prefs:{channel:channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'],
-        quietStart:+p.quietStart,quietEnd:+p.quietEnd,dailyCap:+p.dailyCap,
+      prefs:{channel:p.channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'],
+        quietStart:p.quietOn?+p.quietStart:0,quietEnd:p.quietOn?+p.quietEnd:0,dailyCap:+p.dailyCap,
         tzOffset:-new Date().getTimezoneOffset()}};
   }
 
@@ -801,12 +826,18 @@ const Alerts=(function(){
     pane.style.display=(st==='on-pro')?'':'none';
     if(st==='on-pro'){
       $('#alMinProfit').value=p.minProfit;$('#alMinRoi').value=p.minRoi;
+      $('#alChannel').value=p.channel;
+      $('#alQuiet').checked=!!p.quietOn;
+      $('#alQuietRow').style.display=p.quietOn?'':'none';
       $('#alQs').value=p.quietStart;$('#alQe').value=p.quietEnd;$('#alCap').value=p.dailyCap;
+      $('#alQuiet').onchange=()=>{$('#alQuietRow').style.display=$('#alQuiet').checked?'':'none';};
     }
+    const F=(typeof Checkout!=='undefined'&&Checkout.get()&&Checkout.get().founder)||null;
+    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:8px">Founder pricing: '+F.left+' of '+F.total+' seats left at $'+Number(F.amount).toFixed(2)+'/month, locked for good.</div>':'';
     const msg={
       'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
-      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes</b>. By the time a free alert reaches you, the drop is usually gone. Pro gets the same alert the second it lands.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>',
-      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free alerts arrive 10 minutes late.</b> Pro alerts are instant.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>',
+      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes</b>. By the time a free alert reaches you, the drop is usually gone. Pro gets the same alert the second it lands.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>'+fnote,
+      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free alerts arrive 10 minutes late.</b> Pro alerts are instant.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>'+fnote,
       'blocked':'<div class="sub">Notifications are blocked for this site. Re-allow them in your browser settings, then come back.</div>',
       'unsupported':'<div class="sub">This browser cannot receive push notifications.</div>',
       'ios-install':'<div class="sub"><b style="color:var(--ink2)">Add Holomint to your Home Screen first.</b><br>On iPhone, alerts only work for installed apps.<br><br>1. Tap the Share button in Safari<br>2. Scroll and tap <b style="color:var(--ink2)">Add to Home Screen</b><br>3. Open Holomint from the new icon<br>4. Come back here and turn alerts on</div>',
@@ -820,7 +851,8 @@ const Alerts=(function(){
 
   function wire(){
     const s=$('#alSave'),o=$('#alOff');
-    if(s)s.onclick=()=>{savePrefs({minProfit:+$('#alMinProfit').value||25,minRoi:+$('#alMinRoi').value||20,
+    if(s)s.onclick=()=>{savePrefs({channel:$('#alChannel').value||'ebay',quietOn:$('#alQuiet').checked,
+      minProfit:+$('#alMinProfit').value||25,minRoi:+$('#alMinRoi').value||20,
       quietStart:+$('#alQs').value||0,quietEnd:+$('#alQe').value||0,dailyCap:Math.min(20,Math.max(1,+$('#alCap').value||8))});push();};
     if(o)o.onclick=disable;
     // the SW tells us when the browser rotates a subscription out from under us
@@ -831,6 +863,19 @@ const Alerts=(function(){
   }
   return {render,wire,enable,disable,resync};
 })();
+
+/* Paints the founder seat counter into the drops card for free users. Reads whatever
+   Checkout.load() has cached; called from renderDrops and again once pricing arrives. */
+function paintFounder(){
+  const el=document.getElementById('fBan');
+  if(!el)return;
+  const P=(typeof Checkout!=='undefined')&&Checkout.get();
+  const F=P&&P.founder;
+  if(!F||!(F.left>0)||Premium.active()){el.innerHTML='';el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML='<b>Founder pricing</b> · '+F.left+' of '+F.total+' seats left · tap to lock $'+Number(F.amount).toFixed(2)+'/month for good';
+  el.onclick=()=>$('#proBtn').click();
+}
 
 /* ---- Checkout ------------------------------------------------------------
    The price is fetched from the Worker, which reads it from Polar. It is never
@@ -1369,7 +1414,8 @@ function renderDrops(){
     const hot=days>=0&&days<=1;
     return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:10px;color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:8px"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
   }).join('');
-  body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="dl-note">Flip figures are estimates: market price from third-party data, net of channel fees, vs. listed retail. Market may move before you sell. Not financial advice.</div>'+'<div class="live-head">Tracked releases</div>'+manualHtml;
+  body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="dl-note">Flip figures are estimates: market price from third-party data, net of channel fees, vs. listed retail. Market may move before you sell. Not financial advice.</div>'+'<div class="dl-founder" id="fBan"></div>'+'<div class="live-head">Tracked releases</div>'+manualHtml;
+  paintFounder();
   body.querySelectorAll('[data-ics]').forEach(b=>b.onclick=()=>{const d=drops.find(x=>x.id===b.dataset.ics);if(d){icsFor(d);toast('Calendar event saved. Alarm set for the day before');}});
   body.querySelectorAll('[data-deldrop]').forEach(b=>b.onclick=()=>{drops=drops.filter(x=>x.id!==b.dataset.deldrop);saveDrops();renderDrops();});
 }
@@ -1714,7 +1760,7 @@ $$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrad
 $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
-renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();Checkout.load().then(function(){paintFounder();Alerts.render();});
 (async function(){
   const co=new URLSearchParams(location.search).get('co');
   if(!co)return;
