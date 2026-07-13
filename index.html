@@ -7,9 +7,19 @@
 <meta name="theme-color" content="#070916">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Self-hosted. Google Fonts sent every visitor's IP to Google on page load, which
+     contradicted our own privacy policy and has drawn GDPR litigation over exactly
+     this pattern. These are the same typefaces, served from our own origin.
+     Family names deliberately match the existing CSS vars, so nothing else changes.
+     Italics are synthesised by the browser, exactly as before (Google was not
+     serving italic faces either: no ital axis was requested). */
+  @font-face{font-family:'Fraunces';font-style:normal;font-display:swap;font-weight:100 900;src:url(./fonts/fraunces.woff2) format('woff2-variations')}
+  @font-face{font-family:'Hanken Grotesk';font-style:normal;font-display:swap;font-weight:100 900;src:url(./fonts/hanken.woff2) format('woff2-variations')}
+  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:400;src:url(./fonts/plexmono-400.woff2) format('woff2')}
+  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:500;src:url(./fonts/plexmono-500.woff2) format('woff2')}
+  @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:600;src:url(./fonts/plexmono-600.woff2) format('woff2')}
+</style>
 <style>
   :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   /* type scale: every size in the app is one of these twelve steps */
