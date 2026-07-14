@@ -18,6 +18,6 @@ jobs:
         run: |
           git config user.name "holomint-bot"
           git config user.email "actions@github.com"
-          git add prices.json products.json || true
+          git add prices.json products.json sealed.json history.json || true
           git diff --cached --quiet || git commit -m "Daily price refresh"
           git push
