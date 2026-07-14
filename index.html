@@ -229,6 +229,19 @@
   .wl-chip{display:inline-flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:5px 6px 5px 11px;font-size:12px;color:var(--ink)}
   .wl-chip button{background:none;border:none;color:var(--ink3);font-size:15px;line-height:1;cursor:pointer;padding:2px 5px}
   .wl-chip button:active{color:var(--down)}
+  #tourWrap{display:none;position:fixed;inset:0;z-index:9000}
+  #tourWrap.on{display:block}
+  #tourMask div{position:fixed;background:rgba(4,6,14,.86);backdrop-filter:blur(1.5px)}
+  #tourRing{position:fixed;border:2px solid var(--gold);border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px rgba(216,169,63,.16);transition:all .28s cubic-bezier(.4,0,.2,1)}
+  #tourCard{position:fixed;left:14px;right:14px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
+  .tour-dots{display:flex;gap:5px;margin-bottom:12px}
+  .tour-dots i{width:16px;height:3px;border-radius:2px;background:var(--line);transition:.2s}
+  .tour-dots i.on{background:var(--gold);width:24px}
+  .tour-t{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);margin-bottom:7px;line-height:1.25}
+  .tour-b{font-size:13.5px;line-height:1.6;color:var(--ink2);margin-bottom:16px}
+  .tour-b b{color:var(--ink)}
+  .tour-nav{display:flex;gap:8px}
+  .tour-nav .act{width:auto}
   .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:9px 12px;margin:10px 0 2px;font-size:12px;line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
   .dl-founder b{color:var(--gold)}
   .dl-lock{opacity:.72}
@@ -400,7 +413,7 @@
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alQueue"><span><b>Queue alerts</b> (Pokemon Center waiting room and similar)</span></label>
-            <div class="sub">At Pokemon Center the queue is usually the only window that matters. Get pinged the moment it opens.</div>
+            <div class="sub">At Pokemon Center the queue is usually the only window that matters, and you cannot tell what is dropping until you are in line. Getting in costs nothing, so this is on by default.</div>
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alIntel"><span><b>Pre-drop intel</b> (invites and staged pages)</span></label>
@@ -427,7 +440,8 @@
     </div>
 
     <div class="card">
-      <div class="row between" style="padding:6px 0"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
+      <div class="row between" style="padding:6px 0"><span style="font-size:14px">How Holomint works</span><button class="ghost" id="setTour" style="padding:8px 14px">Replay tour</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:8px 14px">Email</a></div>
@@ -515,6 +529,19 @@
   </div>
 </div>
 <div class="toast" id="toast">Done</div>
+
+<div id="tourWrap" aria-hidden="true">
+  <div id="tourMask"></div>
+  <div id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div class="tour-dots" id="tourDots"></div>
+    <div class="tour-t" id="tourTitle"></div>
+    <div class="tour-b" id="tourBody"></div>
+    <div class="tour-nav">
+      <button class="ghost" id="tourSkip">Skip</button>
+      <button class="act" id="tourNext" style="flex:1">Next</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ===== SPINE ===== */
@@ -770,7 +797,7 @@ const Alerts=(function(){
   const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
   const capable=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
 
-  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,queueAlerts:false,intelAlerts:false,watch:[],watchOnly:false,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
+  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,queueAlerts:true,intelAlerts:false,watch:[],watchOnly:false,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
   const savePrefs=p=>Store.save('alertPrefs',p);
 
   function payload(sub){
@@ -940,6 +967,101 @@ function paintFounder(){
   el.innerHTML='<b>Founder pricing</b> · '+F.left+' of '+F.total+' seats left · tap to lock $'+Number(F.amount).toFixed(2)+'/month for good';
   el.onclick=()=>$('#proBtn').click();
 }
+
+/* ---- First-run tour ------------------------------------------------------
+   Launch traffic is 100% first-time visitors, and the app opens on a fee
+   calculator. Without this, a person can arrive from the video and leave
+   without ever seeing the drops feed or learning alerts exist.
+   Deliberately says nothing about price: get the permission grant while they
+   are curious, let a real drop land, and let the founder counter sell later. */
+const Tour=(function(){
+  const KEY='tourSeen';
+  let i=0,ring=null;
+
+  const STEPS=[
+    {tab:'port', sel:'#dropsBody', title:'Every Pokemon restock, the second it lands',
+     body:'This is the live feed. Pokemon Center, Best Buy, Target, and more, each one matched to its sealed listing and <b>priced net of your fees</b> against retail. No hunting, no refreshing.'},
+    {tab:'port', sel:'#dropsBody', title:'Locked rows are on a 10 minute delay',
+     body:'Free shows every drop, <b>10 minutes late</b>. By then the hot ones are gone. That delay is the only thing Pro removes from the feed: same drops, the second they land instead of ten minutes after.'},
+    {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
+     body:'You should not have to sit and stare at a feed. Turn on alerts and your phone buzzes when a drop clears the floors you set. <b>The app does not need to be open.</b>'}
+  ];
+
+  function clear(){
+    const m=$('#tourMask'); if(m)m.innerHTML='';
+    if(ring&&ring.parentNode)ring.parentNode.removeChild(ring); ring=null;
+  }
+  function paint(){
+    const st=STEPS[i]; if(!st)return done();
+    const el=document.querySelector(st.sel);
+    // A collapsed card has zero height, so there would be nothing to spotlight. Open it
+    // using the app's own toggle, which persists the state: if we are telling someone the
+    // drops feed is the point, it had better still be open when the tour ends.
+    const host=el&&el.closest('.card');
+    if(host&&host.classList.contains('collapsed')){
+      const head=host.querySelector('.colhead');
+      if(head){ head.click(); return setTimeout(paint,60); }
+    }
+    clear();
+    const m=$('#tourMask');
+    const r=el?el.getBoundingClientRect():null;
+    const W=innerWidth,H=innerHeight;
+
+    if(r&&r.height>0){
+      const pad=8;
+      const t=Math.max(0,r.top-pad),b=Math.min(H,r.bottom+pad),l=Math.max(0,r.left-pad),g=Math.min(W,r.right+pad);
+      // four rects around the target: a genuine hole, so the element underneath is really visible
+      const box=(x,y,w,h)=>{const d=document.createElement('div');d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`;m.appendChild(d);};
+      box(0,0,W,t); box(0,b,W,H-b); box(0,t,l,b-t); box(g,t,W-g,b-t);
+      ring=document.createElement('div'); ring.id='tourRing';
+      ring.style.cssText=`left:${l}px;top:${t}px;width:${g-l}px;height:${b-t}px`;
+      $('#tourWrap').appendChild(ring);
+    } else {
+      const d=document.createElement('div'); d.style.cssText='inset:0'; m.appendChild(d);
+    }
+
+    $('#tourTitle').textContent=st.title;
+    $('#tourBody').innerHTML=st.body;
+    $('#tourDots').innerHTML=STEPS.map((_,n)=>'<i class="'+(n===i?'on':'')+'"></i>').join('');
+    $('#tourNext').textContent=(i===STEPS.length-1)?'Turn on alerts':'Next';
+    $('#tourSkip').textContent=(i===STEPS.length-1)?'Not now':'Skip';
+
+    // card goes below the highlight when there is room, otherwise above it
+    const card=$('#tourCard');
+    card.style.top='auto';card.style.bottom='auto';
+    const below=r?(H-r.bottom):0;
+    if(!r||below>240){card.style.top=((r?r.bottom:H/2)+22)+'px';}
+    else{card.style.top=Math.max(14,(r.top-card.offsetHeight-22))+'px';}
+  }
+  function go(n){
+    i=n;
+    const st=STEPS[i];
+    if(!st)return done();
+    if(st.tab)switchTab(st.tab);
+    // let the tab paint before we measure the target
+    requestAnimationFrame(()=>setTimeout(paint,90));
+  }
+  function done(finish){
+    Store.save(KEY,1);
+    clear();
+    $('#tourWrap').classList.remove('on');
+    $('#tourWrap').setAttribute('aria-hidden','true');
+    if(finish){const b=$('#alOn');if(b)b.click();}
+  }
+  function start(){
+    $('#tourWrap').classList.add('on');
+    $('#tourWrap').setAttribute('aria-hidden','false');
+    go(0);
+  }
+  function maybe(){ if(!Store.load(KEY,0)) setTimeout(start,900); }
+
+  addEventListener('resize',()=>{ if($('#tourWrap').classList.contains('on'))paint(); });
+  return {start,maybe,
+    wire(){
+      $('#tourNext').onclick=()=>{ (i===STEPS.length-1)?done(true):go(i+1); };
+      $('#tourSkip').onclick=()=>done(false);
+    }};
+})();
 
 /* ---- Checkout ------------------------------------------------------------
    The price is fetched from the Worker, which reads it from Polar. It is never
@@ -1853,7 +1975,10 @@ $$('#slab input, #slab select').forEach(i=>i.addEventListener('input',renderGrad
 $('#rate').value=buyRate;$('#rateLabel').textContent=buyRate+'%';
 $('#creditBump').value=storeCredit.bump;$('#creditTog').classList.toggle('on',storeCredit.on);$('#creditTog').textContent=storeCredit.on?'On':'Off';
 renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','their');wireSearch('search2','results2','your');
-renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();Checkout.load().then(function(){paintFounder();Alerts.render();});
+renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
+Tour.wire();
+$('#setTour').onclick=()=>Tour.start();
+Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});
 (async function(){
   const co=new URLSearchParams(location.search).get('co');
   if(!co)return;
@@ -1933,7 +2058,7 @@ const Scanner=(function(){
     if(window.Tesseract)return Promise.resolve();
     if(tScriptP)return tScriptP;
     tScriptP=new Promise((res,rej)=>{const sc=document.createElement('script');
-      sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      sc.src='./tesseract/tesseract.min.js';
       sc.onload=res;sc.onerror=()=>rej(new Error('script load failed'));document.head.appendChild(sc);});
     return tScriptP;
   }
@@ -1943,7 +2068,15 @@ const Scanner=(function(){
     if(workerP)return workerP;
     workerP=(async()=>{
       await loadScript();
+      // Self-hosted. Previously this pulled four artifacts from jsDelivr at runtime, on a
+      // FLOATING major (tesseract.js@5), meaning any new 5.x was served automatically to
+      // every user without review. That is arbitrary third-party JS with access to a
+      // localStorage that holds Pro licence keys. All four are now served from our origin.
+      // corePath is a DIRECTORY: tesseract feature-detects SIMD and picks the right core.
       const w=await Tesseract.createWorker('eng',1,{
+        workerPath:'./tesseract/worker.min.js',
+        corePath:'./tesseract/core',
+        langPath:'./tesseract/lang',
         logger:m=>{
           if(m.status&&$('#scanStatus')){
             if(m.status==='downloading'||m.status==='loading tesseract core'||m.status.indexOf('loading')>=0)
