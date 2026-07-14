@@ -126,9 +126,20 @@ async function main() {
   }
   await writeFile('history.json', JSON.stringify(hist));
 
+  // sealed.json: the catalog the Cloudflare Worker matches drop titles against.
+  // This MUST regenerate alongside prices. If it goes stale, sealed products from a
+  // NEW set never enter it, the Worker's matcher never matches them, and alerts stop
+  // firing for exactly the set that matters most. It fails silently: no error, the
+  // drop just lands in the feed with no margin and no push.
+  const sealed = products
+    .filter(p => p.type === 'sealed' && prices[p.id] > 0)
+    .map(p => ({ id: p.id, name: p.name, set: p.set }));
+  await writeFile('sealed.json', JSON.stringify(sealed));
+
   const jp = products.filter(p => p.jp).length;
   const tracked = Object.keys(hist).length;
   console.log(`Wrote ${products.length} products (${jp} JP, ${products.length - jp} EN). History tracks ${tracked} items.`);
+  console.log(`Wrote ${sealed.length} priced sealed products to sealed.json (the Worker's matching catalog).`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
