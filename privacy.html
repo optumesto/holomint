@@ -136,30 +136,14 @@
 <td>CDN, DNS, and our drops-feed server</td>
 <td>IP address, request data</td>
 </tr>
-<tr>
-<td><strong>jsDelivr</strong> (<code>cdn.jsdelivr.net</code>)</td>
-<td>Delivers the OCR library used by the card scanner</td>
-<td>IP address, request data (only when the scanner is used)</td>
-</tr>
-<tr>
-<td><strong>Pokémon TCG API</strong> (<code>api.pokemontcg.io</code>)</td>
-<td>Card search and lookup</td>
-<td>IP address <strong>and the search terms you type</strong></td>
-</tr>
-<tr>
-<td><strong>Polar</strong> (Polar Software, Inc.)</td>
-<td>Payment processing / merchant of record</td>
-<td>Your checkout email, payment details, billing country</td>
-</tr>
-<tr>
-<td><strong>TCGplayer / TCGcsv</strong></td>
-<td>Card price and product data</td>
-<td>Price data is bundled with the app; no direct request from your browser</td>
-</tr>
 </tbody>
 </table>
+<p>| <strong>Pokémon TCG API</strong> (<code>api.pokemontcg.io</code>) | Card search and lookup | IP address <strong>and the search terms you type</strong> |
+| <strong>Polar</strong> (Polar Software, Inc.) | Payment processing / merchant of record | Your checkout email, payment details, billing country |
+| <strong>TCGplayer / TCGcsv</strong> | Card price and product data | Price data is bundled with the app; no direct request from your browser |</p>
 <p><strong>Fonts are self-hosted.</strong> The typefaces Holomint uses are served from holomint.app itself. Your IP address is not sent to Google or any font network to render this app.</p>
-<p><strong>The card scanner runs entirely on your device.</strong> It uses on-device optical character recognition. <strong>Photos and camera frames are never uploaded, transmitted, or sent to us or to any third party.</strong> The scanner only downloads the OCR <em>software library</em> from jsDelivr; your images stay local. <em>(If we ever change this, for example by adding a cloud image-recognition service, we will update this policy and tell you before it ships.)</em></p>
+<p><strong>The card scanner is self-hosted too.</strong> The OCR engine, its worker, and its language data are all served from holomint.app. Nothing about the scanner, including the fact that you used it, is sent to any third-party CDN.</p>
+<p><strong>The card scanner runs entirely on your device.</strong> It uses on-device optical character recognition. <strong>Photos and camera frames are never uploaded, transmitted, or sent to us or to any third party.</strong> The OCR engine, its worker, and its language data are all served from holomint.app itself, so not even the fact that you used the scanner is shared with a third-party CDN. <em>(If we ever change this, for example by adding a cloud image-recognition service, we will update this policy and tell you before it ships.)</em></p>
 <h2>7. Legal bases (EEA/UK users)</h2>
 <p>Where the GDPR applies, we process the limited data described above on the basis of: <strong>contract</strong> (to provide and bill for Holomint Pro), <strong>legitimate interests</strong> (to secure and operate the Service and prevent abuse), and <strong>legal obligation</strong> (to keep tax and transaction records).</p>
 <h2>8. Your rights and choices</h2>
