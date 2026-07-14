@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v64';        // app shell, replaced on every release
+const CACHE = 'holomint-v66';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin — persists across releases
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
@@ -80,6 +80,8 @@ self.addEventListener('fetch', e => {
    Note: Chrome requires userVisibleOnly, so every push MUST show something.
 --------------------------------------------------------------------------- */
 
+const FEED_API = 'https://holomint-feed.mmilliard2516.workers.dev';
+
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) {}
@@ -92,15 +94,44 @@ self.addEventListener('push', e => {
     tag: d.tag || 'holomint-drop',   // collapses repeats for the same product
     renotify: true,
     timestamp: d.ts || Date.now(),
-    data: { url: d.url || './' },
-    actions: [{ action: 'open', title: 'Open listing' }]
+    data: { url: d.url || './', pid: d.pid || null, pname: d.pname || null },
+    actions: (d.act === 'watch' && d.pid)
+      ? [{ action: 'open', title: 'Open' }, { action: 'watch', title: 'Watch this' }]
+      : [{ action: 'open', title: 'Open listing' }]
   };
   e.waitUntil(self.registration.showNotification(title, opts));
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const target = (e.notification.data && e.notification.data.url) || './';
+  const D = e.notification.data || {};
+
+  // "Watch this" from an invite or staged-page alert: add it server-side without ever
+  // opening the app. iOS ignores notification actions entirely, so this is progressive
+  // enhancement; the in-app watchlist is the iOS path.
+  if (e.action === 'watch' && D.pid) {
+    e.waitUntil((async () => {
+      let ok = false;
+      try {
+        const sub = await self.registration.pushManager.getSubscription();
+        if (sub) {
+          const r = await fetch(FEED_API + '/api/watch-add', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint, id: D.pid, name: D.pname || '' }),
+          });
+          ok = r.ok;
+        }
+      } catch (err) {}
+      await self.registration.showNotification(
+        ok ? 'Added to watchlist' : 'Could not add it',
+        { body: ok ? (D.pname || '') + ' will alert you the second it goes buyable, whatever the margin.'
+                   : 'Open Holomint and add it from the alerts settings.',
+          icon: './icon-192.png', badge: './icon-192.png', tag: 'watch-ok' });
+    })());
+    return;
+  }
+
+  const target = D.url || './';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       // Prefer an already-open Holomint window over spawning another one.

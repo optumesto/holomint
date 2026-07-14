@@ -214,6 +214,21 @@
   .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
   .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
   .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
+  .lk-invite{background:rgba(178,140,255,.16);color:#c8a2ff}
+  .lk-preload{background:rgba(127,176,255,.16);color:#7fb0ff}
+  .lk-announce{background:rgba(255,255,255,.07);color:var(--ink2);border:1px dashed var(--line)}
+  .dl-act{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--gold);text-decoration:none}
+  .dl-act:active{opacity:.6}
+  .dl-track{margin-top:8px;padding:7px 12px;font-size:12px}
+  .wl-sug{display:none;position:absolute;left:0;right:0;top:64px;z-index:40;background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .wl-opt{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--bg3)}
+  .wl-opt:last-child{border-bottom:none}
+  .wl-opt:active{background:var(--bg3)}
+  .wl-opt span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:2px}
+  .wl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .wl-chip{display:inline-flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:5px 6px 5px 11px;font-size:12px;color:var(--ink)}
+  .wl-chip button{background:none;border:none;color:var(--ink3);font-size:15px;line-height:1;cursor:pointer;padding:2px 5px}
+  .wl-chip button:active{color:var(--down)}
   .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:9px 12px;margin:10px 0 2px;font-size:12px;line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
   .dl-founder b{color:var(--gold)}
   .dl-lock{opacity:.72}
@@ -374,6 +389,22 @@
               <option value="cash">Cash (no fees)</option>
             </select>
             <div class="sub">Alert profit floors are computed net of this channel's fees.</div>
+          </div>
+          <div class="field" style="position:relative">
+            <label>Watchlist</label>
+            <input id="alWatch" type="text" placeholder="Search sealed products, e.g. Prismatic ETB" autocomplete="off">
+            <div id="alWatchSug" class="wl-sug"></div>
+            <div id="alWatchChips" class="wl-chips"></div>
+            <div class="sub">Watched products alert you on every restock, whether or not they clear your floors.</div>
+            <label class="ck-chk" style="margin-top:8px"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
+          </div>
+          <div class="field">
+            <label class="ck-chk"><input type="checkbox" id="alQueue"><span><b>Queue alerts</b> (Pokemon Center waiting room and similar)</span></label>
+            <div class="sub">At Pokemon Center the queue is usually the only window that matters. Get pinged the moment it opens.</div>
+          </div>
+          <div class="field">
+            <label class="ck-chk"><input type="checkbox" id="alIntel"><span><b>Pre-drop intel</b> (invites and staged pages)</span></label>
+            <div class="sub">Invite signups and preloaded product pages, before the drop exists. The calm way to be early.</div>
           </div>
           <div class="field">
             <label class="ck-chk" style="margin-bottom:6px"><input type="checkbox" id="alQuiet"><span><b>Quiet hours</b> (no alerts overnight)</span></label>
@@ -724,6 +755,7 @@ const HINTS={
   deal:["Deal log","<p>Every buy and trade you archive, with the date and what you paid or received.</p><p style='margin-top:8px'>Useful for reconstructing a deal months later, or exporting your full history to CSV.</p>"],
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hint]');if(!b)return;e.preventDefault();e.stopPropagation();const h=HINTS[b.dataset.hint];if(h)Sheet.info(h[0],h[1]);},true);
+document.addEventListener('click',e=>{const t=e.target.closest('[data-track]');if(!t)return;e.preventDefault();e.stopPropagation();LiveDrops.track(t.dataset.track,t.dataset.date);},true);
 
 /* ---- Drop alerts (Web Push) --------------------------------------------
    The service worker receives these with the app CLOSED. That is the whole
@@ -738,13 +770,14 @@ const Alerts=(function(){
   const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
   const capable=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
 
-  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
+  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,queueAlerts:false,intelAlerts:false,watch:[],watchOnly:false,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
   const savePrefs=p=>Store.save('alertPrefs',p);
 
   function payload(sub){
     const p=prefs();
     return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',
-      prefs:{channel:p.channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'],
+      prefs:{channel:p.channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'].concat(p.queueAlerts?['queue']:[]).concat(p.intelAlerts?['invite','preload']:[]),
+        watch:(p.watch||[]).map(x=>String(x.id)),watchOnly:!!p.watchOnly,
         quietStart:p.quietOn?+p.quietStart:0,quietEnd:p.quietOn?+p.quietEnd:0,dailyCap:+p.dailyCap,
         tzOffset:-new Date().getTimezoneOffset()}};
   }
@@ -831,13 +864,18 @@ const Alerts=(function(){
       $('#alQuietRow').style.display=p.quietOn?'':'none';
       $('#alQs').value=p.quietStart;$('#alQe').value=p.quietEnd;$('#alCap').value=p.dailyCap;
       $('#alQuiet').onchange=()=>{$('#alQuietRow').style.display=$('#alQuiet').checked?'':'none';};
+      $('#alWatchOnly').checked=!!p.watchOnly;
+      $('#alQueue').checked=!!p.queueAlerts;
+      $('#alIntel').checked=!!p.intelAlerts;
+      paintWatch(p.watch||[]);
+      wireWatchSearch();
     }
     const F=(typeof Checkout!=='undefined'&&Checkout.get()&&Checkout.get().founder)||null;
     const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:8px">Founder pricing: '+F.left+' of '+F.total+' seats left at $'+Number(F.amount).toFixed(2)+'/month, locked for good.</div>':'';
     const msg={
       'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
-      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes</b>. By the time a free alert reaches you, the drop is usually gone. Pro gets the same alert the second it lands.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>'+fnote,
-      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free alerts arrive 10 minutes late.</b> Pro alerts are instant.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>'+fnote,
+      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro is instant, with a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>'+fnote,
+      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free: 10 minutes late, 2 a day.</b> Pro: instant, your own ceiling.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>'+fnote,
       'blocked':'<div class="sub">Notifications are blocked for this site. Re-allow them in your browser settings, then come back.</div>',
       'unsupported':'<div class="sub">This browser cannot receive push notifications.</div>',
       'ios-install':'<div class="sub"><b style="color:var(--ink2)">Add Holomint to your Home Screen first.</b><br>On iPhone, alerts only work for installed apps.<br><br>1. Tap the Share button in Safari<br>2. Scroll and tap <b style="color:var(--ink2)">Add to Home Screen</b><br>3. Open Holomint from the new icon<br>4. Come back here and turn alerts on</div>',
@@ -849,9 +887,35 @@ const Alerts=(function(){
     const off2=$('#alOff2'); if(off2)off2.onclick=disable;
   }
 
+  let curWatch=[];
+  function paintWatch(list){
+    curWatch=(list||[]).slice(0,50);
+    const box=$('#alWatchChips'); if(!box)return;
+    box.innerHTML=curWatch.map((x,i)=>'<span class="wl-chip">'+esc(x.name)+'<button data-wi="'+i+'" aria-label="Remove">&times;</button></span>').join('');
+    box.querySelectorAll('button[data-wi]').forEach(b=>b.onclick=()=>{curWatch.splice(+b.dataset.wi,1);paintWatch(curWatch);});
+  }
+  function wireWatchSearch(){
+    const inp=$('#alWatch'),sug=$('#alWatchSug');
+    if(!inp||inp._wired)return; inp._wired=1;
+    inp.oninput=()=>{
+      const q=inp.value.trim().toLowerCase();
+      if(q.length<2){sug.innerHTML='';sug.style.display='none';return;}
+      const hits=(PriceEngine.list()||[]).filter(x=>x.type==='sealed'&&((x.name+' '+x.set).toLowerCase().includes(q))&&!curWatch.some(w=>w.id===x.id)).slice(0,6);
+      if(!hits.length){sug.innerHTML='';sug.style.display='none';return;}
+      sug.innerHTML=hits.map(h=>'<div class="wl-opt" data-id="'+h.id+'" data-name="'+esc(h.name)+'">'+esc(h.name)+'<span>'+esc(h.set)+'</span></div>').join('');
+      sug.style.display='block';
+      sug.querySelectorAll('.wl-opt').forEach(el=>el.onclick=()=>{
+        curWatch.push({id:el.dataset.id,name:el.dataset.name});
+        paintWatch(curWatch);inp.value='';sug.innerHTML='';sug.style.display='none';
+      });
+    };
+    inp.onblur=()=>setTimeout(()=>{sug.style.display='none';},250);
+  }
+
   function wire(){
     const s=$('#alSave'),o=$('#alOff');
     if(s)s.onclick=()=>{savePrefs({channel:$('#alChannel').value||'ebay',quietOn:$('#alQuiet').checked,
+      queueAlerts:$('#alQueue').checked,intelAlerts:$('#alIntel').checked,watch:curWatch.slice(0,50),watchOnly:$('#alWatchOnly').checked,
       minProfit:+$('#alMinProfit').value||25,minRoi:+$('#alMinRoi').value||20,
       quietStart:+$('#alQs').value||0,quietEnd:+$('#alQe').value||0,dailyCap:Math.min(20,Math.max(1,+$('#alCap').value||8))});push();};
     if(o)o.onclick=disable;
@@ -1350,12 +1414,12 @@ const LiveDrops=(function(){
     }catch(e){/* offline, keep the cached feed */}
   }
   function badge(k){return k==='queue'?'QUEUE':k==='restock'?'RESTOCK':'SIGNAL';}
-  function kc(k){return (k==='queue'||k==='restock'||k==='signal')?k:'signal';}
+  function kc(k){return (k==='queue'||k==='restock'||k==='signal'||k==='invite'||k==='preload'||k==='announce')?k:'signal';}
   function row(e){
     if(e.redacted){
       return '<div class="drop-live dl-lock" data-unlock="'+e.unlocks_at+'">'
         +'<span class="lk lk-locked">LOCKED</span>'
-        +'<div class="dl-body"><div class="dl-title">A drop occurred</div>'
+        +'<div class="dl-body"><div class="dl-title">'+(e.cls==='intel'?'Pre-drop intel received':'A drop occurred')+'</div>'
         +'<div class="dl-sub">Unlocking in <b class="dl-cd" data-cd="'+e.unlocks_at+'">--:--</b></div>'
         +'<div class="dl-meta">Pro sees this the second it lands</div></div></div>';
     }
@@ -1364,11 +1428,32 @@ const LiveDrops=(function(){
     var when=e.received_at?timeAgo(e.received_at):(e.ts?timeAgo(e.ts*1000):'');
     var meta=[esc(e.source||''),when].filter(Boolean).join(' · ');
     var sub='';
+
+    // announce: a public future date. No ago-time, no push, a Track button into the
+    // existing Tracked Releases calendar instead.
+    if(e.kind==='announce'&&e.at){
+      var dt=new Date(e.at*1000);
+      var pretty=dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})
+        +' · '+dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+      var tta=safe?('<a class="dl-t" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+title+'</a>'):('<span class="dl-t">'+title+'</span>');
+      return '<div class="drop-live"><span class="lk lk-announce">ANNOUNCE</span>'
+        +'<div class="dl-body">'+tta
+        +'<div class="dl-sub"><b style="color:var(--gold)">'+esc(pretty)+'</b></div>'
+        +'<div class="dl-meta">'+esc(e.source||'')+'</div>'
+        +'<button class="ghost dl-track" data-track="'+esc(e.title||'')+'" data-date="'+dt.toISOString().slice(0,10)+'">Track this release</button>'
+        +'</div></div>';
+    }
     if(e.kind==='restock'&&e.product){
       var pt=esc(e.product.type||''),rt=(typeof e.product.retail==='number')?(' · ~$'+e.product.retail.toFixed(2)):'';
       if(pt||rt)sub='<div class="dl-sub">'+pt+rt+'</div>';
     }
+    if((e.kind==='invite'||e.kind==='preload')){
+      var pt2=e.product&&e.product.type?esc(e.product.type):'';
+      if(pt2)sub='<div class="dl-sub">'+pt2+'</div>';
+    }
+    var actLbl=e.kind==='invite'?'Sign up':(e.kind==='preload'?'Open staged page':null);
     var tt=safe?('<a class="dl-t" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+title+'</a>'):('<span class="dl-t">'+title+'</span>');
+    if(actLbl&&safe)tt+='<div><a class="dl-act" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+actLbl+' &rarr;</a></div>';
     var flipHtml='';
     try{var _ch=(typeof channel!=='undefined')?channel:'cash';var fl=SetMatch.flip(e,_ch);if(fl){var lbl=esc(((FeeCalc.channels[_ch]||{}).label)||'');var mk='$'+fl.market.toFixed(2);if(fl.profit!=null&&fl.profit>0.5){flipHtml='<div class="dl-flip pos"><span class="mk">market '+mk+'</span> · flip +$'+Math.round(fl.profit)+' ('+Math.round(fl.roi)+'%) via '+lbl+'</div>';}else if(fl.profit!=null){flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span> · '+(fl.profit>=0?'+':'-')+'$'+Math.abs(Math.round(fl.profit))+' via '+lbl+'</div>';}else{flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span></div>';}}}catch(_e){}
     return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+flipHtml+'<div class="dl-meta">'+meta+'</div></div></div>';
@@ -1377,6 +1462,14 @@ const LiveDrops=(function(){
     var list=recent();
     if(!list.length)return '<div class="dl-empty">No live drops right now. Pokémon Center restocks, queues, and signals land here automatically.</div>';
     return list.map(row).join('');
+  }
+  function trackFromFeed(name,date){
+    if(!name||!date)return;
+    if(drops.some(function(d){return d.name===name&&d.date===date;})){toast('Already tracking that one.');return;}
+    drops.push({id:'d'+Date.now().toString(36),name:name,date:date});
+    Store.save('drops',drops);
+    renderDrops();
+    toast('Tracking. Tap the calendar icon on the row for a reminder.');
   }
   function tick(){
     document.querySelectorAll('.dl-cd').forEach(el=>{
@@ -1393,7 +1486,7 @@ const LiveDrops=(function(){
     if(cdTimer)clearInterval(cdTimer);
     cdTimer=setInterval(function(){if(document.visibilityState==='visible')tick();},1000);
   }
-  return {refresh:refresh,html:html,start:start,recent:recent,tick:tick};
+  return {refresh:refresh,html:html,start:start,recent:recent,tick:tick,track:trackFromFeed};
 })();
 function icsFor(d){
   const dt=d.date.replace(/-/g,'');
