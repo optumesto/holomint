@@ -64,8 +64,8 @@
   #splash .sname{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);animation:holo 7s linear infinite}
   #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
-  .brandrow{display:flex;align-items:center;gap:7px}
-  .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px 0 -3px -2px}
+  .brandrow{display:flex;align-items:center;gap:4px}
+  .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px -2px -3px 0}
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
   .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -371,7 +371,7 @@
   <!-- ============ SETTINGS ============ -->
   <section class="panel" id="settings">
     <div class="card" style="text-align:center;padding:22px 16px">
-      <img src="icon-512.png" alt="" style="width:64px;height:64px;margin-bottom:8px;border-radius:14px">
+      <img src="leaf-splash.png" alt="" style="width:76px;height:76px;margin-bottom:6px;object-fit:contain;mix-blend-mode:screen">
       <div class="brand" style="font-size:26px">Holomint</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px">sealed · graded · singles</div>
     </div>
@@ -981,7 +981,7 @@ const Tour=(function(){
   const STEPS=[
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep.'},
-    {tab:'port', sel:'#dropsBody', title:'Every Pokemon restock, the second it lands',
+    {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, the second it lands',
      body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them instantly.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
      body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room the moment it opens.'},
@@ -1012,7 +1012,7 @@ const Tour=(function(){
     const W=innerWidth,H=innerHeight;
 
     if(r&&r.height>0){
-      const pad=8;
+      const pad=5;
       const t=Math.max(0,r.top-pad),b=Math.min(H,r.bottom+pad),l=Math.max(0,r.left-pad),g=Math.min(W,r.right+pad);
       // four rects around the target: a genuine hole, so the element underneath is really visible
       const box=(x,y,w,h)=>{const d=document.createElement('div');d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`;m.appendChild(d);};
