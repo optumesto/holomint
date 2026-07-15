@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Holomint Founder</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#070916">
+<!-- Open Graph, so the founder link unfurls as a product wherever it is pasted -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Holomint">
+<meta property="og:title" content="Holomint Pro: Founder pricing">
+<meta property="og:description" content="Lock Holomint Pro at the founder rate for as long as you stay subscribed. Limited seats.">
+<meta property="og:url" content="https://holomint.app/founder">
+<meta property="og:image" content="https://holomint.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://holomint.app/og.png">
+<style>
+  @font-face{font-family:'Fraunces';font-weight:100 900;font-display:swap;src:url(./fonts/fraunces.woff2) format('woff2-variations')}
+  @font-face{font-family:'Hanken Grotesk';font-weight:100 900;font-display:swap;src:url(./fonts/hanken.woff2) format('woff2-variations')}
+  @font-face{font-family:'IBM Plex Mono';font-weight:500;font-display:swap;src:url(./fonts/plexmono-500.woff2) format('woff2')}
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#070916;--bg2:#0e1122;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;
+    --holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff)}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;min-height:100%}
+  body{display:flex;align-items:center;justify-content:center;padding:24px;min-height:100vh;min-height:100dvh}
+  .holo{position:fixed;top:0;left:0;right:0;height:4px;background:var(--holo);background-size:240% auto;animation:sweep 7s linear infinite}
+  @keyframes sweep{from{background-position:0 center}to{background-position:240% center}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .card{width:100%;max-width:420px;text-align:center}
+  .leaf{width:64px;height:64px;object-fit:contain;mix-blend-mode:screen;margin:0 auto 14px;display:block}
+  .brand{font-family:'Fraunces';font-size:40px;font-weight:600;line-height:1;color:#c8a2ff;
+    background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;transform:translateZ(0);animation:sweep 7s linear infinite;margin-bottom:6px}
+  .tag{font-size:15px;color:var(--ink2);margin-bottom:30px}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;
+    animation:spin .8s linear infinite;margin:24px auto}
+  .msg{font-size:14px;color:var(--ink3);font-family:'IBM Plex Mono';letter-spacing:.02em}
+  .price{font-family:'Fraunces';font-size:56px;font-weight:600;line-height:1;margin:6px 0 4px}
+  .price span{font-size:20px;color:var(--ink3);font-family:'Hanken Grotesk';font-weight:400}
+  .price em{font-size:22px;color:var(--ink3);font-style:normal;text-decoration:line-through;margin-left:10px;font-weight:400}
+  .seats{display:inline-block;background:rgba(216,169,63,.12);border:1px solid rgba(216,169,63,.4);border-radius:999px;
+    padding:7px 16px;font-family:'IBM Plex Mono';font-size:13px;color:var(--gold);margin-bottom:26px}
+  .go{display:block;width:100%;background:var(--gold);color:#1a1205;font-weight:600;font-size:17px;border:none;border-radius:14px;
+    padding:16px;cursor:pointer;text-decoration:none;transition:transform .12s,filter .12s}
+  .go:active{transform:scale(.98)}.go:hover{filter:brightness(1.05)}
+  .fine{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:16px}
+  .fine a{color:var(--ink2)}
+  .back{display:inline-block;margin-top:22px;font-size:13px;color:var(--ink3);text-decoration:none;font-family:'IBM Plex Mono'}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="holo"></div>
+<div class="card">
+  <img class="leaf" src="./leaf-splash.png" alt="">
+  <div class="brand">Holomint</div>
+  <div class="tag">Founder pricing</div>
+
+  <!-- loading -->
+  <div id="load">
+    <div class="spin"></div>
+    <div class="msg">Checking availability&hellip;</div>
+  </div>
+
+  <!-- offer (filled in by JS) -->
+  <div id="offer" class="hide">
+    <div class="price" id="price"></div>
+    <div class="seats" id="seats"></div>
+    <a class="go" id="go" href="#">Continue to checkout</a>
+    <div class="fine">
+      Billed monthly. Renews automatically until you cancel, which you can do anytime from your receipt or in the app.
+      See the <a href="./terms.html">Terms</a> and <a href="./refunds.html">Refund Policy</a>.
+    </div>
+  </div>
+
+  <!-- not open yet / error -->
+  <div id="closed" class="hide">
+    <div class="msg" id="closedMsg">Subscriptions are not open yet.</div>
+    <a class="back" href="https://holomint.app/">&larr; Back to Holomint</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  var API='https://holomint-feed.mmilliard2516.workers.dev/api/pricing';
+  var $=function(id){return document.getElementById(id);};
+  function show(el){el.classList.remove('hide');}
+  function hide(el){el.classList.add('hide');}
+  function money(n){return '$'+Number(n).toFixed(2);}
+
+  function closed(msg){
+    hide($('load'));
+    if(msg)$('closedMsg').textContent=msg;
+    show($('closed'));
+  }
+
+  // Redirect straight to a checkout URL. If we can, skip the interstitial entirely so
+  // the person lands on Polar as fast as possible. The card is the fallback if the
+  // browser blocks an immediate navigation.
+  function present(p){
+    var founder = p.founder && p.founder.left>0 && p.founder.checkout;
+    var url = founder ? p.founder.checkout : p.checkout;
+    if(!url) return closed('Subscriptions are not open yet.');
+
+    var amount = founder ? p.founder.amount : p.amount;
+    var per = p.interval==='year' ? 'year' : 'month';
+
+    $('price').innerHTML = money(amount)+'<span>/'+per+'</span>'
+      + (founder ? '<em>'+money(p.amount)+'</em>' : '');
+    if(founder){
+      $('seats').textContent = p.founder.left+' of '+p.founder.total+' founder seats left';
+    } else {
+      hide($('seats'));
+    }
+    $('go').href = url;
+    hide($('load'));
+    show($('offer'));
+
+    // Give the seat count a beat to be seen, then send them through. Founder scarcity is
+    // real, so it is worth the half second; the button is there if the auto-redirect is blocked.
+    setTimeout(function(){ window.location.href = url; }, founder ? 1400 : 700);
+  }
+
+  fetch(API,{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(p){
+      if(!p || !p.configured) return closed('Subscriptions are not open yet.');
+      present(p);
+    })
+    .catch(function(){
+      closed('Could not reach checkout. Please try again in a moment.');
+    });
+})();
+</script>
+</body>
+</html>
