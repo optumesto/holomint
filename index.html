@@ -217,6 +217,13 @@
   .lk-invite{background:rgba(178,140,255,.16);color:#c8a2ff}
   .lk-preload{background:rgba(127,176,255,.16);color:#7fb0ff}
   .lk-announce{background:rgba(255,255,255,.07);color:var(--ink2);border:1px dashed var(--line)}
+  .dl-ask{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .dl-ask span{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+  .dl-yes,.dl-no{font-size:12px;font-weight:600;border-radius:8px;padding:5px 12px;cursor:pointer;border:1px solid var(--line);background:var(--bg3);color:var(--ink)}
+  .dl-yes{border-color:rgba(70,227,172,.4);color:var(--up)}
+  .dl-yes:active{background:rgba(70,227,172,.14)}
+  .dl-no:active{background:var(--bg2)}
+  .dl-caught{margin-top:9px;font-size:11.5px;color:var(--up);font-family:var(--mono)}
   .dl-act{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--gold);text-decoration:none}
   .dl-act:active{opacity:.6}
   .dl-track{margin-top:8px;padding:7px 12px;font-size:12px}
@@ -783,6 +790,10 @@ const HINTS={
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hint]');if(!b)return;e.preventDefault();e.stopPropagation();const h=HINTS[b.dataset.hint];if(h)Sheet.info(h[0],h[1]);},true);
 document.addEventListener('click',e=>{const t=e.target.closest('[data-track]');if(!t)return;e.preventDefault();e.stopPropagation();LiveDrops.track(t.dataset.track,t.dataset.date);},true);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-caught]');if(!b)return;e.preventDefault();e.stopPropagation();
+  Caught.mark(b.dataset.cid,b.dataset.caught,b.dataset.pid||'',b.dataset.pnm||'');
+  toast(b.dataset.caught==='caught'?'Nice. Logged as caught.':'Logged.');
+  if(typeof renderDrops==='function')renderDrops();},true);
 
 /* ---- Drop alerts (Web Push) --------------------------------------------
    The service worker receives these with the app CLOSED. That is the whole
@@ -967,6 +978,34 @@ function paintFounder(){
   el.innerHTML='<b>Founder pricing</b> · '+F.left+' of '+F.total+' seats left · tap to lock $'+Number(F.amount).toFixed(2)+'/month for good';
   el.onclick=()=>$('#proBtn').click();
 }
+
+/* ---- Caught it: outcome logging ------------------------------------------
+   One tap after an alert: did you get it? Stored locally (the value ticker reads
+   this) and pinged anonymously to the Worker for aggregate conversion signal.
+   No analytics SDK, no new data category beyond a product id we already handle. */
+const Caught=(function(){
+  var KEY='caught';
+  function all(){return Store.load(KEY,{});}
+  function state(cid){return all()[cid]&&all()[cid].o;}
+  function mark(cid,outcome,pid,pname){
+    var m=all();
+    if(m[cid])return;                                  // one outcome per drop, ever
+    m[cid]={o:outcome,pid:pid,name:pname||'',at:Date.now()};
+    Store.save(KEY,m);
+    // fire-and-forget anonymous ping; failure is fine, the local record is the source of truth
+    try{
+      fetch('https://holomint-feed.mmilliard2516.workers.dev/api/caught',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outcome:outcome,pid:pid})}).catch(function(){});
+    }catch(e){}
+  }
+  // total caught in the current month, from the local log. Feeds the value ticker later.
+  function monthCaught(){
+    var m=all(),ym=new Date().toISOString().slice(0,7),n=0;
+    for(var k in m){if(m[k].o==='caught'&&new Date(m[k].at).toISOString().slice(0,7)===ym)n++;}
+    return n;
+  }
+  return {state:state,mark:mark,monthCaught:monthCaught};
+})();
+window.Caught=Caught;
 
 /* ---- First-run tour ------------------------------------------------------
    Launch traffic is 100% first-time visitors, and the app opens on a fee
@@ -1585,7 +1624,18 @@ const LiveDrops=(function(){
     if(actLbl&&safe)tt+='<div><a class="dl-act" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">'+actLbl+' &rarr;</a></div>';
     var flipHtml='';
     try{var _ch=(typeof channel!=='undefined')?channel:'cash';var fl=SetMatch.flip(e,_ch);if(fl){var lbl=esc(((FeeCalc.channels[_ch]||{}).label)||'');var mk='$'+fl.market.toFixed(2);if(fl.profit!=null&&fl.profit>0.5){flipHtml='<div class="dl-flip pos"><span class="mk">market '+mk+'</span> · flip +$'+Math.round(fl.profit)+' ('+Math.round(fl.roi)+'%) via '+lbl+'</div>';}else if(fl.profit!=null){flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span> · '+(fl.profit>=0?'+':'-')+'$'+Math.abs(Math.round(fl.profit))+' via '+lbl+'</div>';}else{flipHtml='<div class="dl-flip"><span class="mk">market '+mk+'</span></div>';}}}catch(_e){}
-    return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+flipHtml+'<div class="dl-meta">'+meta+'</div></div></div>';
+    var pid=(e.match&&e.match.id)?String(e.match.id):(e.pid?String(e.pid):'');
+    var pnm=(e.match&&e.match.name)?e.match.name:(e.pname||'');
+    var caughtHtml='';
+    if(e.kind==='restock'&&pid&&!e.redacted){
+      var done=Caught.state(e.event_id||pid);
+      caughtHtml = done
+        ? '<div class="dl-caught">'+(done==='caught'?'\u2713 Marked as caught':'Marked missed')+'</div>'
+        : '<div class="dl-ask"><span>Did you get it?</span>'
+          +'<button class="dl-yes" data-caught="caught" data-cid="'+esc(e.event_id||pid)+'" data-pid="'+esc(pid)+'" data-pnm="'+esc(pnm)+'">Caught it</button>'
+          +'<button class="dl-no" data-caught="missed" data-cid="'+esc(e.event_id||pid)+'" data-pid="'+esc(pid)+'">Missed</button></div>';
+    }
+    return '<div class="drop-live"><span class="lk lk-'+kc(e.kind)+'">'+badge(e.kind)+'</span><div class="dl-body">'+tt+sub+flipHtml+'<div class="dl-meta">'+meta+'</div>'+caughtHtml+'</div></div>';
   }
   function html(){
     var list=recent();
