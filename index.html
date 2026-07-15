@@ -61,11 +61,11 @@
   #splash.gone{opacity:0;visibility:hidden}
   #splash img{width:150px;height:150px;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 8px 30px rgba(125,240,200,.22));animation:sfloat 2.4s ease-in-out infinite}
   @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-  #splash .sname{font-family:var(--serif);font-size:30px;font-weight:600;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
+  #splash .sname{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);animation:holo 7s linear infinite}
   #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
-  .brandrow{display:flex;align-items:center;gap:9px}
-  .brandrow img{width:26px;height:26px;flex:0 0 auto;object-fit:contain}
+  .brandrow{display:flex;align-items:center;gap:7px}
+  .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px 0 -3px -2px}
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
   .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -76,9 +76,9 @@
   .navb.scan-fab .fabwrap svg{width:24px;height:24px;stroke:#0c1020;stroke-width:2}
   .wrap2{display:none}
   header{padding:calc(14px + env(safe-area-inset-top)) 0 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none}
-  .brand{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:.02em;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:holo 7s linear infinite}
+  .brand{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1;letter-spacing:.02em;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);will-change:background-position;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
-  @keyframes holo{to{background-position:240% center}}
+  @keyframes holo{from{background-position:0 center}to{background-position:240% center}}
   .probtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:18px;padding:9px 14px;min-height:34px;cursor:pointer}
   .probtn.on{border-color:transparent;background:var(--holo);background-size:240% auto;color:#101010;font-weight:600;animation:holo 7s linear infinite}
   .netpill{display:none;margin:-6px 0 12px;text-align:center}
@@ -282,7 +282,7 @@
   <div class="netpill" id="netPill"><span id="netPillText">Offline</span></div>
 
   <!-- ============ TRADE BLOCK ============ -->
-  <section class="panel on" id="block">
+  <section class="panel on" id="block" data-tour-block>
     <div class="seg sm" id="langSeg" style="margin-bottom:8px"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
@@ -337,7 +337,7 @@
   <!-- ============ PORTFOLIO ============ -->
   <section class="panel" id="port">
     <div class="stats" id="portStats"></div>
-    <div class="card">
+    <div class="card" id="portTotals">
       <label>Allocation</label>
       <div class="weight" id="weightBar"></div>
       <div class="wleg" id="weightLeg"></div>
@@ -371,8 +371,8 @@
   <!-- ============ SETTINGS ============ -->
   <section class="panel" id="settings">
     <div class="card" style="text-align:center;padding:22px 16px">
-      <img src="icon-512.png" alt="" style="width:72px;height:72px;margin-bottom:10px">
-      <div class="brand" style="font-size:24px">Holomint</div>
+      <img src="icon-512.png" alt="" style="width:64px;height:64px;margin-bottom:8px;border-radius:14px">
+      <div class="brand" style="font-size:26px">Holomint</div>
       <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px">sealed · graded · singles</div>
     </div>
     <div class="card">
@@ -456,7 +456,7 @@
 
   <!-- ============ SLAB MATH ============ -->
   <section class="panel" id="slab">
-    <div class="card">
+    <div class="card" id="slabCard">
       <div class="grid2" style="margin-bottom:10px">
         <div><label>Card</label><input id="cardName" placeholder="Mega Charizard X EX"></div>
         <div><label>Number</label><input id="cardNum" placeholder="125/094 or SWSH284"></div>
@@ -979,12 +979,16 @@ const Tour=(function(){
   let i=0,ring=null;
 
   const STEPS=[
+    {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
+     body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep.'},
     {tab:'port', sel:'#dropsBody', title:'Every Pokemon restock, the second it lands',
-     body:'This is the live feed. Pokemon Center, Best Buy, Target, and more, each one matched to its sealed listing and <b>priced net of your fees</b> against retail. No hunting, no refreshing.'},
-    {tab:'port', sel:'#dropsBody', title:'Locked rows are on a 10 minute delay',
-     body:'Free shows every drop, <b>10 minutes late</b>. By then the hot ones are gone. That delay is the only thing Pro removes from the feed: same drops, the second they land instead of ten minutes after.'},
+     body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them instantly.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
-     body:'You should not have to sit and stare at a feed. Turn on alerts and your phone buzzes when a drop clears the floors you set. <b>The app does not need to be open.</b>'}
+     body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room the moment it opens.'},
+    {tab:'port', sel:'#portTotals', title:'Track holdings as a P&L, not a binder',
+     body:'Log what you buy and Holomint tracks cost basis, market value, and realized gains with FIFO or LIFO accounting. It is a portfolio, not a checklist. Pro adds a tax summary and CSV export.'},
+    {tab:'slab', sel:'#slabCard', title:'Grading math, before you send it in',
+     body:'Slab Math weighs the grading fee against the graded-vs-raw spread and the odds, so you know whether a card is worth submitting. Look up any card and see the numbers.'}
   ];
 
   function clear(){
@@ -1023,8 +1027,10 @@ const Tour=(function(){
     $('#tourTitle').textContent=st.title;
     $('#tourBody').innerHTML=st.body;
     $('#tourDots').innerHTML=STEPS.map((_,n)=>'<i class="'+(n===i?'on':'')+'"></i>').join('');
-    $('#tourNext').textContent=(i===STEPS.length-1)?'Turn on alerts':'Next';
-    $('#tourSkip').textContent=(i===STEPS.length-1)?'Not now':'Skip';
+    const last=(i===STEPS.length-1);
+    const isAlerts=STEPS[i].sel==='#alertCard';
+    $('#tourNext').textContent=last?(isAlerts?'Turn on alerts':'Done'):'Next';
+    $('#tourSkip').textContent=last?'Close':'Skip';
 
     // card goes below the highlight when there is room, otherwise above it
     const card=$('#tourCard');
@@ -1043,10 +1049,11 @@ const Tour=(function(){
   }
   function done(finish){
     Store.save(KEY,1);
+    const wasAlerts=STEPS[i]&&STEPS[i].sel==='#alertCard';
     clear();
     $('#tourWrap').classList.remove('on');
     $('#tourWrap').setAttribute('aria-hidden','true');
-    if(finish){const b=$('#alOn');if(b)b.click();}
+    if(finish&&wasAlerts){const b=$('#alOn');if(b)b.click();}
   }
   function start(){
     $('#tourWrap').classList.add('on');
@@ -2058,7 +2065,7 @@ const Scanner=(function(){
     if(window.Tesseract)return Promise.resolve();
     if(tScriptP)return tScriptP;
     tScriptP=new Promise((res,rej)=>{const sc=document.createElement('script');
-      sc.src='./tesseract/tesseract.min.js';
+      sc.src='./tesseract.min.js';
       sc.onload=res;sc.onerror=()=>rej(new Error('script load failed'));document.head.appendChild(sc);});
     return tScriptP;
   }
@@ -2068,15 +2075,21 @@ const Scanner=(function(){
     if(workerP)return workerP;
     workerP=(async()=>{
       await loadScript();
-      // Self-hosted. Previously this pulled four artifacts from jsDelivr at runtime, on a
-      // FLOATING major (tesseract.js@5), meaning any new 5.x was served automatically to
-      // every user without review. That is arbitrary third-party JS with access to a
-      // localStorage that holds Pro licence keys. All four are now served from our origin.
-      // corePath is a DIRECTORY: tesseract feature-detects SIMD and picks the right core.
+      // Self-hosted. This previously pulled four artifacts from jsDelivr at runtime on a
+      // FLOATING major (tesseract.js@5), so any new 5.x was served automatically to every
+      // user without review: arbitrary third-party JS with access to a localStorage that
+      // holds Pro licence keys. All four now come from our own origin, flat at the root.
+      //
+      // Passing corePath a specific .js file skips tesseract's own directory+SIMD lookup,
+      // so we detect SIMD here instead. (Same probe wasm-feature-detect uses.) That is what
+      // lets every file live at the root with no subfolders.
+      const simd=(()=>{try{
+        return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));
+      }catch(e){return false;}})();
       const w=await Tesseract.createWorker('eng',1,{
-        workerPath:'./tesseract/worker.min.js',
-        corePath:'./tesseract/core',
-        langPath:'./tesseract/lang',
+        workerPath:'./tesseract-worker.min.js',
+        corePath:simd?'./tesseract-core-simd-lstm.wasm.js':'./tesseract-core-lstm.wasm.js',
+        langPath:'.',
         logger:m=>{
           if(m.status&&$('#scanStatus')){
             if(m.status==='downloading'||m.status==='loading tesseract core'||m.status.indexOf('loading')>=0)
