@@ -251,6 +251,7 @@
   .lot-hint{font-size:12px;color:var(--ink3)}
   .lot-ask{margin-top:16px}
   .lot-progress{text-align:center;padding:40px 0}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .lot-progress .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
   .lot-progress .msg{font-size:13px;color:var(--ink3);font-family:var(--mono)}
   .lot-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
@@ -507,18 +508,18 @@
       <div class="grid2" style="margin-bottom:10px"><div><label>Grader</label><select id="gBrand"></select></div><div><label>Service</label><select id="gService"></select></div></div>
       <div class="grid2" style="margin-bottom:12px"><div><label>Ship / card</label><input class="num" id="gShip" type="number" value="3"></div></div>
       <div class="stats" style="grid-template-columns:repeat(3,1fr);margin:0">
-        <div class="stat"><div class="sl">Fee 🔒</div><div class="sv" id="tFee">—</div></div>
-        <div class="stat"><div class="sl">Days 🔒</div><div class="sv" id="tDays">—</div></div>
-        <div class="stat"><div class="sl">Raw 🔒</div><div class="sv" id="tRaw">—</div></div>
+        <div class="stat"><div class="sl">Fee 🔒</div><div class="sv" id="tFee">-</div></div>
+        <div class="stat"><div class="sl">Days 🔒</div><div class="sv" id="tDays">-</div></div>
+        <div class="stat"><div class="sl">Raw 🔒</div><div class="sv" id="tRaw">-</div></div>
       </div>
     </div>
     <div class="card">
       <table style="margin-top:0">
         <thead><tr><th>Grade</th><th>Value</th><th>Pop</th><th>vs raw</th></tr></thead>
         <tbody>
-          <tr><td>10</td><td><input class="num" id="g10" type="number" value="300" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p10pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d10">—</td></tr>
-          <tr><td>9</td><td><input class="num" id="g9" type="number" value="140" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p9pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d9">—</td></tr>
-          <tr><td>8</td><td><input class="num" id="g8" type="number" value="90" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p8pop" type="number" placeholder="—" style="padding:7px 9px;font-size:13px"></td><td id="d8">—</td></tr>
+          <tr><td>10</td><td><input class="num" id="g10" type="number" value="300" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p10pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d10">-</td></tr>
+          <tr><td>9</td><td><input class="num" id="g9" type="number" value="140" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p9pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d9">-</td></tr>
+          <tr><td>8</td><td><input class="num" id="g8" type="number" value="90" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p8pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d8">-</td></tr>
         </tbody>
       </table>
     </div>
@@ -527,7 +528,7 @@
       <div class="colbody" id="salesBody"></div>
     </div>
     <div class="card">
-      <div class="verdict"><div class="vv" id="gVerdict">—</div><div class="ve" id="gEdge"></div></div>
+      <div class="verdict"><div class="vv" id="gVerdict">-</div><div class="ve" id="gEdge"></div></div>
       <div class="stats" style="margin:14px 0 2px">
         <div class="stat"><div class="sl">All-in cost</div><div class="sv" id="sCost">$0</div></div>
         <div class="stat"><div class="sl">Net at 10</div><div class="sv" id="sN10">$0</div></div>
@@ -1659,7 +1660,7 @@ function renderTax(){
   const body=$('#taxBody');
   if(!Premium.active()){body.innerHTML=lockHtml('Realized P&L by tax year, ready for filing.');wireLocks();return;}
   if(!soldLog.length){body.innerHTML='<div class="empty">No sales yet</div>';return;}
-  const byYear={};soldLog.forEach(r=>{const y=(r.date||'').slice(0,4)||'—';byYear[y]=byYear[y]||{n:0,basis:0,net:0,realized:0};const b=byYear[y];b.n+=1;b.basis+=r.basis;b.net+=r.net;b.realized+=r.realized;});
+  const byYear={};soldLog.forEach(r=>{const y=(r.date||'').slice(0,4)||'-';byYear[y]=byYear[y]||{n:0,basis:0,net:0,realized:0};const b=byYear[y];b.n+=1;b.basis+=r.basis;b.net+=r.net;b.realized+=r.realized;});
   body.innerHTML='<table><thead><tr><th>Year</th><th>Sales</th><th>Basis</th><th>Net</th><th>P&L</th></tr></thead><tbody>'+Object.entries(byYear).sort((a,b)=>b[0].localeCompare(a[0])).map(([y,v])=>{
     const cls=v.realized>=0?'pos':'neg';
     return `<tr><td>${y}</td><td>${v.n}</td><td>${usd(v.basis)}</td><td>${usd(v.net)}</td><td class="${cls}">${usd(v.realized)}</td></tr>`;}).join('')+'</tbody></table>';
@@ -2161,7 +2162,7 @@ function pickCard(c){
     $('#chSet').textContent=c.set;
     $('#finishRow').innerHTML='';SlabData.finish=null;
     Slab.raw=c.price!=null?c.price:null;
-    $('#tRaw').textContent=Slab.raw!=null?usd(Slab.raw):'—';
+    $('#tRaw').textContent=Slab.raw!=null?usd(Slab.raw):'-';
     $('#cardHit').classList.remove('hide');
     renderGrade();return;
   }
@@ -2182,7 +2183,7 @@ function pickCard(c){
 function applyFinish(){const c=SlabData.card;let raw=null;
   if(c&&SlabData.finish&&c.prices[SlabData.finish])raw=c.prices[SlabData.finish].market;
   Slab.raw=raw;
-  $('#tRaw').textContent=raw!=null?usd(raw):'—';
+  $('#tRaw').textContent=raw!=null?usd(raw):'-';
   renderGrade();}
 function slabData(){if(!SlabData.card)return;
   SlabData.gradeData(SlabData.card,gBrandSel).then(d=>{
@@ -2220,7 +2221,7 @@ function renderGrade(){
   $('#sCost').textContent=usd(cost);
   const grades=[['10',+$('#g10').value||0,'d10'],['9',+$('#g9').value||0,'d9'],['8',+$('#g8').value||0,'d8']];
   if(raw==null){
-    grades.forEach(([g,v,id])=>{const el=$('#'+id);el.textContent='—';el.className='';});
+    grades.forEach(([g,v,id])=>{const el=$('#'+id);el.textContent='-';el.className='';});
     $('#sN10').textContent=usd((+$('#g10').value||0)-cost);
     $('#sN9').textContent=usd((+$('#g9').value||0)-cost);
     $('#sN8').textContent=usd((+$('#g8').value||0)-cost);
