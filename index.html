@@ -239,6 +239,33 @@
   #tourWrap{display:none;position:fixed;inset:0;z-index:9000}
   #tourWrap.on{display:block}
   #tourMask div{position:fixed;background:rgba(4,6,14,.86);backdrop-filter:blur(1.5px)}
+  #lotModal{display:none;position:fixed;inset:0;z-index:8500;background:var(--bg);overflow-y:auto}
+  #lotModal.show{display:block}
+  .lot-inner{max-width:560px;margin:0 auto;padding:56px 18px 40px}
+  .lot-head{margin-bottom:20px}
+  .lot-sub{font-size:13px;color:var(--ink2);line-height:1.55;margin-top:6px}
+  .lot-drop{border:1.5px dashed var(--line);border-radius:16px;padding:34px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+  .lot-drop:active,.lot-drop.drag{border-color:var(--gold);background:rgba(216,169,63,.05)}
+  .lot-drop-i{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink2)}
+  .lot-drop-i b{color:var(--ink)}
+  .lot-hint{font-size:12px;color:var(--ink3)}
+  .lot-ask{margin-top:16px}
+  .lot-progress{text-align:center;padding:40px 0}
+  .lot-progress .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  .lot-progress .msg{font-size:13px;color:var(--ink3);font-family:var(--mono)}
+  .lot-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .lot-row:last-child{border-bottom:none}
+  .lot-row .nm{flex:1;min-width:0}
+  .lot-row .nm b{display:block;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lot-row .nm span{font-size:11px;color:var(--ink3);font-family:var(--mono)}
+  .lot-row .pr{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .lot-row.miss .nm b{color:var(--ink3)}
+  .lot-row .fixbtn{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg3);color:var(--ink2);cursor:pointer}
+  .lot-tot{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--bg2)}
+  .lot-tot .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px}
+  .lot-tot .tr.big{font-size:17px;font-weight:600;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
+  .lot-verdict{margin-top:14px;padding:13px 16px;border-radius:12px;font-weight:600;text-align:center;font-size:15px}
+  .lot-actions{display:flex;gap:8px;margin-top:16px}
   #tourRing{position:fixed;border:2px solid var(--gold);border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px rgba(216,169,63,.16);transition:all .28s cubic-bezier(.4,0,.2,1)}
   #tourCard{position:fixed;left:14px;right:14px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
   .tour-dots{display:flex;gap:5px;margin-bottom:12px}
@@ -332,7 +359,8 @@
       </div>
     </div>
     <div class="btnrow">
-      <button class="ghost" id="copyReceipt" style="flex:0 0 auto" disabled>Receipt</button>
+      <button class="ghost" id="copyReceipt" style="flex:0 0 auto" disabled>Share deal image</button>
+      <button class="ghost" id="scanLot" style="flex:0 0 auto">Scan a lot</button>
       <button class="act" id="sendDesk" style="flex:1" disabled>Send to Desk →</button>
     </div>
     <div class="card" id="hotCard" style="display:none;margin-top:14px">
@@ -351,7 +379,7 @@
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
-        <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
+        <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="refreshGraded" style="padding:8px 11px" title="Update graded card values">Price graded</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
       </div>
       <div class="row" style="gap:6px;margin-bottom:7px"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:9px 11px;font-size:14px"><select id="holdSort" style="padding:6px 7px;font-size:11px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
       <div class="seg sm" id="holdTypeSeg" style="margin-bottom:10px"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
@@ -520,6 +548,39 @@
 <div class="sheetbg" id="sheetbg"></div>
 <div class="sheet" id="sheet"><div class="holo-line"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div>
   <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
+</div>
+<div id="lotModal">
+  <button class="scanx" id="lotClose">×</button>
+  <div class="lot-inner">
+    <div class="lot-head">
+      <div class="brand" style="font-size:22px">Lot scanner</div>
+      <div class="lot-sub">Paste or upload a marketplace listing photo. Holomint reads the cards, prices each net of your fees, and totals the lot against the asking price.</div>
+    </div>
+
+    <div id="lotDrop" class="lot-drop">
+      <div class="lot-drop-i">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16l4-4 3 3 5-5 4 4M4 20h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1z"/></svg>
+        <div><b>Tap to upload</b> or paste a screenshot</div>
+        <div class="lot-hint">a binder page, a pile of singles, a listing photo</div>
+      </div>
+      <input type="file" id="lotFile" accept="image/*" style="display:none">
+    </div>
+
+    <div id="lotAsk" class="lot-ask" style="display:none">
+      <label style="margin:0 0 6px">Asking price (optional)</label>
+      <div class="row" style="gap:8px;align-items:center">
+        <span style="color:var(--ink3)">$</span>
+        <input type="number" id="lotAskVal" inputmode="decimal" placeholder="what they want for the lot" style="flex:1">
+      </div>
+    </div>
+
+    <div id="lotProgress" class="lot-progress" style="display:none">
+      <div class="spin"></div>
+      <div class="msg" id="lotStatus">Reading the photo…</div>
+    </div>
+
+    <div id="lotResults" style="display:none"></div>
+  </div>
 </div>
 <div id="scanModal">
   <button class="scanx" id="scanClose">×</button><button class="scanx" id="scanTorch" style="right:64px;display:none" onclick="Scanner.toggleTorch()">⚡</button>
@@ -979,6 +1040,45 @@ function paintFounder(){
   el.onclick=()=>$('#proBtn').click();
 }
 
+/* ---- Graded price refresh ------------------------------------------------
+   Graded holdings get live values from the Worker's /api/graded (PokeTrace behind
+   a 24h cache). One request per graded card; the Worker dedupes across all users,
+   so this stays well inside the API limit. Stores value + a per-card asOf date. */
+const GradedPrices=(function(){
+  var base='https://holomint-feed.mmilliard2516.workers.dev/api/graded';
+  function fetchOne(h){
+    var g=(h.grader||'psa'), gr=(h.grade||'10');
+    var num=h.number||h.cardNum||'';
+    return fetch(base+'?name='+encodeURIComponent(h.name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(g)+'&grade='+encodeURIComponent(gr),{cache:'no-store'})
+      .then(function(r){return r.json();}).catch(function(){return null;});
+  }
+  async function refresh(opts){
+    opts=opts||{};
+    var graded=holdings.filter(function(h){return h.type==='graded'&&h.name;});
+    if(!graded.length){if(!opts.silent)toast('No graded cards to price.');return;}
+    // if the endpoint is not configured yet, say so once and stop
+    var probe=await fetchOne(graded[0]);
+    if(probe&&probe.configured===false){if(!opts.silent)toast('Graded pricing is not switched on yet.');return;}
+    var updated=0,missed=0;
+    // sequential to be gentle; the set is small and the Worker cache makes repeats instant
+    for(var i=0;i<graded.length;i++){
+      var d=(i===0)?probe:await fetchOne(graded[i]);
+      if(d&&d.found&&d.value!=null){graded[i].currentValue=Math.round(d.value);graded[i].gradedAsOf=Date.now();graded[i].gradedSales=d.saleCount||0;updated++;}
+      else{missed++;}
+    }
+    Store.save('holdings',holdings);
+    recompute&&recompute();renderPortfolio&&renderPortfolio();
+    if(!opts.silent)toast(updated+' priced'+(missed?', '+missed+' not found':'')+'.');
+    return {updated:updated,missed:missed};
+  }
+  // auto-refresh graded holdings whose price is stale (>20h), quietly, on load
+  function auto(){
+    var stale=holdings.some(function(h){return h.type==='graded'&&h.name&&(!h.gradedAsOf||Date.now()-h.gradedAsOf>20*3600000);});
+    if(stale)refresh({silent:true});
+  }
+  return {refresh:refresh,auto:auto};
+})();
+
 /* ---- Caught it: outcome logging ------------------------------------------
    One tap after an alert: did you get it? Stored locally (the value ticker reads
    this) and pinged anonymously to the Worker for aggregate conversion signal.
@@ -1247,7 +1347,7 @@ $$('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$('#modeSeg
   $('#channelCard').classList.toggle('hide',trade);$('#rateCard').classList.toggle('hide',trade);
   $('#theirCashRow').classList.toggle('hide',!trade);
   $('#sendDesk').textContent=trade?'Log trade →':'Send to Desk →';
-  $('#copyReceipt').textContent=trade?'Share trade':'Receipt';recompute();});
+  $('#copyReceipt').textContent=trade?'Share trade image':'Share deal image';recompute();});
 
 const chWrap=$('#channels');
 function renderChannels(){chWrap.innerHTML=Object.entries(FeeCalc.channels).map(([k,c])=>`<div class="ch${k===channel?' on':''}" data-ch="${k}"><div class="cn">${c.label}</div><div class="cf">${c.pct}%${c.est?' est':''}</div></div>`).join('');
@@ -1359,37 +1459,128 @@ $('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
   theirPile=[];yourPile=[];theirCash=0;yourCash=0;$('#theirCash').value=0;$('#yourCash').value=0;
   recompute();switchTab('port');};
 
+const Receipt=(function(){
+  var W=1080, P=64;
+  // brand palette (mirrors :root so the image matches the app)
+  var C={bg:'#070916',card:'#0e1122',line:'#242947',ink:'#ece7d8',ink2:'#9aa3b8',ink3:'#5d6480',gold:'#d8a93f',up:'#46e3ac',down:'#ff7e8a'};
+  function holoGrad(ctx,x,y,w){var g=ctx.createLinearGradient(x,y,x+w,y);
+    ['#c8a2ff','#7fb0ff','#7df0c8','#ffe08a','#ff9ad2'].forEach(function(c,i,a){g.addColorStop(i/(a.length-1),c);});return g;}
+  function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+  // rows: [{l,r,strong,color}] ; kicker: small top label ; verdict: {text,color}
+  function render(opts){
+    var rows=opts.rows||[], H=P*2+120+ (rows.length*58) + (opts.verdict?150:70) + 80;
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    var ctx=cv.getContext('2d');
+    // bg
+    ctx.fillStyle=C.bg; ctx.fillRect(0,0,W,H);
+    // holo top bar
+    ctx.fillStyle=holoGrad(ctx,0,0,W); ctx.fillRect(0,0,W,10);
+    // card panel
+    ctx.fillStyle=C.card; ctx.strokeStyle=C.line; ctx.lineWidth=2;
+    roundRect(ctx,P,P,W-P*2,H-P*2,28); ctx.fill(); ctx.stroke();
+
+    var x=P+48, y=P+92;
+    // wordmark (serif, holo)
+    ctx.font='600 56px Fraunces, Georgia, serif';
+    ctx.fillStyle=holoGrad(ctx,x,y,360); ctx.textBaseline='alphabetic';
+    ctx.fillText('Holomint', x, y);
+    // kicker on the right
+    ctx.font='500 26px "IBM Plex Mono", monospace'; ctx.fillStyle=C.ink3;
+    ctx.textAlign='right'; ctx.fillText((opts.kicker||'DEAL RECEIPT'), W-P-48, y-6); ctx.textAlign='left';
+
+    y+=26; ctx.strokeStyle=C.line; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(W-P-48,y); ctx.stroke();
+    y+=54;
+
+    // rows
+    rows.forEach(function(rw){
+      ctx.font=(rw.strong?'600 34px':'400 32px')+' Hanken Grotesk, system-ui, sans-serif';
+      ctx.fillStyle=rw.color||(rw.strong?C.ink:C.ink2);
+      ctx.textAlign='left';  ctx.fillText(String(rw.l), x, y);
+      ctx.textAlign='right'; ctx.fillText(String(rw.r||''), W-P-48, y);
+      y+=58;
+    });
+    ctx.textAlign='left';
+
+    // verdict pill
+    if(opts.verdict){
+      y+=14;
+      var vtxt=opts.verdict.text, vcol=opts.verdict.color||C.gold;
+      ctx.font='600 34px Hanken Grotesk, system-ui, sans-serif';
+      var vw=ctx.measureText(vtxt).width+64;
+      ctx.fillStyle='rgba(216,169,63,.12)'; if(vcol===C.up)ctx.fillStyle='rgba(70,227,172,.14)';
+      ctx.strokeStyle=vcol; ctx.lineWidth=2;
+      roundRect(ctx,x,y-40,vw,60,16); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=vcol; ctx.fillText(vtxt, x+32, y);
+      y+=64;
+    }
+
+    // footer
+    ctx.font='500 26px "IBM Plex Mono", monospace'; ctx.fillStyle=C.ink3;
+    ctx.fillText('holomint.app', x, H-P-28);
+    ctx.textAlign='right'; ctx.fillText(new Date().toLocaleDateString(), W-P-48, H-P-28); ctx.textAlign='left';
+    return cv;
+  }
+
+  async function shareCanvas(cv,label){
+    var okName=(label||'holomint')+'.png';
+    await (document.fonts?document.fonts.ready:Promise.resolve());
+    return new Promise(function(res){
+      cv.toBlob(async function(blob){
+        if(!blob){toast('Could not render image');return res(false);}
+        var file=new File([blob],okName,{type:'image/png'});
+        // mobile: native share sheet with the image file
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          try{await navigator.share({files:[file],title:'Holomint'});toast('Shared');return res(true);}catch(e){/* fall through to download */}
+        }
+        // fallback: download
+        var url=URL.createObjectURL(blob); var a=document.createElement('a');
+        a.href=url; a.download=okName; document.body.appendChild(a); a.click();
+        setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1000);
+        toast('Saved image'); res(true);
+      },'image/png');
+    });
+  }
+  return {render:render,share:shareCanvas,C:C};
+})();
+
 function shareText(text,okMsg){
   if(navigator.share){navigator.share({text}).then(()=>{}).catch(()=>{});toast(okMsg);return;}
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast(okMsg)).catch(()=>toast('Copy failed'));}
   else toast('Clipboard unavailable');
 }
-$('#copyReceipt').onclick=()=>{
+$('#copyReceipt').onclick=async()=>{
+  var Cc=Receipt.C;
   if(mode==='trade'){
     const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash;
     if(T<=0&&Y<=0)return;
-    const L=['HOLOMINT TRADE',new Date().toLocaleString(),'','THEY GIVE:'];
-    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push('  '+p.qty+'x '+it.name+'  '+usd(pr*p.qty));});
-    if(theirCash>0)L.push('  + '+usd(theirCash)+' cash');
-    L.push('','YOU GIVE:');
-    yourPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push('  '+p.qty+'x '+it.name+'  '+usd(pr*p.qty));});
-    if(yourCash>0)L.push('  + '+usd(yourCash)+' cash');
-    const diff=T-Y;
-    L.push('','Their side '+usd(T)+' · your side '+usd(Y));
-    L.push(Math.abs(diff)<=Math.max(T,Y)*0.03?'Balanced.':(diff>0?'You add '+usd(diff)+' to even it.':'They owe '+usd(-diff)+' to even it.'));
-    L.push('','via Holomint · holomint.app');
-    shareText(L.join('\n'),'Trade ready to share');return;
+    var rows=[];
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+    if(theirCash>0)rows.push({l:'+ cash',r:usd(theirCash)});
+    rows.push({l:'They give',r:usd(T),strong:true});
+    yourPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+    if(yourCash>0)rows.push({l:'+ cash',r:usd(yourCash)});
+    rows.push({l:'You give',r:usd(Y),strong:true});
+    const diff=T-Y, bal=Math.abs(diff)<=Math.max(T,Y)*0.03;
+    var verdict=bal?{text:'Balanced trade',color:Cc.up}
+      :(diff>0?{text:'You add '+usd(diff)+' to even it',color:Cc.gold}
+              :{text:'They owe '+usd(-diff)+' to even it',color:Cc.gold});
+    var cv=Receipt.render({kicker:'TRADE',rows:rows,verdict:verdict});
+    await Receipt.share(cv,'holomint-trade');return;
   }
   const n=cashNumbers();if(n.market<=0)return;
-  const L=['HOLOMINT DEAL RECEIPT',new Date().toLocaleString(),''];
-  theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);L.push((p.qty+'x '+it.name).slice(0,30).padEnd(31)+usd(pr*p.qty).padStart(9));});
-  L.push('');L.push('Market total'.padEnd(22)+usd(n.market).padStart(9));
-  L.push((storeCredit.on?'Credit offer':'Cash offer').padEnd(22)+usd(n.offer).padStart(9));
-  L.push(('Net resale ('+FeeCalc.channels[channel].label+')').padEnd(22)+usd(n.net).padStart(9));
-  L.push('Est. profit'.padEnd(22)+usd(n.profit).padStart(9));L.push('');L.push('via Holomint');
-  const text=L.join('\n');
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast('Copied')).catch(()=>toast('Copy failed'));}
-  else{toast('Clipboard unavailable');}};
+  var rows=[];
+  theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+  rows.push({l:'Market total',r:usd(n.market),strong:true});
+  rows.push({l:(storeCredit.on?'Credit offer':'Cash offer'),r:usd(n.offer)});
+  rows.push({l:'Net resale ('+FeeCalc.channels[channel].label+')',r:usd(n.net)});
+  var profitPos=n.profit>=0;
+  rows.push({l:'Est. profit',r:usd(n.profit),strong:true,color:profitPos?Cc.up:Cc.down});
+  var verdict={text:(profitPos?'+':'')+usd(n.profit)+' profit'+(n.market>0?' · '+Math.round(n.profit/n.market*100)+'%':''),
+    color:profitPos?Cc.up:Cc.down};
+  var cv=Receipt.render({kicker:'DEAL RECEIPT',rows:rows,verdict:verdict});
+  await Receipt.share(cv,'holomint-deal');};
 
 /* ---- PORTFOLIO ---- */
 let holdings=Store.load('holdings',[]);
@@ -1936,7 +2127,32 @@ const SlabData={
     const d=await r.json();
     return (d.data||[]).map(c=>({name:c.name,number:c.number,set:(c.set&&c.set.name)||'',prices:(c.tcgplayer&&c.tcgplayer.prices)||{}}));
   },
-  async gradeData(card,brand){return null;}
+  // LIVE via the Worker's /api/graded (PokeTrace behind a 24h cache; key never in the app).
+  // Fetches the three headline grades for the selected grader in parallel and maps to the
+  // shape Slab Math already consumes. Returns null if graded pricing is not configured yet.
+  async gradeData(card,brand){
+    var grader=(brand&&brand.value?brand.value:(typeof brand==='string'?brand:'psa'))||'psa';
+    var name=(card&&card.name)||'';
+    var num=(card&&(card.number||card.cardNumber))||'';
+    if(!name)return null;
+    var base='https://holomint-feed.mmilliard2516.workers.dev/api/graded';
+    function one(g){
+      return fetch(base+'?name='+encodeURIComponent(name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(grader)+'&grade='+g,{cache:'no-store'})
+        .then(function(r){return r.json();}).catch(function(){return null;});
+    }
+    var res=await Promise.all([one('10'),one('9'),one('8')]);
+    if(res[0]&&res[0].configured===false)return null;      // not wired yet -> manual entry
+    var prices={},pop={},sales=[];
+    var labels=['g10','g9','g8'];
+    res.forEach(function(d,i){
+      if(d&&d.found&&d.value!=null){
+        prices[labels[i]]=Math.round(d.value);
+        if(d.saleCount)sales.push({date:'~'+d.saleCount+' sales'+(d.approx?'+':''),grade:d.tier.replace('_',' '),price:Math.round(d.value)});
+      }
+    });
+    if(!Object.keys(prices).length)return {prices:{},pop:{},sales:[],_none:true};
+    return {prices:prices,pop:pop,sales:sales};
+  }
 };
 function pickCard(c){
   SlabData.card=c;
@@ -2035,6 +2251,8 @@ renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','t
 renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
 Tour.wire();
 $('#setTour').onclick=()=>Tour.start();
+var _rg=$('#refreshGraded');if(_rg)_rg.onclick=function(){_rg.textContent='Pricing…';_rg.disabled=true;GradedPrices.refresh().finally(function(){_rg.textContent='Price graded';_rg.disabled=false;});};
+setTimeout(function(){try{GradedPrices.auto();}catch(e){}},2500);
 Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});
 (async function(){
   const co=new URLSearchParams(location.search).get('co');
@@ -2054,6 +2272,196 @@ Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});
 })();
 PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
+/* ---- LOT SCANNER: price a marketplace listing photo of singles --------------
+   Takes an uploaded/pasted image, OCRs it with the same self-hosted tesseract,
+   splits the text into candidate card lines, matches each against the catalog,
+   and totals the lot net of fees against the asking price. Realistic v1: extract
+   what it confidently can, price those, and let the user tap-correct the rest. */
+const LotScanner=(function(){
+  var worker=null, workerP=null, lastRows=[];
+
+  function simdOK(){try{return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));}catch(e){return false;}}
+  function ensureWorker(){
+    if(workerP)return workerP;
+    workerP=(async function(){
+      if(!window.Tesseract){
+        await new Promise(function(res,rej){var sc=document.createElement('script');sc.src='./tesseract.min.js';sc.onload=res;sc.onerror=function(){rej(new Error('scanner failed to load'));};document.head.appendChild(sc);});
+      }
+      var w=await Tesseract.createWorker('eng',1,{
+        workerPath:'./tesseract-worker.min.js',
+        corePath:simdOK()?'./tesseract-core-simd-lstm.wasm.js':'./tesseract-core-lstm.wasm.js',
+        langPath:'.',
+        logger:function(m){var el=$('#lotStatus');if(el&&m.status){
+          if(m.status.indexOf('load')>=0)el.textContent='Loading scanner '+(m.progress?Math.round(m.progress*100)+'%':'');
+          else if(m.status==='recognizing text')el.textContent='Reading the photo '+(m.progress?Math.round(m.progress*100)+'%':'');}}
+      });
+      worker=w;return w;
+    })();
+    return workerP;
+  }
+
+  // upscale big photos a little and cap size so OCR is quick and accurate
+  function prep(img){
+    var maxW=1600,scale=Math.min(2,maxW/img.width)||1;
+    var w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+    var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    var ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);
+    return cv;
+  }
+
+  // split OCR text into candidate card-name lines. Marketplace listings put one item
+  // per line; we drop obvious noise (prices, qty markers, single tokens) and keep lines
+  // that read like a card name.
+  function candidateLines(text){
+    var out=[];
+    (text||'').split(/\n+/).forEach(function(raw){
+      var line=raw.replace(/[|_]+/g,' ').replace(/\s+/g,' ').trim();
+      if(line.length<4)return;
+      // strip a leading list marker / qty ("3x", "2 -", bullet)
+      line=line.replace(/^\s*(\d+\s*[x\-.)]\s*)/i,'').trim();
+      // strip a trailing price so it does not pollute the name match
+      line=line.replace(/[\$\u00a3\u20ac]?\s*\d+[.,]\d{2}\s*$/,'').trim();
+      var letters=(line.match(/[a-z]/gi)||[]).length;
+      if(letters<3)return;                         // mostly symbols/numbers
+      if(/^[\d\s.,\-\/]+$/.test(line))return;      // pure numbers
+      // keep an optional trailing card number token to help disambiguation
+      out.push(line.slice(0,48));
+    });
+    // de-dupe near-identical lines
+    var seen={},uniq=[];
+    out.forEach(function(l){var k=l.toLowerCase().replace(/[^a-z0-9]/g,'');if(k&&!seen[k]){seen[k]=1;uniq.push(l);}});
+    return uniq.slice(0,40);
+  }
+
+  function matchLine(line){
+    var lang=(typeof currentLang!=='undefined')?currentLang:'en';
+    // pull a card-number hint if present (e.g. 199/165) to sharpen the match
+    var numM=line.match(/(\d{1,3})\s*\/\s*(\d{1,3})/);
+    var q=line.replace(/(\d{1,3})\s*\/\s*(\d{1,3})/,'').trim();
+    var hits=[];
+    try{hits=PriceEngine.search(q,lang)||[];}catch(e){hits=[];}
+    // prefer singles; the lot scanner is for cards
+    var singles=hits.filter(function(h){return h.type==='single';});
+    var pool=singles.length?singles:hits;
+    if(!pool.length)return {line:line,found:false};
+    var pick=pool[0];
+    if(numM){
+      var key=numM[1];
+      var byNum=pool.find(function(h){return String(h.number||'').split('/')[0]===key;});
+      if(byNum)pick=byNum;
+    }
+    var price=0;try{price=+PriceEngine.getPrice(pick.id)||0;}catch(e){}
+    return {line:line,found:true,id:pick.id,name:pick.name,number:pick.number||'',price:price,alts:pool.slice(0,6)};
+  }
+
+  async function run(img,ask){
+    setPhase('progress');
+    var cv=prep(img);
+    var w;try{w=await ensureWorker();}catch(e){toast('Scanner could not load.');setPhase('drop');return;}
+    var res;try{res=await w.recognize(cv);}catch(e){toast('Could not read the photo.');setPhase('drop');return;}
+    var lines=candidateLines(res.data&&res.data.text);
+    if(!lines.length){renderResults([],ask);return;}
+    var rows=lines.map(matchLine);
+    lastRows=rows;
+    renderResults(rows,ask);
+  }
+
+  function setPhase(ph){
+    $('#lotDrop').style.display = ph==='drop'?'block':'none';
+    $('#lotAsk').style.display  = ph==='drop'?'block':'none';
+    $('#lotProgress').style.display = ph==='progress'?'block':'none';
+    $('#lotResults').style.display = ph==='results'?'block':'none';
+  }
+
+  function priceRows(rows){
+    var found=rows.filter(function(r){return r.found;});
+    var market=found.reduce(function(s,r){return s+r.price;},0);
+    var chan=(typeof channel!=='undefined')?channel:'ebay';
+    var netInfo=FeeCalc.net(market,chan);
+    return {found:found,market:market,net:netInfo.net,fees:netInfo.fees,chan:chan};
+  }
+
+  function renderResults(rows,ask){
+    setPhase('results');
+    var box=$('#lotResults');
+    if(!rows.length){box.innerHTML='<div class="empty" style="padding:30px 0">Could not read any card names. Try a sharper, straighter photo with the names visible.</div>'
+      +'<div class="lot-actions"><button class="ghost" id="lotAgain" style="flex:1">Try another photo</button></div>';
+      $('#lotAgain').onclick=reset;return;}
+    var p=priceRows(rows);
+    var chLabel=(FeeCalc.channels[p.chan]&&FeeCalc.channels[p.chan].label)||p.chan;
+    var rowsHtml=rows.map(function(r,i){
+      if(!r.found)return '<div class="lot-row miss" data-i="'+i+'"><div class="nm"><b>'+esc(r.line)+'</b><span>no catalog match</span></div><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
+      return '<div class="lot-row" data-i="'+i+'"><div class="nm"><b>'+esc(r.name)+'</b><span>'+(r.number?esc(r.number)+' · ':'')+'matched from "'+esc(r.line)+'"</span></div><span class="pr">'+usd(r.price)+'</span><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
+    }).join('');
+    var askN=+ask||0;
+    var profit=p.net-askN;
+    var verdict='';
+    if(askN>0){
+      var pos=profit>=0;
+      var col=pos?'rgba(70,227,172,.14)':'rgba(255,126,138,.14)',bord=pos?'var(--up)':'var(--down)';
+      verdict='<div class="lot-verdict" style="background:'+col+';border:1px solid '+bord+';color:'+bord+'">'
+        +(pos?'Worth it: +'+usd(profit)+' after fees':'Overpriced: '+usd(profit)+' after fees')
+        +(p.market>0?' · '+Math.round(profit/askN*100)+'% on ask':'')+'</div>';
+    }
+    box.innerHTML=rowsHtml
+      +'<div class="lot-tot">'
+      +'<div class="tr"><span>Cards matched</span><span>'+p.found.length+' of '+rows.length+'</span></div>'
+      +'<div class="tr"><span>Market total</span><span>'+usd(p.market)+'</span></div>'
+      +'<div class="tr"><span>Net resale ('+esc(chLabel)+')</span><span>'+usd(p.net)+'</span></div>'
+      +(askN>0?'<div class="tr big"><span>Profit vs ask</span><span style="color:'+(profit>=0?'var(--up)':'var(--down)')+'">'+usd(profit)+'</span></div>':'<div class="tr big"><span>Net resale value</span><span>'+usd(p.net)+'</span></div>')
+      +'</div>'+verdict
+      +'<div class="lot-actions"><button class="ghost" id="lotAgain" style="flex:1">New photo</button><button class="act" id="lotToDesk" style="flex:1">Add matched to Trade</button></div>';
+    $('#lotAgain').onclick=reset;
+    $('#lotToDesk').onclick=function(){sendToTrade(rows);};
+    Array.prototype.forEach.call(document.querySelectorAll('#lotResults [data-fix]'),function(b){
+      b.onclick=function(){fixRow(+b.dataset.fix);};
+    });
+  }
+
+  // tap-correct: let the user search and replace a single row
+  function fixRow(i){
+    var r=lastRows[i];if(!r)return;
+    var term=prompt('Search for the correct card:', r.name||r.line||'');
+    if(term==null)return;
+    var lang=(typeof currentLang!=='undefined')?currentLang:'en';
+    var hits=[];try{hits=(PriceEngine.search(term,lang)||[]).filter(function(h){return h.type==='single';});}catch(e){}
+    if(!hits.length){toast('No match for that.');return;}
+    var pick=hits[0],price=0;try{price=+PriceEngine.getPrice(pick.id)||0;}catch(e){}
+    lastRows[i]={line:r.line,found:true,id:pick.id,name:pick.name,number:pick.number||'',price:price};
+    renderResults(lastRows, $('#lotAskVal').value);
+  }
+
+  function sendToTrade(rows){
+    var found=rows.filter(function(r){return r.found;});
+    if(!found.length){toast('No matched cards to add.');return;}
+    if(typeof theirPile==='undefined'){toast('Trade Block unavailable.');return;}
+    // collapse duplicates into qty
+    var byId={};
+    found.forEach(function(r){byId[r.id]=(byId[r.id]||0)+1;});
+    Object.keys(byId).forEach(function(id){
+      var ex=theirPile.find(function(pp){return pp.key===id;});
+      if(ex)ex.qty+=byId[id];else theirPile.push({key:id,qty:byId[id]});
+    });
+    if(typeof recompute==='function')recompute();
+    close();
+    if(typeof switchTab==='function')switchTab('block');
+    toast(found.length+' cards added to the Trade Block.');
+  }
+
+  function handleFile(file){
+    if(!file||!/^image\//.test(file.type)){toast('Please choose an image.');return;}
+    var fr=new FileReader();
+    fr.onload=function(){var img=new Image();img.onload=function(){run(img, $('#lotAskVal').value);};img.onerror=function(){toast('Could not open that image.');};img.src=fr.result;};
+    fr.readAsDataURL(file);
+  }
+
+  function reset(){lastRows=[];$('#lotFile').value='';setPhase('drop');}
+  function open(){$('#lotModal').classList.add('show');reset();}
+  function close(){$('#lotModal').classList.remove('show');if(worker){/* keep worker warm for the session */}}
+
+  return {open:open,close:close,handleFile:handleFile,_run:run};
+})();
+
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
 /* ---- PERCEPTUAL-HASH CARD MATCH ----------------------------------------
    Identifies a cropped card photo by image fingerprint (256-bit dHash), robust
@@ -2574,6 +2982,24 @@ function showScanResults(hits,q){
 $('#scanBtn').onclick=()=>Scanner.open(false);
 $('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
+// Lot scanner wiring
+var _lotOpen=function(){LotScanner.open();};
+var _sl=$('#scanLot');if(_sl)_sl.onclick=_lotOpen;
+$('#lotClose').onclick=function(){LotScanner.close();};
+$('#lotDrop').onclick=function(){$('#lotFile').click();};
+$('#lotFile').onchange=function(e){var f=e.target.files&&e.target.files[0];if(f)LotScanner.handleFile(f);};
+// paste a screenshot straight in
+document.addEventListener('paste',function(e){
+  if(!$('#lotModal').classList.contains('show'))return;
+  var items=(e.clipboardData&&e.clipboardData.items)||[];
+  for(var i=0;i<items.length;i++){if(items[i].type.indexOf('image')>=0){var f=items[i].getAsFile();if(f){LotScanner.handleFile(f);e.preventDefault();return;}}}
+});
+// drag and drop onto the drop zone
+(function(){var d=$('#lotDrop');if(!d)return;
+  ['dragenter','dragover'].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.remove('drag');});});
+  d.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)LotScanner.handleFile(f);});
+})();
 document.getElementById('scanRetake').onclick=()=>Scanner.open(false);
 document.getElementById('scanCapture').onclick=()=>Scanner.capture();
 /* native capture: no on-screen shutter needed */
