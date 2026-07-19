@@ -74,7 +74,7 @@
 </div></header>
 <main><div class="wrap">
 <h1 style="margin-bottom:4px">Holomint Privacy Policy</h1>
-<p><strong>Version 1.0 · Effective July 11, 2026</strong></p>
+<p><strong>Version 1.1 · Effective July 17, 2026</strong></p>
 <p>This Privacy Policy explains how <strong>Optume Ventures LLC</strong> ("Optume," "we," "us") handles information in connection with Holomint at holomint.app and related applications (the "Service").</p>
 <p><strong>Holomint is privacy-first by design: your collection, portfolio, tracked cards, cost basis, and settings are stored locally on your own device and are never sent to us.</strong> We cannot see them. This policy describes the limited information that is nonetheless involved in operating the Service and in billing for Holomint Pro.</p>
 <hr />
@@ -82,6 +82,7 @@
 <ul>
 <li><strong>No account required.</strong> No login, name, or email is needed to use Holomint's free tier.</li>
 <li><strong>Your collection data stays on your device</strong>, in your browser's local storage. We do not receive it, store it, or have any ability to read it.</li>
+<li><strong>If you subscribe to Pro, a random per-installation identifier is stored with your license key to enforce the device limit</strong> (see Section 3). You can view and release your devices in the app.</li>
 <li><strong>We do not use advertising, and we do not use cross-site tracking.</strong> The only usage metric we keep is an anonymous, aggregated count of whether alerts lead to purchases (see Section 3); it is not tied to you.</li>
 <li><strong>We never see your card number.</strong> Holomint Pro payments are handled by a third-party payment provider acting as <strong>merchant of record</strong>.</li>
 <li><strong>We do not sell your personal information.</strong></li>
@@ -99,7 +100,8 @@
 <ul>
 <li><strong>Technical/hosting logs.</strong> Holomint is delivered via <strong>GitHub Pages</strong> and <strong>Cloudflare</strong>. These providers automatically log standard technical data (IP address, browser and device type, timestamps) for delivery, security, and abuse prevention. This is standard for essentially every website. We do not use these logs to build profiles.</li>
 <li><strong>Live drops feed.</strong> Holomint retrieves publicly available restock/drop information from our Cloudflare-hosted server component. This is a <strong>one-way retrieval of public data.</strong> We do not send your collection, portfolio, or personal data to that server.</li>
-<li><strong>Anonymous product metrics.</strong> When you mark whether an alert led to a purchase, we keep an <strong>anonymous, aggregated count</strong> (for example, how many alerts across all users resulted in a purchase on a given day) to measure whether the product is useful. These counts are not linked to you, your device, or your identity, and we do not build any individual profile from them. Your own running total is calculated on your device, not by us.</li>
+<li><strong>Anonymous product metrics.</strong> When you mark whether an alert led to a purchase, we keep an <strong>anonymous, aggregated count</strong> (for example, how many alerts across all users resulted in a purchase on a given day) to measure whether the product is useful. These counts are not linked to you, your device, your license key, or your identity, and we do not build any individual profile from them. (This is separate from the device-seat identifier described below, which exists only to enforce the Pro device limit.) Your own running total is calculated on your device, not by us.</li>
+<li><strong>Pro device seats.</strong> If you use Holomint Pro, your subscription may be used on a limited number of devices at a time (see the Terms). To enforce that limit, the app creates a <strong>random identifier for that installation</strong> (not for you) and sends it to our server alongside your license key. We store that identifier and the date it was last used, associated with your license key. We use it <strong>only</strong> to count and enforce device seats, and to show you your own devices in the app so you can release one. It is not linked to your browsing, your location, or your collection, and it is not used for advertising, profiling, or analytics. You can release a seat at any time in the app under <strong>Settings, Manage devices</strong>, which deletes that identifier immediately. Seats not used for <strong>45 days are deleted automatically</strong>.</li>
 <li><strong>Third-party card data and images.</strong> Prices and images are sourced from third parties (including TCGplayer data via TCGcsv). When images load, your browser requests them from third-party servers, which will receive your IP address and standard request data. Their content is governed by their own terms and privacy policies.</li>
 <li><strong>Support communications.</strong> If you email us, we receive your email address and message, and use them only to respond.</li>
 </ul>
@@ -155,7 +157,7 @@
 <h2>9. Children's privacy</h2>
 <p>Holomint is a tool for collectors, investors, and sellers and is <strong>not directed to children under 13</strong> (or under 16 where that is the applicable age). We do not knowingly collect personal information from children. <strong>Holomint Pro may only be purchased by adults (18+).</strong> If you believe a child has provided us personal information, contact <strong>mmmilliard@optumeventures.com</strong> and we will delete it.</p>
 <h2>10. Retention and security</h2>
-<p>Data on your device persists until you delete it. Data held by our providers (hosting logs, subscription and tax records) is retained per their policies and as long as needed for business, security, accounting, and legal purposes. We use HTTPS in transit. No system is perfectly secure; the local-first design substantially limits what is at risk, but we cannot guarantee absolute security.</p>
+<p>Data on your device persists until you delete it. <strong>Pro device-seat identifiers are deleted 45 days after a device is last used, or immediately when you release that seat in the app.</strong> Data held by our providers (hosting logs, subscription and tax records) is retained per their policies and as long as needed for business, security, accounting, and legal purposes. We use HTTPS in transit. No system is perfectly secure; the local-first design substantially limits what is at risk, but we cannot guarantee absolute security.</p>
 <h2>11. International transfers</h2>
 <p>We operate from the United States and use providers that process data in the United States and elsewhere. If you use the Service from outside the U.S., the limited technical and billing data described above may be processed in the U.S.</p>
 <h2>12. Changes to this policy</h2>

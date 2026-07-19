@@ -1,7 +1,7 @@
 /*
- * generate-prices.mjs — Holomint catalog build step
+ * generate-prices.mjs: Holomint catalog build step
  * Pulls the FULL Pokémon catalog (English + Japanese) from TCGcsv:
- * every priced product — sealed, singles, all price tiers, both languages.
+ * every priced product: sealed, singles, all price tiers, both languages.
  * Writes products.json + prices.json. Runs daily via GitHub Actions. Node 18+.
  */
 import { writeFile } from 'node:fs/promises';
@@ -38,7 +38,7 @@ async function pokemonCategories() {
 
 // Sealed detection (everything else priced is a card/single we keep)
 const SEALED = /(booster box|booster pack|sleeved booster|elite trainer box|\betb\b|booster bundle|build & battle|build and battle|premium collection|ultra.?premium|collection box|special collection|mini tin|\btin\b|booster display|booster case|box set|poke ?ball tin|premier deck|league battle deck|battle deck|starter set|gift box|surprise box|holiday calendar|advent calendar)/i;
-const EXCLUDE = /(code card|online code|empty|opened|damaged|proxy|playtest|lot of|bulk lot|repack|custom)/i;
+const EXCLUDE = /(code card|online code|empty|opened|damaged|proxy|playtest|lot of|bulk lot|repack|custom|\berror\b|misprint|miscut|test print)/i;
 const NONCARD = /(playmat|sleeve|deck box|binder|portfolio|^coin$| coin$|pin\b|figure|plush|dice|damage counter|marker|album|toploader|booster case|display case)/i;
 
 const OOP_MONTHS = 24;
@@ -46,11 +46,15 @@ const OOP_MONTHS = 24;
 function classify(p) {
   const name = p.name || '';
   if (!name || EXCLUDE.test(name)) return null;
+  // Metadata outranks the name: promo CARDS are named after the product they came in
+  // ("Squirtle - 33/214 (Premium Collection Promo)", "... Elite Trainer Box"), so a
+  // name test alone misfiles them as sealed. A card Number in extendedData settles it.
+  const ext = p.extendedData || [];
+  if (ext.some(d => /^number$/i.test(d.name || ''))) return 'single';
   if (SEALED.test(name)) return 'sealed';
   if (NONCARD.test(name)) return null;
-  const ext = p.extendedData || [];
-  if (ext.length) return ext.some(d => /^(number|rarity)$/i.test(d.name || '')) ? 'single' : null;
-  return 'single'; // no metadata on this set — treat priced non-sealed as a card
+  if (ext.length) return ext.some(d => /^rarity$/i.test(d.name || '')) ? 'single' : null;
+  return 'single'; // no metadata on this set, so treat priced non-sealed as a card
 }
 
 async function main() {
@@ -74,7 +78,7 @@ async function main() {
 
       const priceById = {};
       for (const row of priceRows) {
-        // fall through every available price type — promos & low-volume cards
+        // fall through every available price type, including promos and low-volume cards
         // often have no marketPrice but do have mid/low. Never lose a card to this.
         const v = row.marketPrice ?? row.midPrice ?? row.directLowPrice ?? row.lowPrice ?? row.highPrice ?? null;
         if (v != null && v > 0) {
@@ -89,7 +93,7 @@ async function main() {
         const price = priceById[p.productId];
         const kind = classify(p);
         if (!kind) continue;
-        // keep the card even if unpriced — searchability matters more than price coverage.
+        // keep the card even if unpriced, because searchability matters more than price coverage.
         // (sealed with no price is usually noise; require a price for sealed only.)
         if (price == null && kind === 'sealed') continue;
         const id = String(p.productId);
@@ -105,14 +109,14 @@ async function main() {
   }
 
   if (products.length < 100) {
-    console.error(`Only ${products.length} products — looks wrong; leaving files untouched.`);
+    console.error(`Only ${products.length} products, which looks wrong. Leaving files untouched.`);
     process.exit(1);
   }
 
   await writeFile('products.json', JSON.stringify(products));
   await writeFile('prices.json', JSON.stringify(prices));
 
-  // Price history: append today's snapshot for tracked movers (keeps file lean —
+  // Price history: append today's snapshot for tracked movers (keeps file lean,
   // only items >= $2, capped, 180-day rolling window). Chart fills in over time.
   const today = new Date().toISOString().slice(0, 10);
   let hist = {};

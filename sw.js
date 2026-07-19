@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v76';        // app shell, replaced on every release
+const CACHE = 'holomint-v0.95';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin - persists across releases
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
@@ -34,8 +34,27 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Same-origin data files (prices.json, products.json, etc.): network-first so daily
-  // updates land; fall back to cache when offline at a show.
+  // products.json is 10MB and the product LIST changes a few times a year, not daily.
+  // Network-first meant re-downloading it on every cold open, which is brutal on show
+  // wifi or mobile data and is the slowest moment in the whole app. Serve it cache-first
+  // from the persistent media cache (survives version bumps) and refresh in the
+  // background, so the second open is instant and still ends up current.
+  if (url.pathname.endsWith('products.json') && url.origin === location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(hit => {
+        const net = fetch(e.request).then(res => {
+          const copy = res.clone();
+          caches.open(MEDIA).then(c => c.put(e.request, copy)).catch(()=>{});
+          return res;
+        }).catch(() => hit);
+        return hit || net;
+      })
+    );
+    return;
+  }
+
+  // Other same-origin data files (prices.json, history.json): network-first so daily
+  // price updates land; fall back to cache when offline at a show.
   if (url.pathname.endsWith('.json') && url.origin === location.origin) {
     e.respondWith(
       fetch(e.request).then(res => {

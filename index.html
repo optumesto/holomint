@@ -3,8 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Holomint</title>
+<title>Holomint: Pokemon restock alerts that do the math</title>
 <meta name="theme-color" content="#070916">
+<link rel="canonical" href="https://holomint.app/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"SoftwareApplication","@id":"https://holomint.app/#app","name":"Holomint",
+ "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
+ "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
+ "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
+ "image":"https://holomint.app/og.png","softwareVersion":"0.95",
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
+ "publisher":{"@id":"https://holomint.app/#org"}},
+{"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
+ "legalName":"Optume Ventures LLC","url":"https://holomint.app/",
+ "logo":"https://holomint.app/icon-512.png","email":"mmmilliard@optumeventures.com",
+ "sameAs":["https://instagram.com/holomint.app"]},
+{"@type":"WebSite","@id":"https://holomint.app/#site","name":"Holomint",
+ "url":"https://holomint.app/","publisher":{"@id":"https://holomint.app/#org"}}
+]}
+</script>
 <meta name="description" content="Pokemon restock drops with the flip margin computed net of your fees. Free live feed, instant Pro alerts even with the app closed.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Holomint">
@@ -34,7 +52,7 @@
   @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:600;src:url(./fonts/plexmono-600.woff2) format('woff2')}
 </style>
 <style>
-  :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#5d6480;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+  :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#757c98;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   /* type scale: every size in the app is one of these twelve steps */
   :root{--t1:10px;--t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
   .ck-founder{background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink2)}
@@ -65,7 +83,7 @@
   #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
   .brandrow{display:flex;align-items:center;gap:4px}
-  .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px -2px -3px 0}
+  .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px -2px -3px 0;mix-blend-mode:screen}
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
   .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -87,7 +105,8 @@
   .tabs{display:flex;gap:6px;margin:16px 0 18px;background:var(--bg2);padding:5px;border-radius:12px;border:1px solid var(--line)}
   .tab{flex:1;padding:11px 4px;text-align:center;border-radius:8px;font-weight:500;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;border:none;background:none;font-family:var(--sans)}
   .tab.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
-  .panel{display:none;animation:fade .3s ease}.panel.on{display:block}
+  .panel{display:none;animation:paneIn .26s cubic-bezier(.22,.61,.36,1)}
+  @keyframes paneIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.panel.on{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .panel.on{animation:fade .32s cubic-bezier(.22,.8,.3,1)}
   .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
@@ -173,6 +192,10 @@
   .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}.anchor:last-of-type{border-bottom:none}
   .anchor .al{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
   .anchor 
+  /* Lock digit widths so numbers never jitter as they change. */
+  .av,.sv,.sl,.pr,.m,.dl-flip,.dl-cd,.cg-pct,.qa,.lot-tot,.lot-verdict,
+  table td,table th,.stat .sv,#aMarket,#aPayout,#aNet,#aProfit,
+  input[type="number"],[class*="tot"]{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'lnum' 1}
   .anchor.hero .av{font-family:var(--mono);font-size:20px;font-weight:600}
   .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 4px}
   .ch{padding:9px 4px;text-align:center;border-radius:9px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:.15s}
@@ -238,7 +261,93 @@
   .wl-chip button:active{color:var(--down)}
   #tourWrap{display:none;position:fixed;inset:0;z-index:9000}
   #tourWrap.on{display:block}
-  #tourMask div{position:fixed;background:rgba(4,6,14,.86);backdrop-filter:blur(1.5px)}
+  #tourDim{position:fixed;inset:0;background:rgba(4,6,14,.58);backdrop-filter:blur(1px)}
+  @keyframes fxpulse{0%{box-shadow:0 0 0 0 rgba(216,169,63,.55)}70%{box-shadow:0 0 0 12px rgba(216,169,63,0)}100%{box-shadow:0 0 0 0 rgba(216,169,63,0)}}
+  .fxglow{animation:fxpulse 1.3s ease-out 2;border-radius:12px;position:relative;z-index:2}
+  #featModal{display:none;position:fixed;inset:0;z-index:8600;background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #featModal.show{display:flex}
+  .fm-g{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.09em;text-transform:uppercase;margin:16px 0 4px}
+  .fm-row{display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid var(--line);padding:11px 0;cursor:pointer}
+  .fm-row:active{background:var(--bg3)}
+  .fm-t{display:block;font-size:14px;color:var(--ink);font-weight:600}
+  .fm-d{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:2px}
+  .fm-go{display:inline-block;font-size:11px;font-family:var(--mono);color:var(--gold);margin-top:5px}
+  #condModal{display:none;position:fixed;inset:0;z-index:8600;background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #condModal.show{display:flex}
+  .cg-card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:20px 16px;width:min(560px,100%);max-height:88vh;overflow-y:auto}
+  .cg-sub{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-bottom:14px}
+  .cg-row{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .cg-row svg{flex:0 0 auto}
+  .cg-tx{flex:1;min-width:0}
+  .cg-tx b{font-size:14px;color:var(--ink)}
+  .cg-k{font-family:var(--mono);font-size:11px;color:var(--gold);margin-left:4px}
+  .cg-tx p{font-size:12px;color:var(--ink3);line-height:1.5;margin-top:3px}
+  .cg-pct{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap}
+  .cg-pct input{width:52px;background:var(--bg3);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:5px 6px;font-family:var(--mono);font-size:13px;text-align:right}
+  .qa-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}
+  .qa-l{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
+  .qa{font-size:11.5px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg3);color:var(--ink2);cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+  .qa:active{border-color:var(--gold);color:var(--ink)}
+  #cfmModal{display:none;position:fixed;inset:0;z-index:8700;background:rgba(4,6,14,.72);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #cfmModal.show{display:flex}
+  .cfm-b{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:8px}
+  .cfm-b p{margin:0 0 8px}
+  .pile-item{touch-action:pan-y}
+  #ptr{height:0;opacity:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--ink3);transition:height .2s ease,opacity .2s ease}
+  .res-msg{padding:14px 12px;font-size:13px;color:var(--ink2);line-height:1.5}
+  .res-msg span{font-size:11.5px;color:var(--ink3)}
+  .res-msg b{color:var(--gold);cursor:pointer;text-decoration:underline}
+  .dots::after{content:'';animation:dots 1.4s steps(4,end) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .res.sel{background:var(--bg3);outline:1px solid rgba(216,169,63,.5);outline-offset:-1px}
+  /* iOS Safari force-zooms the whole page when you focus an input smaller than 16px,
+     and it does not zoom back out. It is the single most recognisable "this is a website"
+     moment on an iPhone. Touch pointers get 16px; desktop keeps the tighter 14px. */
+  @media (pointer: coarse){
+    input,select,textarea{font-size:16px}
+  }
+  /* Contain the rubber-band. Without this the browser's own overscroll fights the
+     pull-to-refresh gesture and the whole page bounces like a web view. */
+  html,body{overscroll-behavior-y:contain}
+  /* Small table actions were a 14px glyph with 4px of padding, which is a long way under
+     a comfortable touch target. Keep them visually identical, make them properly hittable. */
+  .toolbtn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}
+  /* Selection in the app's own palette rather than the browser default blue. */
+  ::selection{background:rgba(216,169,63,.28);color:var(--ink)}
+  /* A scrollbar that belongs to this app, on the desktop layout that now matters. */
+  @media (pointer: fine){
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#1c2140;border-radius:8px;border:2px solid var(--bg)}
+    ::-webkit-scrollbar-thumb:hover{background:#282f56}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;scroll-behavior:auto !important}
+  }
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+  button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .navb:focus-visible{outline-offset:-3px}
+  #ticker{display:none;background:var(--bg2);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-bottom:14px}
+  #ticker.on{display:block}
+  #ticker .tl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink3);margin-bottom:6px}
+  #ticker .tv{font-family:var(--mono);font-size:27px;font-weight:600;color:var(--up);
+    font-variant-numeric:tabular-nums;line-height:1.1}
+  #ticker.free .tv{color:var(--gold)}
+  #ticker .tn{font-size:11.5px;color:var(--ink3);line-height:1.5;margin-top:6px}
+  #ticker .tup{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--gold);
+    background:rgba(216,169,63,.1);border:1px solid rgba(216,169,63,.4);border-radius:9px;
+    padding:7px 13px;cursor:pointer}
+  .es-h{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--ink3);font-style:normal;line-height:1.5;max-width:280px}
+  #toast .tu{margin-left:12px;background:transparent;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;padding:0 2px;text-decoration:underline}
+  .chip.live{background:rgba(70,227,172,.16);color:var(--up);border:1px solid rgba(70,227,172,.35)}
+  .pcond{margin-left:6px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:10.5px;font-family:var(--mono);padding:2px 3px}
+  #scanChoose{display:none;position:fixed;inset:0;z-index:8400;background:rgba(4,6,14,.66);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
+  #scanChoose.show{display:flex}
+  .sc-card{background:var(--bg2);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:min(520px,100%);display:flex;flex-direction:column;gap:9px}
+  .sc-t{font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:2px}
   #lotModal{display:none;position:fixed;inset:0;z-index:8500;background:var(--bg);overflow-y:auto}
   #lotModal.show{display:block}
   .lot-inner{max-width:560px;margin:0 auto;padding:56px 18px 40px}
@@ -267,8 +376,7 @@
   .lot-tot .tr.big{font-size:17px;font-weight:600;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
   .lot-verdict{margin-top:14px;padding:13px 16px;border-radius:12px;font-weight:600;text-align:center;font-size:15px}
   .lot-actions{display:flex;gap:8px;margin-top:16px}
-  #tourRing{position:fixed;border:2px solid var(--gold);border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px rgba(216,169,63,.16);transition:all .28s cubic-bezier(.4,0,.2,1)}
-  #tourCard{position:fixed;left:14px;right:14px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
+  #tourCard{position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
   .tour-dots{display:flex;gap:5px;margin-bottom:12px}
   .tour-dots i{width:16px;height:3px;border-radius:2px;background:var(--line);transition:.2s}
   .tour-dots i.on{background:var(--gold);width:24px}
@@ -323,6 +431,7 @@
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
+      <div id="quickAdd" class="qa-row" style="display:none"></div>
       <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
@@ -372,6 +481,7 @@
 
   <!-- ============ PORTFOLIO ============ -->
   <section class="panel" id="port">
+    <div id="ticker"></div>
     <div class="stats" id="portStats"></div>
     <div class="card" id="portTotals">
       <label>Allocation</label>
@@ -433,7 +543,7 @@
             <label>Price against</label>
             <select id="alChannel" style="width:100%">
               <option value="ebay">eBay (13.6% + $0.40)</option>
-              <option value="tcgplayer">TCGplayer (12.5% + $0.30)</option>
+              <option value="tcgplayer">TCGplayer (13.25% + $0.30)</option>
               <option value="whatnot">Whatnot (11% + $0.30)</option>
               <option value="cash">Cash (no fees)</option>
             </select>
@@ -477,9 +587,17 @@
 
     <div class="card">
       <div class="row between" style="padding:6px 0"><span style="font-size:14px">How Holomint works</span><button class="ghost" id="setTour" style="padding:8px 14px">Replay tour</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v0.95 · early access</span></div>
+      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:8px 14px">Open</a></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">What is Holomint?</span><a class="ghost" href="about.html" style="padding:8px 14px">Read</a></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Follow Holomint</span><a class="ghost" href="https://instagram.com/holomint.app" target="_blank" rel="noopener noreferrer" style="padding:8px 14px">Instagram</a></div>
+      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Drop receipts, margin logs, and what is being built next.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:8px 14px">Email</a></div>
     </div>
     <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.7">
@@ -550,11 +668,35 @@
 <div class="sheet" id="sheet"><div class="holo-line"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div>
   <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
 </div>
+<div id="featModal">
+  <div class="cg-card">
+    <button class="scanx" id="featClose" aria-label="Close" style="position:absolute;top:10px;right:10px">×</button>
+    <div class="brand" style="font-size:20px;margin-bottom:2px">Everything Holomint does</div>
+    <div class="cg-sub">Tap any feature and Holomint will take you to it and highlight it.</div>
+    <div class="fm-list"></div>
+  </div>
+</div>
+<div id="condModal">
+  <div class="cg-card">
+    <button class="scanx" id="condClose" aria-label="Close" style="position:absolute;top:10px;right:10px">×</button>
+    <div class="brand" style="font-size:20px;margin-bottom:2px">Card conditions</div>
+    <div class="cg-sub">Market prices track Near Mint. Other grades price at a percentage of NM. The percentages below are typical dealer numbers; tap one to change it, and every single in the app follows. When live condition pricing is switched on, cards use real per-condition market prices instead, and the chip reads live; these percentages remain the offline fallback.</div>
+    <div class="cg-list"></div>
+  </div>
+</div>
+<div id="scanChoose">
+  <div class="sc-card">
+    <div class="sc-t">Scan</div>
+    <button class="act" id="scGoCard" style="width:100%">Scan a card</button>
+    <button class="ghost" id="scGoLot" style="width:100%">Price a lot from a photo</button>
+    <button class="ghost" id="scGoX" style="width:100%;color:var(--ink3)">Cancel</button>
+  </div>
+</div>
 <div id="lotModal">
-  <button class="scanx" id="lotClose">×</button>
+  <button class="scanx" id="lotClose" aria-label="Close lot scanner">×</button>
   <div class="lot-inner">
     <div class="lot-head">
-      <div class="brand" style="font-size:22px">Lot scanner</div>
+      <div class="row" style="gap:7px;align-items:center"><img src="leaf-splash.png" alt="" style="width:24px;height:24px;object-fit:contain;mix-blend-mode:screen"><div class="brand" style="font-size:22px">Lot scanner</div></div>
       <div class="lot-sub">Paste or upload a marketplace listing photo. Holomint reads the cards, prices each net of your fees, and totals the lot against the asking price.</div>
     </div>
 
@@ -600,7 +742,7 @@
 <div class="toast" id="toast">Done</div>
 
 <div id="tourWrap" aria-hidden="true">
-  <div id="tourMask"></div>
+  <div id="tourDim"></div>
   <div id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
     <div class="tour-dots" id="tourDots"></div>
     <div class="tour-t" id="tourTitle"></div>
@@ -634,10 +776,16 @@ const PriceEngine=(function(){
   let cache={'es-bb':480,'lo-bb':230,'cz-etb':92,'151-bb':40,'151-etb':74,'ss-bb':132,'pe-etb':90,'zard151':300,'moon':1100,'gira':250};
   let catIndex=null,catIndexFor=null;
   async function loadData(){
-    try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length)catalog=p;}}catch(e){}
+    window.CatalogState='loading';
+    let gotProducts=false;
+    try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
     try{const r=await fetch('prices.json');if(r.ok){Object.assign(cache,await r.json());Store.save('pricesAt',new Date().toISOString());}}catch(e){}
     try{const r=await fetch('history.json');if(r.ok)history=await r.json();}catch(e){}
-    return true;
+    // A silent failure here leaves every search empty forever with no explanation, which
+    // reads as a broken app rather than a missing download.
+    window.CatalogState=gotProducts?'ready':'failed';
+    document.dispatchEvent(new CustomEvent('catalog',{detail:window.CatalogState}));
+    return gotProducts;
   }
   return{
     // Fuzzy fallback for noisy OCR: rank catalog by character-bigram similarity (Dice).
@@ -700,7 +848,7 @@ const PriceEngine=(function(){
   };
 })();
 const FeeCalc=(function(){
-  const channels={cash:{label:'Cash',pct:0,flat:0},ebay:{label:'eBay',pct:13.6,flat:0.40,est:true},tcgplayer:{label:'TCGPlayer',pct:12.5,flat:0.30,est:true},whatnot:{label:'Whatnot',pct:11,flat:0.30,est:true}};
+  const channels={cash:{label:'Cash',pct:0,flat:0},ebay:{label:'eBay',pct:13.6,flat:0.40,est:true},tcgplayer:{label:'TCGPlayer',pct:13.25,flat:0.30,est:true},whatnot:{label:'Whatnot',pct:11,flat:0.30,est:true}};
   function net(a,k){const c=channels[k];if(!c||a<=0)return{fees:0,net:a};const fees=a*(c.pct/100)+c.flat;return{fees,net:a-fees};}
   return{channels,net};
 })();
@@ -721,7 +869,7 @@ const Premium=(function(){
       const r=await fetch(API+'/api/license?k='+encodeURIComponent(key),{cache:'no-store'});
       if(r.status===503)return 'unknown';   // authority unreachable: not the key's fault
       const d=await r.json();
-      if(d&&d.valid){lic={key,valid:true,at:Date.now()};Store.save('license',lic);return true;}
+      if(d&&d.valid){lic={key,valid:true,at:Date.now(),strikes:0};Store.save('license',lic);return true;}
       return false;
     }catch(e){return 'unknown';}   // cannot reach the server: cannot say
   }
@@ -733,11 +881,22 @@ const Premium=(function(){
     if(!lic||!lic.key)return;
     try{
       const r=await fetch(API+'/api/license?k='+encodeURIComponent(lic.key),{cache:'no-store'});
+      if(r.status===503)return;                       // authority unreachable: keep Pro
       const d=await r.json();
       if(d&&d.valid===false){
+        // Two strikes. A single valid:false can come from a bad deploy window or a
+        // transient server misconfiguration, and wiping a paying customer's key from
+        // their device is not recoverable without support. Require it twice.
+        const strikes=(lic.strikes||0)+1;
+        if(strikes<2){
+          lic.strikes=strikes;lic.at=lic.at||Date.now();Store.save('license',lic);
+          return;
+        }
         clear();
         try{renderProBtn();renderPortfolio();LiveDrops.refresh();Alerts.resync();}catch(e){}
         toast('Pro key is no longer valid.');
+      } else if(d&&d.valid===true&&lic.strikes){
+        lic.strikes=0;Store.save('license',lic);      // recovered: forget the strike
       }
     }catch(e){/* offline: keep Pro */}
   }
@@ -746,6 +905,18 @@ const Premium=(function(){
   return{active,validate,clear,recheck,key:()=>lic&&lic.key};
 })();
 let acct=Store.load('acct',{method:'fifo'});
+/* A per-install random id, used only to count how many devices a Pro key is running on.
+   It identifies an install, not a person, and never leaves the app except alongside the
+   licence it belongs to. */
+const DeviceId=(function(){
+  var d=Store.load('deviceId',null);
+  if(!d){
+    try{d=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now().toString(36));}
+    catch(e){d=String(Math.random()).slice(2)+Date.now().toString(36);}
+    Store.save('deviceId',d);
+  }
+  return d;
+})();
 
 /* ===== UI CORE ===== */
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
@@ -763,16 +934,55 @@ function pctChange(pts){if(!pts||pts.length<2)return null;const a=pts[0].p,b=pts
 function priceTag(id){return PriceEngine.hasPrice(id)?usd(PriceEngine.getPrice(id)):'\u2014';}
 function thumbHtml(it,cls){const u=it&&it.img;if(!u)return `<div class="${cls}"></div>`;
   return `<img class="${cls}" loading="lazy" src="${u}" onerror="this.style.visibility='hidden'">`;}
+/* Animate a money figure from its current value to a new one. Short, eased, and it
+   falls back to a plain write for tiny deltas, first paint, or reduced motion, so it
+   never slows down someone working quickly. */
+function setMoney(el,val,fmt){
+  if(!el)return;
+  fmt=fmt||usd;
+  var prev=el.__v;
+  if(prev==null||!isFinite(prev)||Math.abs(val-prev)<0.01||
+     (window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){
+    el.__v=val;el.textContent=fmt(val);return;
+  }
+  if(el.__raf)cancelAnimationFrame(el.__raf);
+  var t0=performance.now(),dur=Math.min(520,220+Math.abs(val-prev)*0.6);
+  function step(now){
+    var k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,3);   // ease out cubic
+    el.textContent=fmt(prev+(val-prev)*e);
+    if(k<1)el.__raf=requestAnimationFrame(step);
+    else{el.__v=val;el.textContent=fmt(val);}
+  }
+  el.__raf=requestAnimationFrame(step);
+}
 const usd=n=>{const v=n*(FX.rate||1),sym=CURRENCIES[FX.code]||'$',a=Math.abs(v);
   let body;
   if(a>0&&a<10)body=a.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
   else body=Math.round(a).toLocaleString();
   return (v<0?'\u2212':'')+sym+body;};
 const pct=n=>(n>=0?'+':'')+Math.round(n)+'%';
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms||12);}catch(e){}}
+/* toast(msg) or toast(msg,{undo:fn}): an undoable toast stays up longer and offers
+   one tap to put things back. Deleting a holding you typed in by hand should never
+   be a one way door. */
+let _undoT=null;
+function toast(msg,opts){const t=$('#toast');
+  if(_undoT){clearTimeout(_undoT);_undoT=null;}
+  if(opts&&typeof opts.undo==='function'){
+    t.innerHTML='<span></span><button class="tu">Undo</button>';
+    t.firstChild.textContent=msg;
+    t.querySelector('.tu').onclick=function(){opts.undo();t.classList.remove('show');buzz(8);};
+    t.classList.add('show');
+    _undoT=setTimeout(()=>t.classList.remove('show'),5200);
+    return;
+  }
+  t.textContent=msg;t.classList.add('show');_undoT=setTimeout(()=>t.classList.remove('show'),1900);}
 let lastTab='block';
 function switchTab(name){
-  if(name==='scan'){Scanner.open(false);return;}
+  // announce the current tab to assistive tech, not just visually
+  setTimeout(function(){try{document.querySelectorAll('.navb').forEach(function(b){
+    if(b.classList.contains('on'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}catch(e){}},0);
+  if(name==='scan'){var sc=$('#scanChoose');if(sc){sc.classList.add('show');}else{Scanner.open(false);}return;}
   lastTab=name;
   $$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));
   $$('.navb').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
@@ -799,15 +1009,30 @@ function backup(){
   const data={schema:SCHEMA,exported:new Date().toISOString(),
     holdings:Store.load('holdings',[]),sold:Store.load('sold',[]),deals:Store.load('deals',[]),
     fees:Store.load('fees',null),hotlist:Store.load('hotlist',[]),credit:Store.load('credit',null),
-    buyRate:Store.load('buyRate',75),acct:Store.load('acct',{method:'fifo'})};
+    buyRate:Store.load('buyRate',75),acct:Store.load('acct',{method:'fifo'}),
+    drops:Store.load('drops',[]),lang:Store.load('lang',null),license:Store.load('license',null),
+    alertPrefs:Store.load('alertPrefs',null),caught:Store.load('caught',{}),
+    consent:Store.load('consent',null),tourSeen:Store.load('tourSeen',0)};
   const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='holomint-backup.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Backup saved');}
 function restoreFile(file){const rd=new FileReader();
   rd.onload=()=>{try{const d=JSON.parse(rd.result);
     if(!d||typeof d!=='object'||!('schema' in d)){toast('Not a Holomint backup');return;}
-    ['holdings','sold','deals','fees','hotlist','credit','buyRate','acct'].forEach(k=>{if(d[k]!=null)Store.save(k,d[k]);});
-    toast('Restored');setTimeout(()=>location.reload(),600);
+    // Restoring replaces everything currently in the app. Say what is about to happen,
+    // and what it will be replaced with, before doing it.
+    const inc=(d.holdings||[]).length, cur=(Store.load('holdings',[])||[]).length;
+    const when=d.at?new Date(d.at).toLocaleString():'an unknown date';
+    Sheet.confirm
+      ? Sheet.confirm('Restore this backup?',
+          '<p>This replaces everything currently in Holomint with the contents of this file.</p>'+
+          '<p>Backup from <b>'+esc(when)+'</b>, with <b>'+inc+'</b> holdings. You currently have <b>'+cur+'</b>.</p>'+
+          '<p>Your current data cannot be recovered afterwards unless you backed it up too.</p>',
+          'Replace my data', ()=>doRestore(d))
+      : (confirm('Restore this backup? It replaces all current data ('+cur+' holdings) with '+inc+' from the file.') && doRestore(d));
   }catch(e){toast('Bad file');}};rd.readAsText(file);}
+function doRestore(d){
+  ['holdings','sold','deals','fees','hotlist','credit','buyRate','acct','drops','lang','license','alertPrefs','caught','consent','tourSeen'].forEach(k=>{if(d[k]!=null)Store.save(k,d[k]);});
+  toast('Restored');setTimeout(()=>location.reload(),600);}
 const fileIn=document.createElement('input');fileIn.type='file';fileIn.accept='application/json';fileIn.style.display='none';document.body.appendChild(fileIn);
 fileIn.onchange=()=>{if(fileIn.files[0])restoreFile(fileIn.files[0]);fileIn.value='';};
 
@@ -844,7 +1069,7 @@ const Sheet=(function(){
 
 /* ---- Hints: tap-to-open explainers (hover tooltips do not exist on touch) ---- */
 const HINTS={
-  fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>12.5% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:10px'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
+  fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>13.25% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:10px'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
   flip:["Flip margin","<p>For each restock, Holomint matches the product to its sealed listing in the catalog, takes the current market price, subtracts your channel fees, and compares the result against the listed retail.</p><p style='margin-top:8px'><b>Green</b> means it clears fees at today's market. <b>Dim</b> means it does not.</p><p style='margin-top:8px'>Market prices come from third-party data and refresh daily, so they can move before you sell. Pre-orders are the least reliable. If Holomint cannot match a product with confidence, it shows no margin at all rather than guessing.</p><p style='margin-top:8px'><b>Estimates only. Not financial advice.</b></p>"],
   tax:["Tax summary","<p>Realized profit and loss by year, using the cost basis you entered and the net you actually received after fees.</p><p style='margin-top:8px'>Only sold items count. Holdings you still own are unrealized and do not appear here.</p><p style='margin-top:8px'>Lot accounting (FIFO or LIFO) is set in Pro settings. It decides which cost basis is used when you sell part of a stack.</p><p style='margin-top:8px'>This is a summary for your own records. It is not tax advice.</p>"],
   alerts:["Drop alerts","<p>Your phone buzzes when a restock lands with real margin in it, <b>even when Holomint is closed</b>. No need to keep the app open.</p><p style='margin-top:8px'>Holomint matches the drop to its sealed listing, prices it against your fee channel, and only wakes you if it clears <b>both</b> of your floors: net profit and ROI.</p><p style='margin-top:8px'>Free restock bots ping you for everything. This one stays quiet unless there is money in it.</p><p style='margin-top:8px'>A hard daily cap applies no matter how low you set the floors, so a bad setting cannot spam you into muting the app.</p>"],
@@ -992,7 +1217,9 @@ const Alerts=(function(){
     curWatch=(list||[]).slice(0,50);
     const box=$('#alWatchChips'); if(!box)return;
     box.innerHTML=curWatch.map((x,i)=>'<span class="wl-chip">'+esc(x.name)+'<button data-wi="'+i+'" aria-label="Remove">&times;</button></span>').join('');
-    box.querySelectorAll('button[data-wi]').forEach(b=>b.onclick=()=>{curWatch.splice(+b.dataset.wi,1);paintWatch(curWatch);});
+    box.querySelectorAll('button[data-wi]').forEach(b=>b.onclick=()=>{const wi=+b.dataset.wi,gone=curWatch[wi];
+      curWatch.splice(wi,1);paintWatch(curWatch);buzz();
+      toast('Removed from watchlist',{undo:()=>{curWatch.splice(wi,0,gone);paintWatch(curWatch);}});});
   }
   function wireWatchSearch(){
     const inp=$('#alWatch'),sug=$('#alWatchSug');
@@ -1080,6 +1307,46 @@ const GradedPrices=(function(){
   return {refresh:refresh,auto:auto};
 })();
 
+/* ---- MARGIN LOG: what the feed flagged this month --------------------------
+   Every restock that clears a positive flip gets its profit recorded once, keyed by
+   event id, bucketed by month. The feed itself only retains a week, so this has to
+   accumulate as drops land rather than be derived from the cache. Purely local: this
+   is the user's own history and never leaves the device. */
+const MarginLog=(function(){
+  var KEY='marginLog';
+  function all(){return Store.load(KEY,{});}
+  function ym(t){return new Date(t||Date.now()).toISOString().slice(0,7);}
+  function note(events){
+    if(!events||!events.length)return;
+    var m=all(),ch=(typeof channel!=='undefined')?channel:'cash',dirty=false;
+    events.forEach(function(e){
+      if(!e||e.kind!=='restock'||e.redacted||!e.event_id)return;
+      var when=e.received_at||(e.ts?e.ts*1000:Date.now());
+      var b=ym(when);
+      m[b]=m[b]||{};
+      if(m[b][e.event_id]!=null)return;                 // already counted
+      var fl=null;try{fl=SetMatch.flip(e,ch);}catch(_){}
+      if(!fl||fl.profit==null||fl.profit<=0.5)return;
+      m[b][e.event_id]=Math.round(fl.profit*100)/100;
+      dirty=true;
+    });
+    if(dirty){
+      // keep three months so the file cannot grow without bound
+      var keys=Object.keys(m).sort().slice(-3),trim={};
+      keys.forEach(function(k){trim[k]=m[k];});
+      Store.save(KEY,trim);
+    }
+  }
+  function monthTotal(){
+    var m=all()[ym()]||{},t=0;
+    for(var k in m)t+=m[k];
+    return t;
+  }
+  function monthCount(){return Object.keys(all()[ym()]||{}).length;}
+  return {note:note,monthTotal:monthTotal,monthCount:monthCount};
+})();
+window.MarginLog=MarginLog;
+
 /* ---- Caught it: outcome logging ------------------------------------------
    One tap after an alert: did you get it? Stored locally (the value ticker reads
    this) and pinged anonymously to the Worker for aggregate conversion signal.
@@ -1116,11 +1383,11 @@ window.Caught=Caught;
    are curious, let a real drop land, and let the founder counter sell later. */
 const Tour=(function(){
   const KEY='tourSeen';
-  let i=0,ring=null;
+  let i=0;
 
   const STEPS=[
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
-     body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep.'},
+     body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, the second it lands',
      body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them instantly.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
@@ -1131,53 +1398,39 @@ const Tour=(function(){
      body:'Slab Math weighs the grading fee against the graded-vs-raw spread and the odds, so you know whether a card is worth submitting. Look up any card and see the numbers.'}
   ];
 
-  function clear(){
-    const m=$('#tourMask'); if(m)m.innerHTML='';
-    if(ring&&ring.parentNode)ring.parentNode.removeChild(ring); ring=null;
-  }
+  function clear(){}
   function paint(){
     const st=STEPS[i]; if(!st)return done();
     const el=document.querySelector(st.sel);
-    // A collapsed card has zero height, so there would be nothing to spotlight. Open it
-    // using the app's own toggle, which persists the state: if we are telling someone the
-    // drops feed is the point, it had better still be open when the tour ends.
+    // A collapsed card has zero height, so there would be nothing to point at. Open it
+    // using the app's own toggle, which persists the state.
     const host=el&&el.closest('.card');
     if(host&&host.classList.contains('collapsed')){
       const head=host.querySelector('.colhead');
       if(head){ head.click(); return setTimeout(paint,60); }
     }
-    clear();
-    const m=$('#tourMask');
-    const r=el?el.getBoundingClientRect():null;
-    const W=innerWidth,H=innerHeight;
-
-    if(r&&r.height>0){
-      const pad=5;
-      const t=Math.max(0,r.top-pad),b=Math.min(H,r.bottom+pad),l=Math.max(0,r.left-pad),g=Math.min(W,r.right+pad);
-      // four rects around the target: a genuine hole, so the element underneath is really visible
-      const box=(x,y,w,h)=>{const d=document.createElement('div');d.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px`;m.appendChild(d);};
-      box(0,0,W,t); box(0,b,W,H-b); box(0,t,l,b-t); box(g,t,W-g,b-t);
-      ring=document.createElement('div'); ring.id='tourRing';
-      ring.style.cssText=`left:${l}px;top:${t}px;width:${g-l}px;height:${b-t}px`;
-      $('#tourWrap').appendChild(ring);
-    } else {
-      const d=document.createElement('div'); d.style.cssText='inset:0'; m.appendChild(d);
-    }
-
+    // No spotlight, no cutouts, no ring: the screen dims, the target scrolls to center,
+    // and the card sits right next to it. This survives any viewport, desktop included,
+    // because there is no rectangle math to get wrong.
+    if(el)el.scrollIntoView({block:'center'});
     $('#tourTitle').textContent=st.title;
     $('#tourBody').innerHTML=st.body;
     $('#tourDots').innerHTML=STEPS.map((_,n)=>'<i class="'+(n===i?'on':'')+'"></i>').join('');
     const last=(i===STEPS.length-1);
-    const isAlerts=STEPS[i].sel==='#alertCard';
+    const isAlerts=st.sel==='#alertCard';
     $('#tourNext').textContent=last?(isAlerts?'Turn on alerts':'Done'):'Next';
     $('#tourSkip').textContent=last?'Close':'Skip';
-
-    // card goes below the highlight when there is room, otherwise above it
-    const card=$('#tourCard');
-    card.style.top='auto';card.style.bottom='auto';
-    const below=r?(H-r.bottom):0;
-    if(!r||below>240){card.style.top=((r?r.bottom:H/2)+22)+'px';}
-    else{card.style.top=Math.max(14,(r.top-card.offsetHeight-22))+'px';}
+    requestAnimationFrame(()=>{
+      const card=$('#tourCard');
+      const r=el?el.getBoundingClientRect():null;
+      const H=innerHeight, ch=card.offsetHeight;
+      let top;
+      if(!r||r.height<=0) top=(H-ch)/2;
+      else if(H-r.bottom>ch+30) top=r.bottom+14;
+      else if(r.top>ch+30) top=r.top-ch-14;
+      else top=(H-ch)/2;
+      card.style.top=Math.max(12,Math.min(top,H-ch-12))+'px';
+    });
   }
   function go(n){
     i=n;
@@ -1330,14 +1583,63 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
+const APP_VERSION='0.95';
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
+Store.load('lotItems',[]).forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
 let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
 const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{const c=FeeCalc.channels[k],v=savedFees[k];if(c&&v){if(typeof v.pct==='number')c.pct=v.pct;if(typeof v.flat==='number')c.flat=v.flat;}});
 
 function resolveItem(key){return manualItems[key]||PriceEngine.getItem(key);}
 function priceOf(key){const v=manualItems[key]?manualItems[key].price:PriceEngine.getPrice(key);return +v||0;}
-function pileValue(arr){return arr.reduce((s,p)=>s+priceOf(p.key)*p.qty,0);}
+/* Card conditions. TCGplayer market prices track Near Mint; the other grades are the
+   standard dealer multipliers, editable in the condition guide. Applied to singles only. */
+let condMult=Object.assign({nm:1,lp:0.88,mp:0.72,hp:0.55,dg:0.40},Store.load('condMult',{}));
+const COND_LABEL={nm:'NM',lp:'LP',mp:'MP',hp:'HP',dg:'DG'};
+function condFactor(entry,it){if(!it||it.type!=='single')return 1;return condMult[(entry&&entry.c)||'nm']||1;}
+/* Live per-condition prices (JustTCG behind the Worker). When configured, a single
+   priced at LP/MP/HP/DG uses the real market number for that condition; the multiplier
+   table is the automatic fallback (offline, unconfigured, or card not covered). The
+   printing is chosen by whichever NM is closest to the catalog's own price, so foil
+   vs normal resolves itself. */
+const CondLive=(function(){
+  var mem={},inflight={},off=false;
+  var base='https://holomint-feed.mmilliard2516.workers.dev/api/cond';
+  function pickPrinting(pid){
+    var d=mem[pid];if(!d||!d.printings)return null;
+    var ref=+PriceEngine.getPrice(pid)||0,best=null,gap=1e9;
+    for(var pr in d.printings){var nm=d.printings[pr].nm;
+      if(nm==null){if(!best)best=d.printings[pr];continue;}
+      var g=Math.abs(nm-ref);if(g<gap){gap=g;best=d.printings[pr];}}
+    return best;
+  }
+  function get(pid,cond){
+    if(cond==='nm'||off)return null;
+    var t=pickPrinting(pid);
+    return (t&&t[cond]!=null)?t[cond]:null;
+  }
+  function want(pid){
+    if(off||mem[pid]||inflight[pid])return;
+    inflight[pid]=1;
+    fetch(base+'?pid='+encodeURIComponent(pid),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      delete inflight[pid];
+      if(d&&d.configured===false){off=true;return;}
+      if(d&&d.found){mem[pid]=d;if(typeof recompute==='function')recompute();
+        if($('#lotResults')&&$('#lotResults').style.display!=='none'&&typeof LotScanner!=='undefined'&&LotScanner.redraw)LotScanner.redraw();}
+      else mem[pid]={printings:null};
+    }).catch(function(){delete inflight[pid];});
+  }
+  return {get:get,want:want,has:function(pid,cond){return get(pid,cond)!=null;}};
+})();
+function linePrice(entry){
+  const it=resolveItem(entry.key);
+  if(it&&it.type==='single'&&entry.c&&entry.c!=='nm'){
+    const lv=CondLive.get(entry.key,entry.c);
+    if(lv!=null)return lv;
+  }
+  return priceOf(entry.key)*condFactor(entry,it);
+}
+function pileValue(arr){return arr.reduce((s,p)=>s+linePrice(p)*p.qty,0);}
 
 function syncLangSeg(){$$('#langSeg button').forEach(x=>x.classList.toggle('on',x.dataset.lang===lang));}
 $$('#langSeg button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;Store.save('lang',lang);syncLangSeg();});
@@ -1374,12 +1676,68 @@ $('#theirCash').oninput=e=>{theirCash=Math.max(0,parseFloat(e.target.value)||0);
 $('#yourCash').oninput=e=>{yourCash=Math.max(0,parseFloat(e.target.value)||0);if(yourCash!=e.target.value)e.target.value=yourCash;recompute();};
 
 function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);let sd;
-  inp.oninput=()=>{clearTimeout(sd);sd=setTimeout(()=>{const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
-    res.innerHTML=r.map(i=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
+  // Desktop: Enter takes the top hit, Escape dismisses. Typing a name and pressing
+  // Enter is what a keyboard user expects, and the desktop layout is real now.
+  inp.onkeydown=e=>{
+    const items=[...res.querySelectorAll('.res')];
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      if(!items.length)return;
+      e.preventDefault();
+      let i=items.findIndex(x=>x.classList.contains('sel'));
+      i=e.key==='ArrowDown'?(i+1)%items.length:(i<=0?items.length-1:i-1);
+      items.forEach(x=>x.classList.remove('sel'));
+      items[i].classList.add('sel');
+      items[i].scrollIntoView({block:'nearest'});
+      inp.setAttribute('aria-activedescendant','res-'+i);
+      return;
+    }
+    if(e.key==='Enter'){
+      const pick=res.querySelector('.res.sel')||items[0];
+      if(pick){e.preventDefault();addTo(target,pick.dataset.add);inp.value='';res.classList.remove('show');res.innerHTML='';}
+      return;
+    }
+    if(e.key==='Escape'){res.classList.remove('show');inp.blur();}
+  };
+  inp.oninput=()=>{clearTimeout(sd);sd=setTimeout(()=>{
+    // Explain an empty result rather than showing a blank box.
+    if(window.CatalogState==='loading'&&inp.value.trim()){
+      res.innerHTML='<div class="res-msg">Loading the card catalog<span class="dots"></span><br><span>First run downloads it once, then it is instant.</span></div>';
+      res.classList.add('show');return;}
+    if(window.CatalogState==='failed'&&inp.value.trim()){
+      res.innerHTML='<div class="res-msg">Could not load the card catalog.<br><span>Check your connection, then <b data-recat>tap here to retry</b>.</span></div>';
+      res.classList.add('show');return;}
+    const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
+    res.setAttribute('role','listbox');
+    res.innerHTML=r.map((i,ri)=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
       const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
-      return `<div class="res" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
+      return `<div class="res" role="option" id="res-${ri}" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
     res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});},130);};}
-function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);if(ex)ex.qty++;else arr.push({key,qty:1,rate:null});recompute();}
+/* The same dealer buys the same products over and over. Remember what actually gets
+   added and offer it as one tap, so a show shift is not the same search fifty times. */
+function noteRecent(key){
+  try{var r=Store.load('recentAdds',[]);
+    r=r.filter(function(k){return k!==key;});r.unshift(key);
+    Store.save('recentAdds',r.slice(0,12));
+  }catch(e){}
+}
+function renderQuickAdd(){
+  var box=$('#quickAdd');if(!box)return;
+  var keys=Store.load('recentAdds',[]).filter(function(k){return !!resolveItem(k);});
+  if(!keys.length){box.innerHTML='';box.style.display='none';return;}
+  box.style.display='';
+  box.innerHTML='<div class="qa-l">Recent</div>'+keys.slice(0,8).map(function(k){
+    var it=resolveItem(k);return '<button class="qa" data-qa="'+esc(k)+'">'+esc((it.name||'').slice(0,26))+'</button>';
+  }).join('');
+}
+function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);
+  noteRecent(key);setTimeout(renderQuickAdd,0);
+  if(ex){ex.qty++;buzz();
+    const nm=((resolveItem(key)||{}).name||'Item').slice(0,24);
+    // Adding something already in the pile is usually intentional, but not always.
+    // Say what happened and offer one tap back, rather than silently changing a count.
+    toast(nm+' already here, now '+ex.qty,{undo:()=>{ex.qty--;if(ex.qty<1){const i=arr.indexOf(ex);if(i>=0)arr.splice(i,1);}recompute();}});
+  } else {arr.push({key,qty:1,rate:null});buzz();}
+  recompute();}
 
 $('#manualBtn').onclick=()=>Sheet.open('Manual entry',[
   {key:'name',label:'Name',placeholder:'e.g. Moonbreon raw NM'},
@@ -1398,26 +1756,29 @@ function renderHotlist(){const el=$('#hotlist');$('#hotCard').style.display=hotl
 $('#hotClear').onclick=()=>{hotlist=[];Store.save('hotlist',hotlist);renderHotlist();};
 
 function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
-  if(!arr.length){el.innerHTML='<div class="empty">Empty</div>';return;}
-  el.innerHTML=arr.map(p=>{const it=resolveItem(p.key),price=priceOf(p.key);
+  if(!arr.length){el.innerHTML='<div class="empty">Nothing here yet.<br><span class="es-h">Search above, or tap Scan to add a card with the camera.</span></div>';return;}
+  el.innerHTML=arr.map((p,pi)=>{const it=resolveItem(p.key),price=linePrice(p);
     const chip=(it.jp?'<span class="chip jp">JP</span> ':'')+(it.type==='graded'?'<span class="chip graded">graded</span>':(it.type==='single'?'<span class="chip raw">raw</span>':'<span class="chip sealed">sealed</span>'));
     const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
-    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea ${chip}${stat}</div></div>
+    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea${(it.type==='single'&&p.c&&p.c!=='nm')?(CondLive.has(p.key,p.c)?' <span class="chip live">live</span>':''):''} ${chip}${stat}${it.type==='single'?`<select class="pcond" data-pile="${containerId}" data-pi="${pi}">${['nm','lp','mp','hp','dg'].map(c=>`<option value="${c}" ${((p.c||'nm')===c)?'selected':''}>${COND_LABEL[c]}</option>`).join('')}</select>`:''}</div></div>
       <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
       <span class="val">${usd(price*p.qty)}</span><span class="x" data-rm="${p.key}">\u00d7</span></div>`;}).join('');
   el.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{arr.find(p=>p.key===b.dataset.inc).qty++;recompute();});
   el.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{const p=arr.find(p=>p.key===b.dataset.dec);p.qty=Math.max(1,p.qty-1);recompute();});
-  el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const i=arr.findIndex(p=>p.key===b.dataset.rm);arr.splice(i,1);recompute();});
+  el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const i=arr.findIndex(p=>p.key===b.dataset.rm);
+    if(i<0)return;const gone=arr[i],nm=(resolveItem(gone.key)||{}).name||'Item';
+    arr.splice(i,1);recompute();buzz();
+    toast(nm.slice(0,26)+' removed',{undo:()=>{arr.splice(i,0,gone);recompute();}});});
 }
 
 function cashNumbers(){let base=0,market=0;
-  theirPile.forEach(p=>{const pr=priceOf(p.key),r=(p.rate!=null?p.rate:buyRate)/100;market+=pr*p.qty;base+=pr*p.qty*r;});
+  theirPile.forEach(p=>{const pr=linePrice(p),r=(p.rate!=null?p.rate:buyRate)/100;market+=pr*p.qty;base+=pr*p.qty*r;});
   const offer=storeCredit.on?base*(1+storeCredit.bump/100):base;
   const net=FeeCalc.net(market,channel).net;return{market,base,offer,net,profit:net-offer};}
 function renderCash(){const n=cashNumbers(),roi=n.offer>0?n.profit/n.offer*100:0;
-  $('#aMarket').textContent=usd(n.market);
+  setMoney($('#aMarket'),n.market);
   $('#payLabel').textContent=storeCredit.on?`Credit payout (+${Math.round(storeCredit.bump)}%)`:'Cash payout';
-  $('#aPayout').textContent=usd(n.offer);$('#aNet').textContent=usd(n.net);
+  setMoney($('#aPayout'),n.offer);setMoney($('#aNet'),n.net);
   const pe=$('#aProfit');pe.textContent=usd(n.profit)+' · '+pct(roi);pe.className='av '+(n.profit>=0?'pos':'neg');
   const empty=n.market<=0;$('#sendDesk').disabled=empty;$('#copyReceipt').disabled=empty;}
 function renderBalance(){const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash,diff=T-Y;
@@ -1557,10 +1918,10 @@ $('#copyReceipt').onclick=async()=>{
     const T=pileValue(theirPile)+theirCash,Y=pileValue(yourPile)+yourCash;
     if(T<=0&&Y<=0)return;
     var rows=[];
-    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=linePrice(p);rows.push({l:p.qty+'x '+it.name+(it.type==='single'&&p.c&&p.c!=='nm'?' ('+COND_LABEL[p.c]+')':''),r:usd(pr*p.qty)});});
     if(theirCash>0)rows.push({l:'+ cash',r:usd(theirCash)});
     rows.push({l:'They give',r:usd(T),strong:true});
-    yourPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+    yourPile.forEach(p=>{const it=resolveItem(p.key),pr=linePrice(p);rows.push({l:p.qty+'x '+it.name+(it.type==='single'&&p.c&&p.c!=='nm'?' ('+COND_LABEL[p.c]+')':''),r:usd(pr*p.qty)});});
     if(yourCash>0)rows.push({l:'+ cash',r:usd(yourCash)});
     rows.push({l:'You give',r:usd(Y),strong:true});
     const diff=T-Y, bal=Math.abs(diff)<=Math.max(T,Y)*0.03;
@@ -1572,7 +1933,7 @@ $('#copyReceipt').onclick=async()=>{
   }
   const n=cashNumbers();if(n.market<=0)return;
   var rows=[];
-  theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);rows.push({l:p.qty+'x '+it.name,r:usd(pr*p.qty)});});
+  theirPile.forEach(p=>{const it=resolveItem(p.key),pr=linePrice(p);rows.push({l:p.qty+'x '+it.name+(it.type==='single'&&p.c&&p.c!=='nm'?' ('+COND_LABEL[p.c]+')':''),r:usd(pr*p.qty)});});
   rows.push({l:'Market total',r:usd(n.market),strong:true});
   rows.push({l:(storeCredit.on?'Credit offer':'Cash offer'),r:usd(n.offer)});
   rows.push({l:'Net resale ('+FeeCalc.channels[channel].label+')',r:usd(n.net)});
@@ -1595,10 +1956,40 @@ function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis
 
 let holdQuery='',holdSort='roi',holdTypeF='all';
 function syncHoldTypeSeg(){$$('#holdTypeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.ht===holdTypeF));}
+/* The retention number. Pro sees what the feed found for them; free sees the same
+   figure framed as what arrived late, which is the honest version of the upgrade
+   argument because it is literally what happened. Hidden until there is something
+   real to show, so a new install is never greeted by a row of zeroes. */
+function renderTicker(){
+  const box=$('#ticker');if(!box)return;
+  let total=0,n=0,caught=0;
+  try{total=MarginLog.monthTotal();n=MarginLog.monthCount();}catch(e){}
+  try{caught=Caught.monthCaught();}catch(e){}
+  if(!n&&!caught){box.className='';box.innerHTML='';return;}
+  const pro=!!(typeof Premium!=='undefined'&&Premium.key());
+  const month=new Date().toLocaleDateString(undefined,{month:'long'});
+  if(pro){
+    box.className='on';
+    box.innerHTML='<div class="tl">'+esc(month)+' so far</div>'
+      +'<div class="tv">'+usd(total)+'</div>'
+      +'<div class="tn">Margin the feed flagged across '+n+' drop'+(n===1?'':'s')+'.'
+      +(caught?' You marked '+caught+' as caught.':'')+'</div>';
+  } else {
+    box.className='on free';
+    box.innerHTML='<div class="tl">'+esc(month)+' so far</div>'
+      +'<div class="tv">'+usd(total)+'</div>'
+      +'<div class="tn">Margin across '+n+' drop'+(n===1?'':'s')+', which reached you about ten minutes after they landed.'
+      +(caught?' You caught '+caught+'.':'')+'</div>'
+      +'<button class="tup" data-upsell>See these the second they land</button>';
+  }
+}
 function renderPortfolio(){
+  // any change to the view resets the window so 'show all' is a deliberate choice
+
   const cost=holdings.reduce((s,h)=>s+h.costBasis*h.qty,0),val=holdings.reduce((s,h)=>s+h.currentValue*h.qty,0);
   const gain=val-cost;
   const realized=soldLog.reduce((s,r)=>s+r.realized,0);
+  renderTicker();
   $('#portStats').innerHTML=[['Cost basis',usd(cost),''],['Market value',usd(val),''],['Unrealized',usd(gain),gain>=0?'pos':'neg'],['Realized P&L',usd(realized),realized>=0?'pos':'neg']].map(s=>`<div class="stat"><div class="sl">${s[0]}</div><div class="sv ${s[2]}">${s[1]}</div></div>`).join('');
   const sealedV=holdings.filter(h=>h.type==='sealed').reduce((s,h)=>s+h.currentValue*h.qty,0);
   const gradedV=holdings.filter(h=>h.type==='graded').reduce((s,h)=>s+h.currentValue*h.qty,0);
@@ -1609,6 +2000,8 @@ function renderPortfolio(){
   renderSold();renderDeals();renderTax();renderDrops();
   renderHoldings();
 }
+const HOLD_WINDOW=150;
+let holdShowAll=false;
 function renderHoldings(){
   let view=holdings.filter(h=>{
     if(holdTypeF!=='all'&&h.type!==holdTypeF)return false;
@@ -1616,19 +2009,37 @@ function renderHoldings(){
     return true;});
   const sorters={roi:(a,b)=>roiPct(b)-roiPct(a),value:(a,b)=>b.currentValue*b.qty-a.currentValue*a.qty,cost:(a,b)=>b.costBasis*b.qty-a.costBasis*a.qty,name:(a,b)=>(a.name||'').localeCompare(b.name||''),recent:(a,b)=>(b.acquired||'').localeCompare(a.acquired||'')};
   const sorted=view.sort(sorters[holdSort]||sorters.roi);
-  $('#holdBody').innerHTML=sorted.length?sorted.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
+  // Render a window, not the whole list. Most dealers never pass the cap; the ones who
+  // import a full inventory get a usable screen immediately instead of a locked one.
+  const shown=holdShowAll?sorted:sorted.slice(0,HOLD_WINDOW);
+  const hidden=sorted.length-shown.length;
+  $('#holdBody').innerHTML=shown.length?shown.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
     const chip=(h.grade)?`<span class="chip graded">${(h.grader||'').toUpperCase()} ${h.grade}</span>`:(h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>')));
     return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
     :(holdings.length?'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">No matches.</td></tr>':'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty. Buy something in the Trade Block.</td></tr>');
-  $('#holdBody').querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>sellHolding(b.dataset.sell));
-  $('#holdBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editHolding(b.dataset.edit));
-  $('#holdBody').querySelectorAll('[data-del]').forEach(b=>armable(b,()=>delHolding(b.dataset.del)));
+  if(hidden>0){
+    $('#holdBody').insertAdjacentHTML('beforeend',
+      '<tr><td colspan="5" style="text-align:center;padding:12px"><button class="ghost" id="holdMore" style="padding:8px 16px;font-size:12px">Show all '+sorted.length+' holdings</button><div style="font-size:11px;color:var(--ink3);margin-top:5px;font-family:var(--mono)">'+hidden+' more not shown</div></td></tr>');
+    const mb=$('#holdMore');if(mb)mb.onclick=()=>{holdShowAll=true;renderHoldings();};
+  }
+  // Handlers are delegated once at the table level (see below), so nothing is attached
+  // per row. At 1000 holdings that is 3 listeners instead of 3000.
 }
+const SOLD_WINDOW=100;
+let soldShowAll=false;
 function renderSold(){
   $('#soldCard').classList.toggle('hide',!soldLog.length);
   if(!soldLog.length)return;
-  $('#soldBody').innerHTML=[...soldLog].reverse().map(r=>{const cls=r.realized>=0?'pos':'neg';
+  const soldAll=[...soldLog].reverse();
+  const soldView=soldShowAll?soldAll:soldAll.slice(0,SOLD_WINDOW);
+  const soldHidden=soldAll.length-soldView.length;
+  $('#soldBody').innerHTML=soldView.map(r=>{const cls=r.realized>=0?'pos':'neg';
     return `<tr><td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${r.qty} · ${r.channel} · ${r.date}</div></td><td>${usd(r.basis)}</td><td>${usd(r.net)}</td><td class="${cls}">${usd(r.realized)}</td><td><span class="toolbtn" data-unsell="${r.id}">\u00d7</span></td></tr>`;}).join('');
+  if(soldHidden>0){
+    $('#soldBody').insertAdjacentHTML('beforeend',
+      '<tr><td colspan="6" style="text-align:center;padding:10px"><button class="ghost" id="soldMore" style="padding:7px 14px;font-size:12px">Show all '+soldAll.length+' sales</button></td></tr>');
+    const sm=$('#soldMore');if(sm)sm.onclick=()=>{soldShowAll=true;renderSold();};
+  }
   $('#soldBody').querySelectorAll('[data-unsell]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=soldLog.find(x=>x.id===b.dataset.unsell);if(!r)return;
     Sheet.open(r.name,[
       {type:'static',html:'<div class="choice">'+
@@ -1651,7 +2062,7 @@ function renderDeals(){
   const body=$('#dealBody');
   $('#dealCount').textContent=dealLog.length?dealLog.length+' logged':'';
   if(!Premium.active()){body.innerHTML=lockHtml(dealLog.length?dealLog.length+' deal'+(dealLog.length>1?'s':'')+' archived and waiting. Unlock to view them.':'Every buy and trade, archived with date and payout.');wireLocks();return;}
-  if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet</div>';return;}
+  if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet.<br><span class="es-h">Build a pile in the Trade Block and send it to the Desk to log one.</span></div>';return;}
   body.innerHTML='<table><thead><tr><th>Deal</th><th>Market</th><th>Paid</th></tr></thead><tbody>'+[...dealLog].reverse().slice(0,30).map(d=>{
     const names=d.items.map(i=>i.qty+'× '+i.name).join(', ');
     return `<tr><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;color:var(--ink);font-size:13px">${names}<div style="font-size:10px;color:var(--ink3)">${d.kind} · ${d.date}</div></td><td>${usd(d.market)}</td><td>${usd(d.payout)}</td></tr>`;}).join('')+'</tbody></table>';
@@ -1659,7 +2070,7 @@ function renderDeals(){
 function renderTax(){
   const body=$('#taxBody');
   if(!Premium.active()){body.innerHTML=lockHtml('Realized P&L by tax year, ready for filing.');wireLocks();return;}
-  if(!soldLog.length){body.innerHTML='<div class="empty">No sales yet</div>';return;}
+  if(!soldLog.length){body.innerHTML='<div class="empty">No sales yet.<br><span class="es-h">Mark a holding as sold and your realized profit lands here.</span></div>';return;}
   const byYear={};soldLog.forEach(r=>{const y=(r.date||'').slice(0,4)||'-';byYear[y]=byYear[y]||{n:0,basis:0,net:0,realized:0};const b=byYear[y];b.n+=1;b.basis+=r.basis;b.net+=r.net;b.realized+=r.realized;});
   body.innerHTML='<table><thead><tr><th>Year</th><th>Sales</th><th>Basis</th><th>Net</th><th>P&L</th></tr></thead><tbody>'+Object.entries(byYear).sort((a,b)=>b[0].localeCompare(a[0])).map(([y,v])=>{
     const cls=v.realized>=0?'pos':'neg';
@@ -1751,7 +2162,7 @@ const SetMatch=(function(){
 const LiveDrops=(function(){
   let cdTimer=null;
   const FEED_URL='https://holomint-feed.mmilliard2516.workers.dev/api/drops';
-  const feedUrl=()=>FEED_URL+(Premium.key()?'?k='+encodeURIComponent(Premium.key()):'');
+  const feedUrl=()=>FEED_URL+(Premium.key()?'?k='+encodeURIComponent(Premium.key())+'&d='+encodeURIComponent(DeviceId):'');
   const MAXAGE=7*24*3600; // seconds. hide events older than a week (also hides the old test event)
   let cache=Store.load('liveDrops',[]),timer=null;
   function recent(){
@@ -1769,6 +2180,14 @@ const LiveDrops=(function(){
       var r=await fetch(feedUrl(),{cache:'no-store'});
       if(!r.ok)return;
       var j=await r.json();
+      // The server tells us when a valid key is over its device limit. Say so plainly,
+      // once, rather than letting Pro look like it silently stopped working.
+      if(j&&j.deviceLimit&&!window.__devLimShown){
+        window.__devLimShown=true;
+        Sheet.info('This Pro key is on too many devices',
+          '<p>Your key is active on <b>'+(j.seats||'')+'</b> devices, and the limit is <b>'+(j.seatCap||'')+'</b>. This device is seeing the free view until a seat is free.</p>'+
+          '<p>Open <b>Settings, Holomint Pro, Manage devices</b> on any device that is already active to release one.</p>');
+      }
       var next=(j&&j.drops)||[];
       if(changed(cache,next)){cache=next;Store.save('liveDrops',cache);if(typeof renderDrops==='function')renderDrops();}
     }catch(e){/* offline, keep the cached feed */}
@@ -1870,9 +2289,10 @@ function icsFor(d){
   a.href=url;a.download=d.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.ics';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 function renderDrops(){
+  try{MarginLog.note(LiveDrops.recent?LiveDrops.recent():[]);}catch(e){}
   const body=$('#dropsBody');
   const today=new Date();today.setHours(0,0,0,0);
-  const manualHtml=!drops.length?'<div class="empty">No releases tracked yet</div>':[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
+  const manualHtml=!drops.length?'<div class="empty">No releases tracked yet.<br><span class="es-h">Add a set release date and Holomint will count down to it.</span></div>':[...drops].sort((a,b)=>a.date.localeCompare(b.date)).map(d=>{
     const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
     const when=days<0?'passed':days===0?'today':days===1?'tomorrow':'in '+days+'d';
     const hot=days>=0&&days<=1;
@@ -2046,8 +2466,8 @@ wireHoldControls();
 const SLAB_BRANDS={
   psa:{label:'PSA',tiers:{
     vbulk:{label:'Value Bulk',fee:24.99,days:150,cap:500,paused:true},
-    value:{label:'Value',fee:39.99,days:75,cap:500,paused:true},
-    reg:{label:'Regular',fee:79.99,days:30,cap:2500,paused:true},
+    value:{label:'Value',fee:32.99,days:75,cap:500,paused:true},
+    reg:{label:'Regular',fee:79.99,days:45,cap:1500},
     express:{label:'Express',fee:149,days:10,cap:5000},
     sexpress:{label:'Super Express',fee:349,days:5,cap:10000},
     walk:{label:'Walk-Through',fee:599,days:6,cap:50000}}},
@@ -2271,8 +2691,255 @@ Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});
   }catch(e){}
   toast('Payment received. Your license key is in your email; paste it in the PRO menu.');
 })();
-PriceEngine.loadData().then(()=>{recompute();renderPortfolio();});
+PriceEngine.loadData().then(ok=>{recompute();renderPortfolio();if(typeof renderQuickAdd==='function')renderQuickAdd();
+  if(!ok)toast('Card catalog did not load. Search will be empty until it does.');});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('[data-recat]'))return;
+  e.preventDefault();toast('Retrying…');
+  PriceEngine.loadData().then(ok=>{recompute();renderPortfolio();toast(ok?'Catalog loaded.':'Still could not load it.');});
+});
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
+/* A confirm dialog in the app's own voice, for actions that cannot be undone. */
+if(typeof Sheet!=='undefined'&&!Sheet.confirm){
+  Sheet.confirm=function(title,html,okLabel,onOk){
+    var w=document.getElementById('cfmModal');
+    if(!w){
+      w=document.createElement('div');w.id='cfmModal';
+      w.innerHTML='<div class="cg-card" style="max-width:420px"><div class="brand" style="font-size:19px" id="cfmT"></div><div class="cfm-b" id="cfmB"></div><div class="row" style="gap:8px;margin-top:16px"><button class="ghost" id="cfmNo" style="flex:1">Cancel</button><button class="act" id="cfmYes" style="flex:1"></button></div></div>';
+      document.body.appendChild(w);
+      w.addEventListener('click',function(e){if(e.target.id==='cfmModal')w.classList.remove('show');});
+    }
+    w.querySelector('#cfmT').textContent=title;
+    w.querySelector('#cfmB').innerHTML=html;
+    var yes=w.querySelector('#cfmYes');yes.textContent=okLabel||'Confirm';
+    w.querySelector('#cfmNo').onclick=function(){w.classList.remove('show');};
+    yes.onclick=function(){w.classList.remove('show');try{onOk&&onOk();}catch(e){}};
+    w.classList.add('show');
+  };
+}
+
+/* ---- GESTURES: swipe a pile row away, pull the drops feed to refresh ----------
+   Both are the gestures people reflexively try on a phone. Swipe pairs with the undo
+   toast, so a mis-swipe costs one tap. Pointer events cover touch and mouse, and both
+   gestures no-op on a desktop pointer so nothing surprises a mouse user. */
+const Gestures=(function(){
+  var TH=72;               // px of travel before a swipe counts as a delete
+  function wireSwipe(){
+    document.addEventListener('pointerdown',function(e){
+      if(e.pointerType!=='touch')return;
+      var row=e.target.closest('.pile-item');if(!row)return;
+      if(e.target.closest('button,select,input,a'))return;
+      var x0=e.clientX,y0=e.clientY,dx=0,locked=null;
+      function move(ev){
+        dx=ev.clientX-x0;var dy=ev.clientY-y0;
+        if(locked===null){ if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
+          locked=Math.abs(dx)>Math.abs(dy)?'x':'y';
+          if(locked==='y'){cleanup();return;} }
+        if(dx>0)dx=0;                                  // left swipe only
+        row.style.transition='none';
+        row.style.transform='translateX('+dx+'px)';
+        row.style.opacity=String(Math.max(.35,1-Math.abs(dx)/240));
+      }
+      function up(){
+        var go=Math.abs(dx)>TH;
+        row.style.transition='transform .18s ease, opacity .18s ease';
+        if(go){
+          row.style.transform='translateX(-110%)';row.style.opacity='0';
+          var rm=row.querySelector('[data-rm]');
+          setTimeout(function(){ if(rm)rm.click(); },170);
+        } else {row.style.transform='';row.style.opacity='';}
+        cleanup();
+      }
+      function cleanup(){
+        document.removeEventListener('pointermove',move);
+        document.removeEventListener('pointerup',up);
+        document.removeEventListener('pointercancel',up);
+      }
+      document.addEventListener('pointermove',move,{passive:true});
+      document.addEventListener('pointerup',up);
+      document.addEventListener('pointercancel',up);
+    },{passive:true});
+  }
+  function wirePull(){
+    var box=$('#dropsBody');if(!box)return;
+    var ind=document.createElement('div');ind.id='ptr';ind.textContent='Pull to refresh';
+    box.parentNode.insertBefore(ind,box);
+    var y0=null,dy=0,armed=false,busy=false;
+    box.addEventListener('pointerdown',function(e){
+      if(e.pointerType!=='touch'||busy)return;
+      // only when the feed is already scrolled to the top
+      var sc=document.scrollingElement||document.documentElement;
+      if(sc.scrollTop>4)return;
+      y0=e.clientY;armed=true;dy=0;
+    },{passive:true});
+    box.addEventListener('pointermove',function(e){
+      if(!armed||y0===null)return;
+      dy=e.clientY-y0;if(dy<0){dy=0;return;}
+      var d=Math.min(dy,90);
+      ind.style.height=d+'px';ind.style.opacity=String(Math.min(1,d/60));
+      ind.textContent=d>=60?'Release to refresh':'Pull to refresh';
+    },{passive:true});
+    function end(){
+      if(!armed)return;armed=false;
+      var go=dy>=60;y0=null;
+      if(go){
+        busy=true;ind.textContent='Refreshing';ind.style.height='34px';
+        buzz();
+        Promise.resolve(typeof LiveDrops!=='undefined'?LiveDrops.refresh():null).finally(function(){
+          setTimeout(function(){ind.style.height='0';ind.style.opacity='0';busy=false;},420);
+        });
+      } else {ind.style.height='0';ind.style.opacity='0';}
+    }
+    box.addEventListener('pointerup',end);
+    box.addEventListener('pointercancel',end);
+  }
+  function wire(){wireSwipe();wirePull();}
+  return {wire:wire};
+})();
+
+/* ---- DEVICES: see and release the seats a Pro key is using --------------------- */
+const Devices=(function(){
+  var API='https://holomint-feed.mmilliard2516.workers.dev';
+  async function open(){
+    var k=Premium.key();
+    if(!k){Sheet.info('Manage devices','<p>Device seats apply to Holomint Pro. Once a Pro key is active, this is where you can see and release the devices using it.</p>');return;}
+    Sheet.info('Manage devices','<p>Loading…</p>');
+    var d=null;
+    try{d=await (await fetch(API+'/api/devices?k='+encodeURIComponent(k),{cache:'no-store'})).json();}catch(e){}
+    if(!d||d.error){Sheet.info('Manage devices','<p>Could not reach the licence server. Try again in a minute.</p>');return;}
+    var rows=(d.devices||[]).map(function(x){
+      var me=x.device===DeviceId;
+      var when=x.last?new Date(x.last).toLocaleDateString():'';
+      return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)">'
+        +'<span style="font-size:13px">'+(me?'<b>This device</b>':'Device '+esc(String(x.device).slice(0,6)))
+        +'<br><span style="font-size:11px;color:var(--ink3);font-family:var(--mono)">last used '+esc(when)+'</span></span>'
+        +(me?'<span style="font-size:11px;color:var(--ink3)">in use</span>'
+            :'<button class="ghost" data-rel="'+esc(x.device)+'" style="padding:6px 11px;font-size:12px">Release</button>')
+        +'</div>';
+    }).join('');
+    Sheet.info('Manage devices',
+      '<p>Your Pro key is using <b>'+(d.seats||0)+'</b> of <b>'+(d.cap||0)+'</b> device seats. Releasing a seat frees it immediately; that device drops to the free view until it takes a seat again.</p>'
+      +'<p style="font-size:11.5px;color:var(--ink3)">Seats you stop using are released automatically after 45 days.</p>'
+      +(rows||'<p>No devices recorded yet.</p>'));
+  }
+  document.addEventListener('click',async function(e){
+    var b=e.target.closest('[data-rel]');if(!b)return;
+    e.preventDefault();b.textContent='Releasing…';b.disabled=true;
+    try{
+      await fetch(API+'/api/device-release',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({license:Premium.key(),device:b.dataset.rel})});
+      toast('Seat released.');open();
+    }catch(err){toast('Could not release that seat.');b.disabled=false;b.textContent='Release';}
+  });
+  return {open:open};
+})();
+
+/* ---- FEATURE GUIDE: what Holomint does and where each thing lives -------------
+   A directory, not a tour. Tap any row and the app switches to that tab, scrolls the
+   thing into view, and pulses it. The glow is a CSS animation on the element itself,
+   not a computed overlay rectangle, so it behaves the same on a phone and a desktop. */
+const FeatureMap=(function(){
+  var GROUPS=[
+    {tab:'block',name:'Trade Block',items:[
+      {sel:'#channels',t:'Resell channel',d:'Pick eBay, TCGplayer, Whatnot, or cash. Every number in the app goes net of that channel\u2019s fees.'},
+      {sel:'#pile',t:'The pile',d:'Search sealed, graded, or singles and build a buy or trade. Singles carry a condition, NM through DG.'},
+      {sel:'#scanLot',t:'Lot scanner',d:'Photograph a binder page or listing photo. Holomint reads the cards, prices each one, and totals the lot against the asking price.'},
+      {sel:'#copyReceipt',t:'Deal and trade receipts',d:'Render the deal as a branded image and share it straight to the other party.'},
+    ]},
+    {tab:'port',name:'Portfolio',items:[
+      {sel:'#portTotals',t:'Cost, market, and P&L',d:'Cost basis, market value, unrealized gain, and realized profit from your sold log.'},
+      {sel:'#dropsCard',t:'Live drops feed',d:'Restocks and queues as they happen, each with the flip math. Mark whether you caught it.'},
+      {sel:'#addHolding',t:'Holdings',d:'Track sealed, graded, and singles you own. Import and export as CSV.'},
+      {sel:'#refreshGraded',t:'Graded price refresh',d:'Pull current market values for graded cards by grader and grade.'},
+    ]},
+    {tab:'slab',name:'Slab Math',items:[
+      {sel:'#slabCard',t:'Grading calculator',d:'Compare raw value against graded outcomes after grading fees, shipping, and resale fees, with turnaround times.'},
+    ]},
+    {tab:'settings',name:'Settings',items:[
+      {sel:'#alertCard',t:'Drop alerts',d:'Push notifications when a drop lands, with your own profit floors. Free is delayed and capped; Pro is instant.'},
+      {sel:'#setTour',t:'Replay the tour',d:'Run the five step walkthrough again any time.'},
+    ]},
+  ];
+  function open(){
+    var m=$('#featModal');
+    m.querySelector('.fm-list').innerHTML=GROUPS.map(function(g){
+      return '<div class="fm-g">'+esc(g.name)+'</div>'+g.items.map(function(it){
+        return '<button class="fm-row" data-tab="'+g.tab+'" data-sel="'+esc(it.sel)+'"><span class="fm-t">'+it.t+'</span><span class="fm-d">'+it.d+'</span><span class="fm-go">Show me</span></button>';
+      }).join('');
+    }).join('');
+    m.classList.add('show');
+  }
+  function close(){$('#featModal').classList.remove('show');}
+  function show(tab,sel){
+    close();
+    if(typeof switchTab==='function')switchTab(tab);
+    setTimeout(function(){
+      var el=document.querySelector(sel);if(!el)return;
+      var host=el.closest('.card');
+      if(host&&host.classList.contains('collapsed')){var h=host.querySelector('.colhead');if(h)h.click();}
+      setTimeout(function(){
+        var t=document.querySelector(sel);if(!t)return;
+        t.scrollIntoView({block:'center',behavior:'smooth'});
+        t.classList.remove('fxglow');void t.offsetWidth;t.classList.add('fxglow');
+        setTimeout(function(){t.classList.remove('fxglow');},2600);
+      },90);
+    },130);
+  }
+  function wire(){
+    $('#featClose').onclick=close;
+    $('#featModal').addEventListener('click',function(e){
+      if(e.target.id==='featModal')return close();
+      var r=e.target.closest('.fm-row');if(r)show(r.dataset.tab,r.dataset.sel);
+    });
+  }
+  return {open:open,close:close,wire:wire};
+})();
+
+/* ---- CONDITION GUIDE: visual scale NM to DG, with editable multipliers ------- */
+const CondGuide=(function(){
+  // A mock card drawn in SVG, with wear layers stacked on by grade. No image assets.
+  function sv(level){
+    var wear='';
+    var W='rgba(236,231,216,';
+    if(level>=1)wear+='<path d="M6 10 l5 -4 M66 6 l5 4 M6 92 l5 4 M66 96 l5 -4" stroke="'+W+'.75)" stroke-width="2" fill="none"/>';
+    if(level>=2)wear+='<path d="M10 4 h12 M50 4 h14 M10 100 h16 M48 100 h16 M4 30 v14 M4 60 v16 M74 26 v16 M74 62 v14" stroke="'+W+'.55)" stroke-width="2" stroke-dasharray="3 4" fill="none"/><path d="M22 40 l30 22 M30 66 l20 -30" stroke="'+W+'.30)" stroke-width="1"/>';
+    if(level>=3)wear+='<path d="M4 4 l10 8 M74 4 l-10 8 M4 100 l10 -8 M74 100 l-10 -8" stroke="'+W+'.85)" stroke-width="3" fill="none"/><path d="M8 58 q20 -8 34 2 q16 10 28 0" stroke="'+W+'.5)" stroke-width="2" fill="none"/>';
+    if(level>=4)wear+='<path d="M2 74 q24 -14 40 0 q20 12 34 -4" stroke="'+W+'.8)" stroke-width="3" fill="none"/><path d="M74 44 l-9 5 l9 6 z" fill="'+W+'.7)"/><circle cx="24" cy="84" r="7" fill="'+W+'.14)"/>';
+    return '<svg viewBox="0 0 78 104" width="66" height="88"><rect x="2" y="2" width="74" height="100" rx="6" fill="var(--bg3)" stroke="var(--line)" stroke-width="2"/><rect x="9" y="10" width="60" height="52" rx="3" fill="rgba(127,176,255,.14)" stroke="var(--line)"/><rect x="9" y="68" width="60" height="7" rx="2" fill="rgba(236,231,216,.12)"/><rect x="9" y="80" width="44" height="5" rx="2" fill="rgba(236,231,216,.08)"/>'+wear+'</svg>';
+  }
+  var TIERS=[
+    {k:'nm',t:'Near Mint',lvl:0,d:'Looks unplayed. Clean surface, sharp corners, no edgewear beyond a fleck. This is the grade market prices track.'},
+    {k:'lp',t:'Lightly Played',lvl:1,d:'Minor edgewear or light corner whitening you notice on inspection, not at arm\u2019s length. No creases.'},
+    {k:'mp',t:'Moderately Played',lvl:2,d:'Obvious whitening along edges, light surface scratches, moderate corner wear. Still crease free.'},
+    {k:'hp',t:'Heavily Played',lvl:3,d:'Heavy whitening, rounded corners, scuffed surface, or a light crease. Structurally intact.'},
+    {k:'dg',t:'Damaged',lvl:4,d:'Creases, bends, tears, water damage, or writing. Priced for the artwork, not the card.'},
+  ];
+  function open(){
+    var m=$('#condModal');
+    m.querySelector('.cg-list').innerHTML=TIERS.map(function(t){
+      var pct=Math.round((condMult[t.k]||1)*100);
+      var edit=t.k==='nm'
+        ? '<span class="cg-pct">100%</span>'
+        : '<span class="cg-pct"><input type="number" min="5" max="100" step="1" value="'+pct+'" data-cm="'+t.k+'">%</span>';
+      return '<div class="cg-row">'+sv(t.lvl)+'<div class="cg-tx"><b>'+t.t+' <span class="cg-k">'+COND_LABEL[t.k]+'</span></b><p>'+t.d+'</p></div>'+edit+'</div>';
+    }).join('');
+    m.classList.add('show');
+  }
+  function close(){$('#condModal').classList.remove('show');}
+  function wire(){
+    $('#condClose').onclick=close;
+    $('#condModal').addEventListener('click',function(e){if(e.target.id==='condModal')close();});
+    $('#condModal').addEventListener('change',function(e){
+      var inp=e.target.closest('[data-cm]');if(!inp)return;
+      var v=Math.max(5,Math.min(100,+inp.value||0))/100;
+      condMult[inp.dataset.cm]=v;Store.save('condMult',condMult);
+      if(typeof recompute==='function')recompute();
+      toast('Saved. '+COND_LABEL[inp.dataset.cm]+' now prices at '+Math.round(v*100)+'% of NM.');
+    });
+  }
+  return {open:open,close:close,wire:wire};
+})();
+
 /* ---- LOT SCANNER: price a marketplace listing photo of singles --------------
    Takes an uploaded/pasted image, OCRs it with the same self-hosted tesseract,
    splits the text into candidate card lines, matches each against the catalog,
@@ -2334,25 +3001,41 @@ const LotScanner=(function(){
     return uniq.slice(0,40);
   }
 
-  function matchLine(line){
-    var lang=(typeof currentLang!=='undefined')?currentLang:'en';
-    // pull a card-number hint if present (e.g. 199/165) to sharpen the match
+  // Pick a usable market price out of the tcgplayer variants object.
+  function priceFromVariants(pr){
+    var order=['holofoil','normal','reverseHolofoil','1stEditionHolofoil','1stEditionNormal','unlimitedHolofoil'];
+    for(var k=0;k<order.length;k++){var v=pr&&pr[order[k]];if(v&&v.market)return +v.market;}
+    for(var kk in pr){if(pr[kk]&&pr[kk].market)return +pr[kk].market;}
+    return 0;
+  }
+  var SEALEDISH=/\b(etb|elite trainer|booster box|booster bundle|bundle|collection|tin|upc|ultra premium|premium|blister|display)\b/i;
+
+  // The catalog (PriceEngine) is sealed products only. Card lines go to pokemontcg.io,
+  // the same source Slab Math uses; sealed-looking lines fall back to the catalog.
+  async function matchLine(line){
     var numM=line.match(/(\d{1,3})\s*\/\s*(\d{1,3})/);
-    var q=line.replace(/(\d{1,3})\s*\/\s*(\d{1,3})/,'').trim();
-    var hits=[];
-    try{hits=PriceEngine.search(q,lang)||[];}catch(e){hits=[];}
-    // prefer singles; the lot scanner is for cards
-    var singles=hits.filter(function(h){return h.type==='single';});
-    var pool=singles.length?singles:hits;
-    if(!pool.length)return {line:line,found:false};
-    var pick=pool[0];
-    if(numM){
-      var key=numM[1];
-      var byNum=pool.find(function(h){return String(h.number||'').split('/')[0]===key;});
-      if(byNum)pick=byNum;
+    var q=line.replace(/(\d{1,3})\s*\/\s*(\d{1,3})/,'').replace(/\s+/g,' ').trim();
+    if(SEALEDISH.test(line)){
+      var hits=[];try{hits=PriceEngine.search(q,(typeof currentLang!=='undefined')?currentLang:'en')||[];}catch(e){}
+      if(hits.length){var pk=hits[0];return {line:line,found:true,id:pk.id,name:pk.name,number:'',set:'',price:(+PriceEngine.getPrice(pk.id)||0)};}
+      return {line:line,found:false};
     }
-    var price=0;try{price=+PriceEngine.getPrice(pick.id)||0;}catch(e){}
-    return {line:line,found:true,id:pick.id,name:pick.name,number:pick.number||'',price:price,alts:pool.slice(0,6)};
+    // Local pass first: the full catalog (all EN and JP singles) is already on the
+    // device, so most lines resolve instantly and the scanner works offline at shows.
+    var lang=(typeof currentLang!=='undefined')?currentLang:'all';
+    var norm=function(x){return String(x).toLowerCase().replace(/[\s/_.\-',]+/g,'');};
+    var loc=[];
+    try{loc=(PriceEngine.search(line,lang)||[]).filter(function(h){return h.type==='single';});}catch(e){}
+    if(numM&&loc.length){var nn=norm(numM[0]);var byNum=loc.filter(function(h){return norm(h.name).indexOf(nn)>=0;});if(byNum.length)loc=byNum;}
+    var priced=loc.find(function(h){return +PriceEngine.getPrice(h.id)>0;})||loc[0];
+    if(priced)return {line:line,found:true,id:priced.id,name:priced.name,number:numM?numM[0]:'',set:priced.set||'',price:(+PriceEngine.getPrice(priced.id)||0),c:'nm'};
+    var cards=[];
+    try{cards=await SlabData.lookupCards(q,numM?numM[1]:'');}catch(e){cards=[];}
+    if(!cards.length&&numM){try{cards=await SlabData.lookupCards(q,'');}catch(e){cards=[];}}
+    if(!cards.length)return {line:line,found:false};
+    var pick=cards[0];
+    if(numM){var byNum2=cards.find(function(c){return String(c.number||'').split('/')[0]===numM[1];});if(byNum2)pick=byNum2;}
+    return {line:line,found:true,name:pick.name,number:pick.number||'',set:pick.set||'',price:priceFromVariants(pick.prices),c:'nm'};
   }
 
   async function run(img,ask){
@@ -2362,7 +3045,16 @@ const LotScanner=(function(){
     var res;try{res=await w.recognize(cv);}catch(e){toast('Could not read the photo.');setPhase('drop');return;}
     var lines=candidateLines(res.data&&res.data.text);
     if(!lines.length){renderResults([],ask);return;}
-    var rows=lines.map(matchLine);
+    var st=$('#lotStatus');if(st)st.textContent='Pricing cards 0 of '+lines.length;
+    var rows=new Array(lines.length),next=0;
+    async function lane(){
+      while(next<lines.length){
+        var j=next++;
+        try{rows[j]=await matchLine(lines[j]);}catch(e){rows[j]={line:lines[j],found:false};}
+        if(st)st.textContent='Pricing cards '+Math.min(next,lines.length)+' of '+lines.length;
+      }
+    }
+    await Promise.all([lane(),lane(),lane()]);
     lastRows=rows;
     renderResults(rows,ask);
   }
@@ -2376,7 +3068,9 @@ const LotScanner=(function(){
 
   function priceRows(rows){
     var found=rows.filter(function(r){return r.found;});
-    var market=found.reduce(function(s,r){return s+r.price;},0);
+    var market=found.reduce(function(s,r){
+      var lv=(r.id&&r.c&&r.c!=='nm')?CondLive.get(r.id,r.c):null;
+      return s+(lv!=null?lv:r.price*(condMult[r.c||'nm']||1));},0);
     var chan=(typeof channel!=='undefined')?channel:'ebay';
     var netInfo=FeeCalc.net(market,chan);
     return {found:found,market:market,net:netInfo.net,fees:netInfo.fees,chan:chan};
@@ -2392,7 +3086,11 @@ const LotScanner=(function(){
     var chLabel=(FeeCalc.channels[p.chan]&&FeeCalc.channels[p.chan].label)||p.chan;
     var rowsHtml=rows.map(function(r,i){
       if(!r.found)return '<div class="lot-row miss" data-i="'+i+'"><div class="nm"><b>'+esc(r.line)+'</b><span>no catalog match</span></div><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
-      return '<div class="lot-row" data-i="'+i+'"><div class="nm"><b>'+esc(r.name)+'</b><span>'+(r.number?esc(r.number)+' · ':'')+'matched from "'+esc(r.line)+'"</span></div><span class="pr">'+usd(r.price)+'</span><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
+      var sub=(r.number?esc(r.number)+' · ':'')+(r.set?esc(r.set)+' · ':'')+'from "'+esc(r.line)+'"';
+      var lv=(r.id&&r.c&&r.c!=='nm')?CondLive.get(r.id,r.c):null;
+      var shown=lv!=null?lv:r.price*(condMult[r.c||'nm']||1);
+      var csel='<select class="pcond lcond" data-li="'+i+'">'+['nm','lp','mp','hp','dg'].map(function(c){return '<option value="'+c+'" '+(((r.c||'nm')===c)?'selected':'')+'>'+COND_LABEL[c]+'</option>';}).join('')+'</select>';
+      return '<div class="lot-row" data-i="'+i+'"><div class="nm"><b>'+esc(r.name)+'</b><span>'+sub+'</span></div>'+csel+'<span class="pr">'+usd(shown)+(lv!=null?' <span class="chip live">live</span>':'')+'</span><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
     }).join('');
     var askN=+ask||0;
     var profit=p.net-askN;
@@ -2417,18 +3115,29 @@ const LotScanner=(function(){
     Array.prototype.forEach.call(document.querySelectorAll('#lotResults [data-fix]'),function(b){
       b.onclick=function(){fixRow(+b.dataset.fix);};
     });
+    Array.prototype.forEach.call(document.querySelectorAll('#lotResults .lcond'),function(sel){
+      sel.onchange=function(){var r=lastRows[+sel.dataset.li];if(r){r.c=sel.value;if(r.id&&sel.value!=='nm')CondLive.want(r.id);renderResults(lastRows,$('#lotAskVal').value);}};
+    });
   }
 
   // tap-correct: let the user search and replace a single row
-  function fixRow(i){
+  async function fixRow(i){
     var r=lastRows[i];if(!r)return;
     var term=prompt('Search for the correct card:', r.name||r.line||'');
-    if(term==null)return;
-    var lang=(typeof currentLang!=='undefined')?currentLang:'en';
-    var hits=[];try{hits=(PriceEngine.search(term,lang)||[]).filter(function(h){return h.type==='single';});}catch(e){}
-    if(!hits.length){toast('No match for that.');return;}
-    var pick=hits[0],price=0;try{price=+PriceEngine.getPrice(pick.id)||0;}catch(e){}
-    lastRows[i]={line:r.line,found:true,id:pick.id,name:pick.name,number:pick.number||'',price:price};
+    if(term==null||!term.trim())return;
+    term=term.trim();
+    if(SEALEDISH.test(term)){
+      var hits=[];try{hits=PriceEngine.search(term,(typeof currentLang!=='undefined')?currentLang:'en')||[];}catch(e){}
+      if(!hits.length){toast('No match for that.');return;}
+      var pk=hits[0];
+      lastRows[i]={line:r.line,found:true,id:pk.id,name:pk.name,number:'',set:'',price:(+PriceEngine.getPrice(pk.id)||0)};
+    }else{
+      var nm=term.match(/(\d{1,3})\s*\/\s*(\d{1,3})/);
+      var cards=[];try{cards=await SlabData.lookupCards(term.replace(/(\d{1,3})\s*\/\s*(\d{1,3})/,'').trim(),nm?nm[1]:'');}catch(e){}
+      if(!cards.length){toast('No match for that.');return;}
+      var pick=cards[0];
+      lastRows[i]={line:r.line,found:true,name:pick.name,number:pick.number||'',set:pick.set||'',price:priceFromVariants(pick.prices)};
+    }
     renderResults(lastRows, $('#lotAskVal').value);
   }
 
@@ -2436,17 +3145,26 @@ const LotScanner=(function(){
     var found=rows.filter(function(r){return r.found;});
     if(!found.length){toast('No matched cards to add.');return;}
     if(typeof theirPile==='undefined'){toast('Trade Block unavailable.');return;}
-    // collapse duplicates into qty
-    var byId={};
-    found.forEach(function(r){byId[r.id]=(byId[r.id]||0)+1;});
-    Object.keys(byId).forEach(function(id){
-      var ex=theirPile.find(function(pp){return pp.key===id;});
-      if(ex)ex.qty+=byId[id];else theirPile.push({key:id,qty:byId[id]});
+    var added=0;
+    found.forEach(function(r){
+      var key=r.id;
+      if(!key){
+        // a single from pokemontcg.io: register it as a manual item so the pile can price it
+        key='lot_'+(r.name+' '+r.number).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+        if(!manualItems[key]){
+          var it={key:key,name:r.name+(r.number?' '+r.number:''),price:+r.price||0,type:'single',status:'raw',manual:true};
+          manualItems[key]=it;
+          try{var li=Store.load('lotItems',[]);if(!li.some(function(x){return x.key===key;})){li.push(it);Store.save('lotItems',li);}}catch(e){}
+        }
+      }
+      var ex=theirPile.find(function(pp){return pp.key===key&&(pp.c||'nm')===(r.c||'nm');});
+      if(ex)ex.qty+=1;else theirPile.push({key:key,qty:1,c:r.c||'nm'});
+      added++;
     });
     if(typeof recompute==='function')recompute();
     close();
     if(typeof switchTab==='function')switchTab('block');
-    toast(found.length+' cards added to the Trade Block.');
+    toast(added+' cards added to the Trade Block.');
   }
 
   function handleFile(file){
@@ -2460,7 +3178,7 @@ const LotScanner=(function(){
   function open(){$('#lotModal').classList.add('show');reset();}
   function close(){$('#lotModal').classList.remove('show');if(worker){/* keep worker warm for the session */}}
 
-  return {open:open,close:close,handleFile:handleFile,_run:run};
+  return {open:open,close:close,handleFile:handleFile,_run:run,redraw:function(){if(lastRows.length)renderResults(lastRows,$('#lotAskVal').value);}};
 })();
 
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */
@@ -2987,6 +3705,145 @@ $('#scanClose').onclick=()=>Scanner.close();
 var _lotOpen=function(){LotScanner.open();};
 var _sl=$('#scanLot');if(_sl)_sl.onclick=_lotOpen;
 $('#lotClose').onclick=function(){LotScanner.close();};
+document.addEventListener('change',function(e){
+  var sel=e.target.closest('.pcond');if(!sel)return;
+  var arr=sel.dataset.pile==='pile'?theirPile:(sel.dataset.pile==='pile2'?yourPile:null);
+  if(!arr)return;var it=arr[+sel.dataset.pi];if(it){it.c=sel.value;if(sel.value!=='nm')CondLive.want(it.key);}
+  if(typeof recompute==='function')recompute();
+  // Teach the multiplier at the moment it first matters, not in a tour step nobody
+  // remembers. One time, then never again.
+  if(sel.value!=='nm'&&!Store.load('condHint',0)){
+    Store.save('condHint',1);
+    setTimeout(function(){Sheet.info('How condition pricing works',
+      '<p>Market prices track Near Mint. Other grades price at a percentage of NM: <b>LP '+Math.round((condMult.lp||0)*100)+'%</b>, MP '+Math.round((condMult.mp||0)*100)+'%, HP '+Math.round((condMult.hp||0)*100)+'%, DG '+Math.round((condMult.dg||0)*100)+'%.</p><p>Those percentages are yours to change, and the visual guide shows what each grade looks like: <b>Settings, Card condition guide</b>.</p>');},450);
+  }
+});
+document.addEventListener('click',function(e){
+  if(e.target.closest('[data-open-cond]')){e.preventDefault();CondGuide.open();}
+  if(e.target.closest('[data-open-feat]')){e.preventDefault();FeatureMap.open();}
+  if(e.target.closest('[data-open-dev]')){e.preventDefault();Devices.open();}
+  if(e.target.closest('[data-upsell]')){e.preventDefault();switchTab('settings');
+    setTimeout(function(){var c=document.querySelector('#alertCard');if(c){var h=c.closest('.card');
+      if(h&&h.classList.contains('collapsed')){var hd=h.querySelector('.colhead');if(hd)hd.click();}
+      c.scrollIntoView({block:'center'});c.classList.add('fxglow');
+      setTimeout(function(){c.classList.remove('fxglow');},2600);}},160);}
+});
+CondGuide.wire();FeatureMap.wire();Gestures.wire();
+// Delegated holdings actions. Attaching per row cost three listeners per holding and
+// had to be redone on every re-render; this is wired once for the life of the page.
+(function(){
+  var body=$('#holdBody');if(!body)return;
+  var armedId=null,armTimer=null;
+  function disarm(){
+    if(!armedId)return;
+    var el=body.querySelector('[data-del="'+armedId+'"]');
+    if(el){el.classList.remove('arm');el.textContent='\u00d7';}
+    armedId=null;clearTimeout(armTimer);
+  }
+  body.addEventListener('click',function(e){
+    var sell=e.target.closest('[data-sell]');
+    if(sell){e.stopPropagation();disarm();sellHolding(sell.dataset.sell);return;}
+    var edit=e.target.closest('[data-edit]');
+    if(edit){e.stopPropagation();disarm();editHolding(edit.dataset.edit);return;}
+    var del=e.target.closest('[data-del]');
+    if(del){
+      e.stopPropagation();
+      var id=del.dataset.del;
+      if(armedId===id){clearTimeout(armTimer);armedId=null;delHolding(id);return;}
+      disarm();
+      armedId=id;del.classList.add('arm');del.textContent='\u2713?';
+      armTimer=setTimeout(disarm,2500);
+    }
+  });
+})();
+(function(){
+  var OVERLAYS=['#lotModal','#featModal','#condModal','#cfmModal','#scanChoose','#scanModal'];
+  var lastFocus=null;
+  function firstFocusable(el){
+    return el.querySelector('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])');
+  }
+  OVERLAYS.forEach(function(sel){
+    var el=document.querySelector(sel);if(!el)return;
+    new MutationObserver(function(){
+      var open=el.classList.contains('show')||el.classList.contains('on');
+      if(open&&!el.__hadFocus){
+        el.__hadFocus=true;lastFocus=document.activeElement;
+        el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+        var f=firstFocusable(el);if(f)setTimeout(function(){try{f.focus();}catch(e){}},60);
+      } else if(!open&&el.__hadFocus){
+        el.__hadFocus=false;
+        if(lastFocus&&lastFocus.focus)setTimeout(function(){try{lastFocus.focus();}catch(e){}},20);
+      }
+    }).observe(el,{attributes:true,attributeFilter:['class']});
+  });
+  // Escape closes the topmost overlay, matching what the back button already does
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape')return;
+    for(var i=0;i<OVERLAYS.length;i++){
+      var el=document.querySelector(OVERLAYS[i]);
+      if(el&&(el.classList.contains('show')||el.classList.contains('on'))){
+        el.classList.remove('show');el.classList.remove('on');e.preventDefault();return;}
+    }
+  });
+})();
+document.addEventListener('click',function(e){var b=e.target.closest('[data-qa]');if(!b)return;
+  e.preventDefault();addTo('their',b.dataset.qa);});
+setTimeout(renderQuickAdd,900);
+// Re-assert the push subscription on boot. The server row carries the tier used to decide
+// instant vs delayed alerts; if it ever drifts (row lost, tier stale after an upgrade),
+// this puts it right without the user noticing anything.
+setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.resync();}catch(e){}},3500);
+// The existing netPill already reports offline plus price freshness. Just make sure it
+// repaints on both events and that coming back online quietly refreshes the feed.
+(function(){
+  window.addEventListener('online',function(){
+    if(typeof netStatus==='function')netStatus();
+    toast('Back online.');
+    if(typeof LiveDrops!=='undefined')LiveDrops.refresh();
+    if(typeof PriceEngine!=='undefined'&&PriceEngine.refresh)PriceEngine.refresh();
+  });
+  window.addEventListener('offline',function(){if(typeof netStatus==='function')netStatus();});
+})();
+/* Back button behaviour. In an installed PWA, pressing back with a sheet open exits the
+   whole app, which feels broken. Each overlay pushes a history entry on open, so back
+   closes the topmost overlay and only leaves the app when nothing is open. */
+(function(){
+  var OVER=[
+    {sel:'#lotModal',   is:function(e){return e.classList.contains('show');},   close:function(){LotScanner.close();}},
+    {sel:'#featModal',  is:function(e){return e.classList.contains('show');},   close:function(){FeatureMap.close();}},
+    {sel:'#condModal',  is:function(e){return e.classList.contains('show');},   close:function(){CondGuide.close();}},
+    {sel:'#scanChoose', is:function(e){return e.classList.contains('show');},   close:function(){e_rm('#scanChoose');}},
+    {sel:'#scanModal',  is:function(e){return e.classList.contains('on')||e.classList.contains('show');}, close:function(){Scanner.close();}},
+    {sel:'#sheet',      is:function(e){return e.classList.contains('show')||e.classList.contains('on');}, close:function(){var b=$('#sheetOk')||$('#sheetX');if(b)b.click();else e_rm('#sheet');}},
+    {sel:'#tourWrap',   is:function(e){return e.classList.contains('on');},     close:function(){Tour.stop?Tour.stop():$('#tourSkip').click();}}
+  ];
+  function e_rm(sel){var e=document.querySelector(sel);if(e){e.classList.remove('show');e.classList.remove('on');}}
+  function topOpen(){
+    for(var i=0;i<OVER.length;i++){var e=document.querySelector(OVER[i].sel);
+      if(e&&OVER[i].is(e))return OVER[i];}
+    return null;
+  }
+  var depth=0;
+  // watch for any overlay opening, and push one history entry per open overlay
+  var mo=new MutationObserver(function(){
+    var open=topOpen()?1:0;
+    if(open&&!depth){depth=1;try{history.pushState({hmOverlay:1},'');}catch(e){}}
+    else if(!open&&depth){depth=0;}
+  });
+  OVER.forEach(function(o){var e=document.querySelector(o.sel);
+    if(e)mo.observe(e,{attributes:true,attributeFilter:['class']});});
+  window.addEventListener('popstate',function(){
+    var t=topOpen();
+    if(t){depth=0;try{t.close();}catch(e){}
+      // stay in the app: replace the entry we just consumed
+      try{history.pushState({hmRoot:1},'');}catch(e){}
+      setTimeout(function(){depth=0;},0);}
+  });
+})();
+$('#scGoX').onclick=function(){$('#scanChoose').classList.remove('show');};
+$('#scGoCard').onclick=function(){$('#scanChoose').classList.remove('show');Scanner.open(false);};
+$('#scGoLot').onclick=function(){$('#scanChoose').classList.remove('show');LotScanner.open();};
+$('#scanChoose').addEventListener('click',function(e){if(e.target.id==='scanChoose')e.target.classList.remove('show');});
 $('#lotDrop').onclick=function(){$('#lotFile').click();};
 $('#lotFile').onchange=function(e){var f=e.target.files&&e.target.files[0];if(f)LotScanner.handleFile(f);};
 // paste a screenshot straight in
