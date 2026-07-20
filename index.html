@@ -12,7 +12,7 @@
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"0.95",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.00",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -92,7 +92,6 @@
   .navb.scan-fab{color:var(--ink)}
   .navb.scan-fab .fabwrap{width:46px;height:46px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;display:flex;align-items:center;justify-content:center;margin-top:-14px;box-shadow:0 4px 16px rgba(125,240,200,.3);border:3px solid var(--bg)}
   .navb.scan-fab .fabwrap svg{width:24px;height:24px;stroke:#0c1020;stroke-width:2}
-  .wrap2{display:none}
   header{padding:calc(14px + env(safe-area-inset-top)) 0 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none}
   .brand{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1;letter-spacing:.02em;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);will-change:background-position;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
@@ -102,7 +101,6 @@
   .netpill{display:none;margin:-6px 0 12px;text-align:center}
   .netpill span{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:4px 12px}
   .netpill.show{display:block}
-  .tabs{display:flex;gap:6px;margin:16px 0 18px;background:var(--bg2);padding:5px;border-radius:12px;border:1px solid var(--line)}
   .tab{flex:1;padding:11px 4px;text-align:center;border-radius:8px;font-weight:500;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;border:none;background:none;font-family:var(--sans)}
   .tab.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .panel{display:none;animation:paneIn .26s cubic-bezier(.22,.61,.36,1)}
@@ -140,7 +138,7 @@
   .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
   .sidehead .st{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
   .sidehead .sv2{font-family:var(--mono);font-size:16px;color:var(--gold);font-weight:600}
-  .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.pile-item:last-child{border-bottom:none}
+  .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);touch-action:pan-y}.pile-item:last-child{border-bottom:none}
   .pi-name{flex:1;min-width:0}.pi-name .n{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
   .chip{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
@@ -149,8 +147,8 @@
   .chip.pro{background:var(--holo);background-size:240% auto;color:#101010;animation:holo 7s linear infinite}
   .qtybtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:16px;cursor:pointer;line-height:1}
   .val{font-family:var(--mono);font-size:14px;min-width:64px;text-align:right}.x{color:var(--ink3);cursor:pointer;font-size:18px;padding:0 2px}
-  .results{margin-top:8px;max-height:230px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;display:none}.results.show{display:block}
-  .res{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
+  .results{margin-top:8px;max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;display:none}.results.show{display:block}
+  .res{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
     .res .rn{font-size:13px}.res .rp{font-family:var(--mono);font-size:12px;color:var(--gold)}
     .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:9px;padding:8px 12px;min-height:34px;font-size:13px;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
   .scanbtn:active{transform:scale(.97)}
@@ -173,15 +171,12 @@
   #scanCapture{position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom));transform:translateX(-50%);width:auto;min-width:210px;z-index:3;box-shadow:0 6px 24px rgba(0,0,0,.5)}
   #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:12px;text-shadow:0 1px 4px #000;z-index:3}
   .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:12px;text-shadow:0 1px 3px #000}
-  .scanbar{position:absolute;bottom:0;left:0;right:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;background:linear-gradient(transparent,rgba(0,0,0,.7))}
-  .scancap{width:68px;height:68px;border-radius:50%;background:var(--gold);border:4px solid #1a1407;cursor:pointer}
-  .scancap:active{transform:scale(.94)}
   .scanx.on{background:var(--gold);color:#1a1407}
   .scanx{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid var(--line);color:#fff;font-size:20px;cursor:pointer;z-index:2}
   .scanstatus{position:absolute;top:calc(50% + 24vh);left:0;right:0;text-align:center;color:var(--gold);font-family:var(--mono);font-size:13px;text-shadow:0 1px 3px #000}
-  .thumb{width:34px;height:48px;flex:0 0 auto;border-radius:4px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
-  .res{gap:10px}.res .rmeta{flex:1;min-width:0}
-  .pthumb{width:30px;height:42px;flex:0 0 auto;border-radius:3px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
+  .thumb{width:52px;height:73px;flex:0 0 auto;border-radius:5px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
+  .res .rmeta{flex:1;min-width:0}
+  .pthumb{width:40px;height:56px;flex:0 0 auto;border-radius:4px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
   .hot{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px}.hot::-webkit-scrollbar{height:0}
   .hchip{flex:0 0 auto;background:var(--bg3);border:1px solid var(--line);border-radius:18px;padding:8px 13px;font-size:12px;white-space:nowrap;cursor:pointer;font-family:var(--mono);color:var(--ink)}
   .hchip:active{transform:scale(.97)}.hchip b{color:var(--gold);font-weight:500;margin-left:7px}
@@ -212,7 +207,7 @@
   th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
   td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:14px}tr:last-child td{border-bottom:none}
   .pos{color:var(--up)}.neg{color:var(--down)}
-  .toolbtn{color:var(--ink3);cursor:pointer;font-size:14px;padding:0 4px}.toolbtn:active{color:var(--ink)}
+  .toolbtn{color:var(--ink3);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}.toolbtn:active{color:var(--ink)}
   .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:26px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
   .verdict{text-align:center;padding:10px 0 4px}.verdict .vv{font-family:var(--serif);font-size:24px;font-weight:600}.verdict .ve{font-family:var(--mono);font-size:14px;margin-top:4px}
   .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
@@ -266,7 +261,11 @@
   .fxglow{animation:fxpulse 1.3s ease-out 2;border-radius:12px;position:relative;z-index:2}
   #featModal{display:none;position:fixed;inset:0;z-index:8600;background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
   #featModal.show{display:flex}
-  .fm-g{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.09em;text-transform:uppercase;margin:16px 0 4px}
+    .fm-g{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.01em;
+    text-transform:none;margin:26px 0 8px;
+    background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:#c8a2ff}
+  .fm-g:first-child{margin-top:6px}
   .fm-row{display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid var(--line);padding:11px 0;cursor:pointer}
   .fm-row:active{background:var(--bg3)}
   .fm-t{display:block;font-size:14px;color:var(--ink);font-weight:600}
@@ -284,6 +283,9 @@
   .cg-tx p{font-size:12px;color:var(--ink3);line-height:1.5;margin-top:3px}
   .cg-pct{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap}
   .cg-pct input{width:52px;background:var(--bg3);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:5px 6px;font-family:var(--mono);font-size:13px;text-align:right}
+  /* The catalog deliberately keeps cards with no price so they stay searchable. Saying
+     so beats showing $0.00 and letting someone think the total is broken. */
+  .nopx{color:var(--gold);font-style:italic}
   .qa-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}
   .qa-l{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
   .qa{font-size:11.5px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg3);color:var(--ink2);cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
@@ -292,7 +294,6 @@
   #cfmModal.show{display:flex}
   .cfm-b{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:8px}
   .cfm-b p{margin:0 0 8px}
-  .pile-item{touch-action:pan-y}
   #ptr{height:0;opacity:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--ink3);transition:height .2s ease,opacity .2s ease}
   .res-msg{padding:14px 12px;font-size:13px;color:var(--ink2);line-height:1.5}
   .res-msg span{font-size:11.5px;color:var(--ink3)}
@@ -308,10 +309,13 @@
   }
   /* Contain the rubber-band. Without this the browser's own overscroll fights the
      pull-to-refresh gesture and the whole page bounces like a web view. */
-  html,body{overscroll-behavior-y:contain}
+  .sheet,.cg-card,.sc-card,#lotModal,#featModal,#condModal{overscroll-behavior:contain}
+  /* a grab handle, because a rounded top edge already promises one */
+  .sheet::before,.sc-card::before{content:'';display:block;width:40px;height:4px;border-radius:99px;
+    background:var(--line);margin:-6px auto 14px}
+  .sheet.drag,.sc-card.drag,.cg-card.drag{transition:none}
   /* Small table actions were a 14px glyph with 4px of padding, which is a long way under
      a comfortable touch target. Keep them visually identical, make them properly hittable. */
-  .toolbtn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}
   /* Selection in the app's own palette rather than the browser default blue. */
   ::selection{background:rgba(216,169,63,.28);color:var(--ink)}
   /* A scrollbar that belongs to this app, on the desktop layout that now matters. */
@@ -394,11 +398,6 @@
   .dl-flip{margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--ink2);line-height:1.35}
   .dl-flip.pos{color:var(--up)}
   .dl-flip .mk{color:var(--ink3)}
-  .banner{background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
-  .banner p{flex:1;font-size:13px;color:var(--ink2);margin:0}
-  .lockcard{position:relative;overflow:hidden}
-  .lockcard .lk{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .lockcard .lk p{font-size:13px;color:var(--ink2);margin:0}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:14px;padding:12px 20px;border-radius:11px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4)}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
   .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:64}
@@ -590,7 +589,7 @@
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v0.95 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.00 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -996,12 +995,6 @@ const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard']);
 const colState=k=>(k in collapsed)?collapsed[k]:DEFAULT_COLLAPSED.has(k);
 function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',colState(k));});}
 $$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!colState(k);Store.save('collapsed',collapsed);applyCollapse();});
-
-/* two-tap confirm: first tap arms, second within 2.5s fires */
-function armable(el,fn){let armed=false,t=null;el.onclick=e=>{e.stopPropagation();
-  if(armed){clearTimeout(t);fn();return;}
-  armed=true;el.classList.add('arm');el.textContent='✓?';
-  t=setTimeout(()=>{armed=false;el.classList.remove('arm');el.textContent='\u00d7';},2500);};}
 
 /* backup / restore */
 const SCHEMA=1;
@@ -1583,7 +1576,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='0.95';
+const APP_VERSION='1.00';
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 Store.load('lotItems',[]).forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
@@ -1760,7 +1753,7 @@ function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
   el.innerHTML=arr.map((p,pi)=>{const it=resolveItem(p.key),price=linePrice(p);
     const chip=(it.jp?'<span class="chip jp">JP</span> ':'')+(it.type==='graded'?'<span class="chip graded">graded</span>':(it.type==='single'?'<span class="chip raw">raw</span>':'<span class="chip sealed">sealed</span>'));
     const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
-    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${usd(price)} ea${(it.type==='single'&&p.c&&p.c!=='nm')?(CondLive.has(p.key,p.c)?' <span class="chip live">live</span>':''):''} ${chip}${stat}${it.type==='single'?`<select class="pcond" data-pile="${containerId}" data-pi="${pi}">${['nm','lp','mp','hp','dg'].map(c=>`<option value="${c}" ${((p.c||'nm')===c)?'selected':''}>${COND_LABEL[c]}</option>`).join('')}</select>`:''}</div></div>
+    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${price>0?usd(price)+' ea':'<span class="nopx">no market price</span>'}${(it.type==='single'&&p.c&&p.c!=='nm'&&price>0)?(CondLive.has(p.key,p.c)?' <span class="chip live">live</span>':''):''} ${chip}${stat}${it.type==='single'?`<select class="pcond" data-pile="${containerId}" data-pi="${pi}">${['nm','lp','mp','hp','dg'].map(c=>`<option value="${c}" ${((p.c||'nm')===c)?'selected':''}>${COND_LABEL[c]}</option>`).join('')}</select>`:''}</div></div>
       <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
       <span class="val">${usd(price*p.qty)}</span><span class="x" data-rm="${p.key}">\u00d7</span></div>`;}).join('');
   el.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{arr.find(p=>p.key===b.dataset.inc).qty++;recompute();});
@@ -1907,11 +1900,6 @@ const Receipt=(function(){
   return {render:render,share:shareCanvas,C:C};
 })();
 
-function shareText(text,okMsg){
-  if(navigator.share){navigator.share({text}).then(()=>{}).catch(()=>{});toast(okMsg);return;}
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>toast(okMsg)).catch(()=>toast('Copy failed'));}
-  else toast('Clipboard unavailable');
-}
 $('#copyReceipt').onclick=async()=>{
   var Cc=Receipt.C;
   if(mode==='trade'){
@@ -1951,7 +1939,6 @@ if(holdings.some(h=>h&&h.sample)){holdings=holdings.filter(h=>!h.sample);Store.s
 let soldLog=Store.load('sold',[]);
 function saveHoldings(){Store.save('holdings',holdings);}
 function saveSold(){Store.save('sold',soldLog);}
-function monthsHeld(d){if(!d)return 12;return Math.max(0.5,(Date.now()-new Date(d).getTime())/(1000*60*60*24*30.44));}
 function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis*100:0;}
 
 let holdQuery='',holdSort='roi',holdTypeF='all';
@@ -3435,8 +3422,7 @@ const Scanner=(function(){
     document.addEventListener('pointerup',function(){cropDrag=null;});
     if(go)go.addEventListener('click',doCrop);
   })();
-  function query0(c){return (c&&c[0])||'';}
-  function parseNumber(text){
+    function parseNumber(text){
     // collector numbers like 125/094, 226/S-P, SWSH284, 073, TG12/TG30
     const m=text.match(/\b([A-Z]{0,5}\d{1,3}\s*\/\s*[A-Z0-9]{1,4}|[A-Z]{2,4}\d{2,4}|\d{1,3}\/\d{1,3})\b/i);
     return m?m[0].replace(/\s+/g,''):'';
@@ -3729,6 +3715,61 @@ document.addEventListener('click',function(e){
       setTimeout(function(){c.classList.remove('fxglow');},2600);}},160);}
 });
 CondGuide.wire();FeatureMap.wire();Gestures.wire();
+/* Swipe an overlay down to dismiss it. Only starts when the panel is scrolled to the top,
+   so dragging through long content still scrolls. Under the threshold it springs back. */
+(function(){
+  var PANELS=[
+    {sel:'.sheet',   close:function(){var c=$('#sheetCancel');if(c)c.click();else{$('#sheet').classList.remove('on');$('#sheetbg').classList.remove('on');}}},
+    {sel:'.sc-card', close:function(){$('#scanChoose').classList.remove('show');}},
+    {sel:'#featModal .cg-card', close:function(){FeatureMap.close();}},
+    {sel:'#condModal .cg-card', close:function(){CondGuide.close();}},
+    {sel:'#cfmModal .cg-card',  close:function(){var m=$('#cfmModal');if(m)m.classList.remove('show');}}
+  ];
+  document.addEventListener('pointerdown',function(e){
+    if(e.pointerType!=='touch')return;
+    var panel=null,def=null;
+    for(var i=0;i<PANELS.length;i++){
+      var el=e.target.closest(PANELS[i].sel);
+      if(el){panel=el;def=PANELS[i];break;}
+    }
+    if(!panel)return;
+    if(e.target.closest('button,a,input,select,textarea'))return;
+    if(panel.scrollTop>2)return;                     // let it scroll instead
+    var y0=e.clientY,x0=e.clientX,dy=0,axis=null;
+    function move(ev){
+      dy=ev.clientY-y0;
+      var dx=ev.clientX-x0;
+      if(axis===null){
+        if(Math.abs(dy)<6&&Math.abs(dx)<6)return;
+        axis=Math.abs(dy)>Math.abs(dx)?'y':'x';
+        if(axis==='x'){cleanup();return;}
+        panel.classList.add('drag');
+      }
+      if(dy<0)dy=dy/4;                               // slight resistance upward
+      panel.style.transform='translateY('+Math.max(dy,-24)+'px)';
+      panel.style.opacity=String(Math.max(.45,1-Math.max(dy,0)/420));
+    }
+    function up(){
+      panel.classList.remove('drag');
+      if(dy>110){
+        panel.style.transform='';panel.style.opacity='';
+        try{def.close();}catch(_){}
+        buzz();
+      } else {
+        panel.style.transform='';panel.style.opacity='';
+      }
+      cleanup();
+    }
+    function cleanup(){
+      document.removeEventListener('pointermove',move);
+      document.removeEventListener('pointerup',up);
+      document.removeEventListener('pointercancel',up);
+    }
+    document.addEventListener('pointermove',move,{passive:true});
+    document.addEventListener('pointerup',up);
+    document.addEventListener('pointercancel',up);
+  },{passive:true});
+})();
 // Delegated holdings actions. Attaching per row cost three listeners per holding and
 // had to be redone on every re-render; this is wired once for the life of the page.
 (function(){
@@ -3757,7 +3798,7 @@ CondGuide.wire();FeatureMap.wire();Gestures.wire();
   });
 })();
 (function(){
-  var OVERLAYS=['#lotModal','#featModal','#condModal','#cfmModal','#scanChoose','#scanModal'];
+  var OVERLAYS=['#lotModal','#featModal','#condModal','#cfmModal','#scanChoose','#scanModal','#sheet'];
   var lastFocus=null;
   function firstFocusable(el){
     return el.querySelector('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])');
@@ -3782,7 +3823,11 @@ CondGuide.wire();FeatureMap.wire();Gestures.wire();
     for(var i=0;i<OVERLAYS.length;i++){
       var el=document.querySelector(OVERLAYS[i]);
       if(el&&(el.classList.contains('show')||el.classList.contains('on'))){
-        el.classList.remove('show');el.classList.remove('on');e.preventDefault();return;}
+        // the sheet carries state (okFn, button labels), so route it through Cancel
+        if(el.id==='sheet'){var cb=$('#sheetCancel');if(cb){cb.click();e.preventDefault();return;}}
+        el.classList.remove('show');el.classList.remove('on');
+        if(el.id==='sheet'){var bg=$('#sheetbg');if(bg)bg.classList.remove('show');}
+        e.preventDefault();return;}
     }
   });
 })();

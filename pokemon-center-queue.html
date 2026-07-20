@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokemon Center Queues: How They Work and How to Catch One</title>
+<meta name="description" content="How the Pokemon Center queue works, the warning sign that appears before stock does, when restocks usually land, and why being ten minutes late means missing it.">
+<link rel="canonical" href="https://holomint.app/pokemon-center-queue.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Holomint">
+<meta property="og:title" content="Pokemon Center Queues: How They Work and How to Catch One">
+<meta property="og:description" content="The warning sign that appears before stock does, when restocks land, and why ten minutes late means gone.">
+<meta property="og:url" content="https://holomint.app/pokemon-center-queue.html">
+<meta property="og:image" content="https://holomint.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon-192.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "@id": "https://holomint.app/pokemon-center-queue.html#article",
+      "headline": "Pokemon Center Queues: How They Work and How to Catch One",
+      "description": "A practical guide to the Pokemon Center virtual waiting room, the signal that precedes a restock, typical timing, and how to be early enough to matter.",
+      "datePublished": "2026-07-18",
+      "dateModified": "2026-07-18",
+      "author": { "@type": "Organization", "name": "Holomint", "url": "https://holomint.app/" },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Holomint",
+        "logo": { "@type": "ImageObject", "url": "https://holomint.app/icon-512.png" }
+      },
+      "mainEntityOfPage": "https://holomint.app/pokemon-center-queue.html",
+      "image": "https://holomint.app/og.png"
+    },
+    {
+      "@type": "HowTo",
+      "name": "How to catch a Pokemon Center restock",
+      "step": [
+        { "@type": "HowToStep", "name": "Watch for the slowdown", "text": "Before stock appears, the site starts responding differently. Pages load slowly or the waiting room appears without product yet. This is the earliest signal available." },
+        { "@type": "HowToStep", "name": "Enter the queue immediately", "text": "Join the waiting room as soon as it opens. Position is assigned when you enter, so entering five minutes earlier is worth more than any refreshing you do afterwards." },
+        { "@type": "HowToStep", "name": "Do not refresh", "text": "Refreshing the queue page can cost your position. Leave the tab open and wait." },
+        { "@type": "HowToStep", "name": "Know your number before checkout", "text": "Decide in advance what the product is worth to you after resale fees, so you are not doing arithmetic while a timer runs." }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://holomint.app/pokemon-center-queue.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the Pokemon Center queue?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is a virtual waiting room that Pokemon Center puts in front of the store during high demand. Instead of everyone hitting the site at once, shoppers are placed in a line and admitted in order. Your position is set when you join, which is why entering early matters more than anything you do afterwards."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I know a Pokemon Center restock is coming?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The site usually changes behaviour before stock appears. Pages respond more slowly, or the waiting room opens before any product is listed. That change is the earliest available signal, and it typically precedes the actual restock rather than following it."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Should I refresh the Pokemon Center queue page?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Refreshing can cost you your place in line. Once you are in the queue, leave the page alone and wait to be admitted."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "When does Pokemon Center restock?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "There is no published schedule and it varies. Community tracking has often observed restocks on weekday mornings US Pacific time, and Pokemon Center exclusives can appear one to three times a week during an active release window. Treat any pattern as a tendency rather than a timetable."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it too late if I hear about a drop ten minutes after it starts",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Usually yes for the products worth buying. Entering the queue within the first five to ten minutes still generally works. Beyond that, the queue has typically absorbed enough people that the sought-after items sell out before your position is called."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<style>
+  :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--ink:#ece7d8;--ink2:#a8afc4;--ink3:#757c98;
+    --line:#242947;--gold:#d8a93f;--up:#46e3ac;--down:#ff7e8a;
+    --holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);
+    --serif:Georgia,'Times New Roman',serif;--sans:system-ui,-apple-system,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,monospace}
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;font-size:16px;
+    -webkit-font-smoothing:antialiased}
+  .bar{position:fixed;top:0;left:0;right:0;height:4px;background:var(--holo);background-size:240% auto;z-index:10}
+  .wrap{max-width:720px;margin:0 auto;padding:46px 20px 72px}
+  .crumb{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:18px}
+  .crumb a{color:var(--ink3);text-decoration:none}
+  h1{font-family:var(--serif);font-size:30px;line-height:1.28;margin-bottom:12px;font-weight:600}
+  .lede{color:var(--ink2);font-size:17px;margin-bottom:8px}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:30px}
+  h2{font-family:var(--serif);font-size:22px;margin:38px 0 10px;font-weight:600}
+  h3{font-size:16px;margin:22px 0 6px;font-weight:600}
+  p{margin:0 0 14px;color:var(--ink2)}
+  ul,ol{margin:0 0 16px;padding-left:20px;color:var(--ink2)}
+  li{margin-bottom:8px}
+  strong{color:var(--ink)}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px;margin:24px 0}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:8px}
+  .cta{display:inline-block;background:var(--gold);color:#1a1408;font-weight:700;text-decoration:none;
+    padding:12px 26px;border-radius:11px;font-size:15px;margin-top:6px}
+  .steps{counter-reset:s;list-style:none;padding:0}
+  .steps li{counter-increment:s;position:relative;padding-left:52px;margin-bottom:20px}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;
+    border-radius:50%;background:var(--bg3);border:1px solid var(--line);color:var(--gold);
+    font-family:var(--mono);font-size:15px;display:flex;align-items:center;justify-content:center}
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;color:var(--ink3)}
+  footer a{color:var(--ink2);text-decoration:none;margin-right:14px}
+  a{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<div class="wrap">
+
+<div class="crumb"><a href="/">Holomint</a> / Pokemon Center queues</div>
+
+<h1>Pokemon Center queues, and how to actually catch one</h1>
+<p class="lede">What the waiting room is, the signal that shows up before stock does, and why hearing about a drop ten minutes late usually means you have already missed it.</p>
+<p class="meta">Updated July 2026</p>
+
+<p>Pokemon Center is the only place some products exist. It is also the hardest place to buy them, because demand arrives all at once and the site puts a queue in front of the store to survive it. Understanding how that queue behaves is most of the skill.</p>
+
+<h2>What the queue actually is</h2>
+<p>When traffic spikes, Pokemon Center places shoppers in a virtual waiting room instead of letting everyone hit the store at the same time. You are given a position and admitted in order.</p>
+<p><strong>Your position is fixed the moment you join.</strong> Nothing you do afterwards improves it. Refreshing does not help and can cost you the place you had. This single fact determines the whole strategy: everything that matters happens before you are in line, not after.</p>
+
+<h2>The signal that comes before the stock</h2>
+<p>The queue does not appear at the same moment product does. In practice the site starts behaving differently first: pages respond more slowly, or the waiting room opens while nothing is listed yet.</p>
+<p>That change is the earliest signal available to anyone outside the company. It is not a guarantee, since maintenance and unrelated traffic can produce the same symptom, but <strong>it reliably precedes a drop rather than following it</strong>, which makes it worth acting on even when it is occasionally wrong.</p>
+
+<div class="card">
+  <div class="kicker">Why Holomint watches for this</div>
+  <p style="margin-bottom:0">Most alert services tell you a product is in stock, which is a report on something that already happened. Holomint also flags the behaviour change that comes first, so the notification arrives while joining the queue is still worth doing. When a product is identified, the alert carries the flip margin net of your resale fees, so the decision is already made when you get there.</p>
+  <a class="cta" href="/">Open Holomint</a>
+</div>
+
+<h2>How to catch one</h2>
+<ol class="steps">
+  <li><strong>Act on the slowdown, not the listing.</strong> If the site is responding strangely, join the waiting room even if nothing is listed yet. Being in line early costs you nothing if it turns out to be a false alarm.</li>
+  <li><strong>Enter once and leave it alone.</strong> Your position is assigned on entry. Do not refresh, do not open the queue in five tabs, do not close it and come back.</li>
+  <li><strong>Be signed in with an address and payment saved.</strong> The checkout window is short, and account setup is the most common reason people lose a cart they already earned.</li>
+  <li><strong>Know your ceiling before you are called.</strong> Decide in advance what the product is worth to you after resale fees. Doing that arithmetic while a timer runs is how people overpay.</li>
+</ol>
+
+<h2>Timing, with an honest caveat</h2>
+<p>There is no published schedule, and anyone claiming a precise one is guessing. What community tracking has generally observed: Pokemon Center exclusives have often appeared on weekday mornings US Pacific time, and during an active release window restocks can occur one to three times a week.</p>
+<p>Treat that as a tendency, not a timetable. The reason alerts exist is precisely that the pattern is not reliable enough to plan around.</p>
+
+<h2>Why ten minutes matters so much</h2>
+<p>The queue is a first come, first served line for a fixed quantity. Every person who joins before you is admitted before you. Ten minutes is enough time for the line to absorb more people than the stock can serve.</p>
+<p>Entering within the first five to ten minutes still generally works. Beyond that, you will often be admitted to a store where the item you came for is already gone. <strong>This is the entire argument for instant alerts:</strong> not that they are faster in some abstract sense, but that the window where joining is still useful is measured in minutes.</p>
+
+<h2>Common questions</h2>
+
+<h3>Does refreshing help my place in the queue?</h3>
+<p>No, and it can hurt. Position is set on entry. Leave the page open.</p>
+
+<h3>Can I use multiple devices or tabs?</h3>
+<p>It rarely helps and retailers actively work against it. A second entry is a second position at the back, not a better one.</p>
+
+<h3>When does Pokemon Center restock?</h3>
+<p>There is no fixed schedule. Weekday mornings US Pacific have been a common window, and exclusives may restock one to three times weekly during a release period, but treat both as tendencies.</p>
+
+<h3>Is a queue always followed by a restock?</h3>
+<p>No. Maintenance and ordinary traffic spikes can raise a waiting room with nothing behind it. The signal is worth acting on because it is cheap to act on, not because it is certain.</p>
+
+<h3>How do I know whether the drop is even worth buying?</h3>
+<p>Work out the resale value net of fees before you are in checkout. <a href="selling-fees.html">Marketplace fees run about 11 to 13.25 percent</a>, which is often the difference between a good flip and a wash. <a href="/">Holomint</a> computes it on the alert itself.</p>
+
+<footer>
+  <a href="/">Open the app</a>
+  <a href="about.html">What is Holomint</a>
+  <a href="selling-fees.html">Selling fees</a>
+  <a href="privacy.html">Privacy</a>
+  <p style="margin-top:14px;font-size:12px">Holomint is an independent tool and is not affiliated with, endorsed by, or sponsored by Nintendo, The Pokemon Company, Creatures Inc. or GAME FREAK. Queue behaviour is observed rather than documented by the retailer and can change at any time.</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -16,6 +16,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://holomint.app/pokemon-center-queue.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://holomint.app/is-grading-worth-it.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://holomint.app/privacy.html</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
