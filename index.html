@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.08",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.11",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -476,7 +476,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
       <div id="quickAdd" class="qa-row" style="display:none"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px;flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot">▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
@@ -514,7 +514,7 @@ catch(e){document.documentElement.style.display="none";}</script>
     </div>
     <div class="btnrow">
       <button class="ghost" id="copyReceipt" style="flex:0 0 auto" disabled>Share deal image</button>
-      <button class="ghost" id="scanLot" style="flex:0 0 auto">Scan a lot</button>
+     
       <button class="act" id="sendDesk" style="flex:1" disabled>Send to Desk →</button>
     </div>
     <div class="card" id="hotCard" style="display:none;margin-top:14px">
@@ -634,7 +634,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.00 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.11 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -1772,11 +1772,19 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.08';
+const APP_VERSION='1.11';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
 const TERMS_VERSION='1.2';
+/* The footer version was a literal in the markup, so it read v1.00 through every release
+   since. Sourced from APP_VERSION now: one constant, and it cannot drift again. */
+try{var _vt=document.getElementById('verTag');
+  if(_vt)_vt.textContent='v'+APP_VERSION+' \u00b7 early access';
+  /* Exposed so support and the console verifier can read the running version without
+     anything hardcoding a number. Ask someone to type APP_VERSION rather than asking
+     them to read a footer they may be looking at on a stale shell. */
+  window.APP_VERSION=APP_VERSION;}catch(e){}
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 Store.load('lotItems',[]).forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
@@ -3250,8 +3258,83 @@ const LotScanner=(function(){
     return {line:line,found:true,name:pick.name,number:pick.number||'',set:pick.set||'',price:priceFromVariants(pick.prices),c:'nm'};
   }
 
+  /* ---- image path -------------------------------------------------------
+     OCR was the wrong engine for a photo. It split the text into lines and treated
+     every line as a card, so one card face (name, HP, ability text, attack text,
+     flavour text, illustrator, set code, copyright) produced thirty-odd rows.
+     A screenshot of cards is an image problem, so it uses the same 256-bit dHash
+     the card scanner uses, against the same 54k-entry hashes.json already on the
+     device. Robust to blur and lighting, and works offline.
+
+     Segmentation without any computer vision: try each plausible grid, hash every
+     cell, and keep the layout that produces the most distinct confident matches.
+     A wrong grid slices cards in half and matches almost nothing, so the correct
+     layout wins on its own evidence. */
+  var LOT_LAYOUTS=[[1,1],[2,2],[3,3],[2,3],[3,2],[3,4],[4,3]];
+  var LOT_OK=84;              // same threshold the card scanner uses (HASH_OK)
+
+  function cellCanvas(cv,cols,rows,cx,cy,inset){
+    var cw=cv.width/cols, ch=cv.height/rows;
+    var ix=cw*inset, iy=ch*inset;
+    var sx=Math.round(cx*cw+ix), sy=Math.round(cy*ch+iy);
+    var sw=Math.max(8,Math.round(cw-ix*2)), sh=Math.max(8,Math.round(ch-iy*2));
+    var c=document.createElement('canvas');c.width=sw;c.height=sh;
+    c.getContext('2d').drawImage(cv,sx,sy,sw,sh,0,0,sw,sh);
+    return c;
+  }
+
+  function scoreLayout(cv,cols,rows,inset){
+    var hits=[],seen={};
+    for(var y=0;y<rows;y++)for(var x=0;x<cols;x++){
+      var b=CardHash.best(cellCanvas(cv,cols,rows,x,y,inset));
+      if(b&&b.dist<=LOT_OK&&!seen[b.id]){seen[b.id]=1;hits.push(b);}
+    }
+    var mean=hits.length?hits.reduce(function(a,h){return a+h.dist;},0)/hits.length:999;
+    return {cols:cols,rows:rows,inset:inset,hits:hits,n:hits.length,mean:mean};
+  }
+
+  async function runHash(img,ask){
+    var cv=prep(img);
+    var okDb=false;try{okDb=await CardHash.ready();}catch(e){okDb=false;}
+    if(!okDb)return null;
+    var st=$('#lotStatus');if(st)st.textContent='Reading cards\u2026';
+
+    var best=null;
+    for(var i=0;i<LOT_LAYOUTS.length;i++){
+      var L=LOT_LAYOUTS[i];
+      var r=scoreLayout(cv,L[0],L[1],0);
+      // Distinct confident matches first. A finer grid gets more chances, so ties on
+      // count fall to mean distance, which a wrong slicing cannot fake.
+      if(!best||r.n>best.n||(r.n===best.n&&r.mean<best.mean))best=r;
+      if(st)st.textContent='Reading cards '+(i+1)+' of '+LOT_LAYOUTS.length;
+      await new Promise(function(res){setTimeout(res,0);});   // keep the UI alive
+    }
+    if(!best||!best.n)return null;
+
+    // Second pass on the winner with a small inset. Binder pockets and screenshot
+    // margins leave background inside a cell, which dilutes the fingerprint.
+    var tight=scoreLayout(cv,best.cols,best.rows,0.06);
+    if(tight.n>best.n||(tight.n===best.n&&tight.mean<best.mean))best=tight;
+
+    var rows=[];
+    best.hits.forEach(function(h){
+      var it=null;try{it=PriceEngine.getItem(h.id);}catch(e){}
+      if(!it)return;
+      rows.push({line:it.name,found:true,id:it.id,name:it.name,number:'',
+                 set:it.set||'',price:(+PriceEngine.getPrice(it.id)||0),c:'nm',dist:h.dist});
+    });
+    return rows.length?rows:null;
+  }
+
   async function run(img,ask){
     setPhase('progress');
+
+    // Images first. OCR stays as the fallback for the case it actually handles:
+    // a marketplace listing screenshot, which is text with one item per line.
+    var hashRows=null;
+    try{hashRows=await runHash(img,ask);}catch(e){hashRows=null;}
+    if(hashRows){lastRows=hashRows;renderResults(hashRows,ask);return;}
+
     var cv=prep(img);
     var w;try{w=await ensureWorker();}catch(e){toast('Scanner could not load.');setPhase('drop');return;}
     var res;try{res=await w.recognize(cv);}catch(e){toast('Could not read the photo.');setPhase('drop');return;}
@@ -3267,6 +3350,15 @@ const LotScanner=(function(){
       }
     }
     await Promise.all([lane(),lane(),lane()]);
+    var hit=rows.filter(function(r){return r&&r.found;}).length;
+    // A listing resolves most of its lines. A photographed card resolves almost none,
+    // because the extra lines are ability and flavour text, not card names. That ratio
+    // is the tell, and it is what turned one card into thirty-odd rows before.
+    if(rows.length>=6&&hit/rows.length<0.34){
+      setPhase('drop');
+      toast('That looks like a photo of cards, not a listing. Try a straight-on shot, or use Scan for one card.');
+      return;
+    }
     lastRows=rows;
     renderResults(rows,ask);
   }
@@ -3446,7 +3538,21 @@ const CardHash=(function(){
     for(let i=0;i<lim;i++)out.push({id:ids[idx[i]],dist:dists[idx[i]]});
     return out;
   }
-  return {ready,match,dHashBytes,get loaded(){return loaded;},get size(){return ids?ids.length:0;}};
+  /* Same comparison as match() but tracks the single minimum instead of sorting all
+     54k indices. Layout detection calls this dozens of times, where the sort in
+     match() would dominate the runtime. */
+  function best(src){
+    if(!loaded)return null;
+    const q=dHashBytes(src),n=ids.length;
+    let bi=-1,bd=1e9;
+    for(let i=0;i<n;i++){
+      const off=i*BYTES;let dd=0;
+      for(let b=0;b<BYTES;b++)dd+=POP[q[b]^data[off+b]];
+      if(dd<bd){bd=dd;bi=i;}
+    }
+    return bi<0?null:{id:ids[bi],dist:bd};
+  }
+  return {ready,match,best,dHashBytes,get loaded(){return loaded;},get size(){return ids?ids.length:0;}};
 })();
 const Scanner=(function(){
   let stream=null,tScriptP=null,worker=null,workerP=null,_shot='';
