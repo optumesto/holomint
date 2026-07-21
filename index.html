@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+<script>/* frame-ancestors is ignored in a meta tag and GitHub Pages cannot send
+   X-Frame-Options, so until the site moves to Cloudflare Pages this is the only
+   clickjacking defence available. Hide first, then try to escape: reading top.location
+   throws when the framing page is cross-origin, which is precisely the hostile case. */
+try{if(self!==top){document.documentElement.style.display="none";
+  try{top.location.replace(location.href);}catch(e){}}}
+catch(e){document.documentElement.style.display="none";}</script>
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://holomint-feed.mmilliard2516.workers.dev https://api.holomint.app https://api.pokemontcg.io; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Holomint: Pokemon restock alerts that do the math</title>
 <meta name="theme-color" content="#070916">
@@ -14,7 +21,7 @@
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.06",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.08",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -74,6 +81,7 @@
   .hintbody{font-size:13px;line-height:1.65;color:var(--ink2)}
   .hintbody b{color:var(--ink);font-weight:600}
   .hintbody .hrow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px}
+  .hintbody .hrow:first-child{border-top:none}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
@@ -186,7 +194,13 @@
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
   input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
   .bigrate{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
-  .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}.anchor:last-of-type{border-bottom:none}
+  .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}
+  /* The trade card ends on four stacked .anchor rows. Without this the last one draws a
+     divider under itself and .card's own bottom border draws again 16px lower, so two
+     parallel lines sit at the foot of the card with nothing between them. The file
+     already uses this convention for .pile-item, .res, .brk, .drop-live, .wl-opt and
+     .lot-row; these are the rows that were missed. */
+  .anchor:last-child{border-bottom:none}.anchor:last-of-type{border-bottom:none}
   .anchor .al{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
   .anchor 
   /* Lock digit widths so numbers never jitter as they change. */
@@ -207,7 +221,8 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 input,.grid2 select{font-size:14px;padding:9px 10px}
   table{width:100%;border-collapse:collapse;margin-top:6px}
   th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
-  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:14px}tr:last-child td{border-bottom:none}
+  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:14px}tr:last-child td{border-bottom:none}
   .pos{color:var(--up)}.neg{color:var(--down)}
   .toolbtn{color:var(--ink3);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}.toolbtn:active{color:var(--ink)}
   .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:26px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
@@ -269,6 +284,7 @@
     -webkit-text-fill-color:transparent;color:#c8a2ff}
   .fm-g:first-child{margin-top:6px}
   .fm-row{display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid var(--line);padding:11px 0;cursor:pointer}
+  .fm-row:first-child{border-top:none}
   .fm-row:active{background:var(--bg3)}
   .fm-t{display:block;font-size:14px;color:var(--ink);font-weight:600}
   .fm-d{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:2px}
@@ -278,6 +294,7 @@
   .cg-card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:20px 16px;width:min(560px,100%);max-height:88vh;overflow-y:auto}
   .cg-sub{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-bottom:14px}
   .cg-row{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .cg-row:first-child{border-top:none}
   .cg-row svg{flex:0 0 auto}
   .cg-tx{flex:1;min-width:0}
   .cg-tx b{font-size:14px;color:var(--ink)}
@@ -924,9 +941,19 @@ const FeeCalc=(function(){
 let _stWarn=false;
 const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){if(!_stWarn){_stWarn=true;try{if(typeof toast==='function')toast('Storage full - export a backup to avoid losing data.');}catch(_){}}}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
 
+const API_LEGACY = 'https://holomint-feed.mmilliard2516.workers.dev';
+const API_CUSTOM = 'https://api.holomint.app';
+/* Read once from storage so the value is fixed for the whole session and nothing races
+   startup. The probe further down updates the preference for the NEXT load only.
+   The point: binding api.holomint.app as a Worker Custom Domain needs no redeploy and no
+   coordinated release. Clients discover it themselves on their following visit, and if it
+   ever stops answering they fall back to workers.dev the same way. Both origins are
+   already allowed by connect-src, so neither direction can be blocked by policy. */
+const FEED_API = Store.load('apiBase','') === API_CUSTOM ? API_CUSTOM : API_LEGACY;
+
 /* ===== PREMIUM ===== */
 const Premium=(function(){
-  const API='https://holomint-feed.mmilliard2516.workers.dev';
+  const API=FEED_API;
   let lic=Store.load('license',null);
   function active(){return !!(lic&&lic.valid);}
 
@@ -1149,7 +1176,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-caught]');
    The service worker receives these with the app CLOSED. That is the whole
    point: a restock feed you have to sit and watch is not a product.        */
 let VAPID_PUBLIC = 'BARRiGidgkZWMEBkg9-q8sQVB_w5g7N5JUczl6JJSDpmFJkl-ctu4brTEutHbpABSDh9A6rhV932BUNG3CfqJqo';
-const FEED_API = 'https://holomint-feed.mmilliard2516.workers.dev';
 /* The same key lived in two places, so rotating it would have silently broken whichever
    one was not updated. The server copy is now authoritative and the literal above is
    only the offline fallback. enable() reads this at call time, so a late answer is fine.
@@ -1158,6 +1184,13 @@ const FEED_API = 'https://holomint-feed.mmilliard2516.workers.dev';
    was swallowed by the try, which meant the key silently never refreshed. */
 try{fetch(FEED_API+'/api/vapid',{cache:'no-store'}).then(r=>r.json())
   .then(d=>{if(d&&d.key)VAPID_PUBLIC=d.key;}).catch(()=>{});}catch(e){}
+// Writes only on change, so this is silent until the custom domain actually exists.
+setTimeout(function(){
+  var cur=Store.load('apiBase','');
+  fetch(API_CUSTOM+'/api/health',{cache:'no-store'})
+    .then(function(r){var v=r.ok?API_CUSTOM:'';if(v!==cur)Store.save('apiBase',v);})
+    .catch(function(){if(cur)Store.save('apiBase','');});
+},6000);
 
 const Alerts=(function(){
   const b64=s=>{const pad='='.repeat((4-s.length%4)%4);const b=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;};
@@ -1383,7 +1416,7 @@ function paintFounder(){
    a 24h cache). One request per graded card; the Worker dedupes across all users,
    so this stays well inside the API limit. Stores value + a per-card asOf date. */
 const GradedPrices=(function(){
-  var base='https://holomint-feed.mmilliard2516.workers.dev/api/graded';
+  var base=FEED_API+'/api/graded';
   function fetchOne(h){
     var g=(h.grader||'psa'), gr=(h.grade||'10');
     var num=h.number||h.cardNum||'';
@@ -1472,7 +1505,7 @@ const Caught=(function(){
     Store.save(KEY,m);
     // fire-and-forget anonymous ping; failure is fine, the local record is the source of truth
     try{
-      fetch('https://holomint-feed.mmilliard2516.workers.dev/api/caught',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outcome:outcome,pid:pid})}).catch(function(){});
+      fetch(FEED_API+'/api/caught',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outcome:outcome,pid:pid})}).catch(function(){});
     }catch(e){}
   }
   // total caught in the current month, from the local log. Feeds the value ticker later.
@@ -1739,7 +1772,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.06';
+const APP_VERSION='1.08';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -1764,7 +1797,7 @@ function condFactor(entry,it){if(!it||it.type!=='single')return 1;return condMul
    vs normal resolves itself. */
 const CondLive=(function(){
   var mem={},inflight={},off=false;
-  var base='https://holomint-feed.mmilliard2516.workers.dev/api/cond';
+  var base=FEED_API+'/api/cond';
   function pickPrinting(pid){
     var d=mem[pid];if(!d||!d.printings)return null;
     var ref=+PriceEngine.getPrice(pid)||0,best=null,gap=1e9;
@@ -2334,7 +2367,15 @@ const LiveDrops=(function(){
   function changed(a,b){a=a||[];b=b||[];if(a.length!==b.length)return true;return ((a[0]||{}).event_id)!==((b[0]||{}).event_id);}
   async function refresh(){
     try{
-      var r=await fetch(feedUrl(),{cache:'no-store',headers:feedHdrs()});
+      var r;
+      try{ r=await fetch(feedUrl(),{cache:'no-store',headers:feedHdrs()}); }
+      catch(netErr){
+        // If the custom domain stops resolving (unbound, DNS pulled), drop the stored
+        // preference straight away so the very next call uses workers.dev again. Without
+        // this the session keeps hammering a dead host until the user reloads.
+        if(FEED_API===API_CUSTOM){try{Store.save('apiBase','');}catch(e){}}
+        throw netErr;
+      }
       if(!r.ok)return;
       var j=await r.json();
       // The server tells us when a valid key is over its device limit. Say so plainly,
@@ -2719,7 +2760,7 @@ const SlabData={
     var name=(card&&card.name)||'';
     var num=(card&&(card.number||card.cardNumber))||'';
     if(!name)return null;
-    var base='https://holomint-feed.mmilliard2516.workers.dev/api/graded';
+    var base=FEED_API+'/api/graded';
     function one(g){
       return fetch(base+'?name='+encodeURIComponent(name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(grader)+'&grade='+g,{cache:'no-store'})
         .then(function(r){return r.json();}).catch(function(){return null;});
@@ -2970,7 +3011,7 @@ const Gestures=(function(){
 
 /* ---- DEVICES: see and release the seats a Pro key is using --------------------- */
 const Devices=(function(){
-  var API='https://holomint-feed.mmilliard2516.workers.dev';
+  var API=FEED_API;
   async function open(){
     var k=Premium.key();
     if(!k){Sheet.info('Manage devices','<p>Device seats apply to Holomint Pro. Once a Pro key is active, this is where you can see and release the devices using it.</p>');return;}
