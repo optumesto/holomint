@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Holomint: Pokemon restock alerts that do the math</title>
 <meta name="theme-color" content="#070916">
@@ -12,7 +14,7 @@
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.00",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.06",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -75,7 +77,7 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
-  #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .5s ease,visibility .5s}
+  #splash{position:fixed;inset:0;z-index:var(--z-splash);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .5s ease,visibility .5s}
   #splash.gone{opacity:0;visibility:hidden}
   #splash img{width:150px;height:150px;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 8px 30px rgba(125,240,200,.22));animation:sfloat 2.4s ease-in-out infinite}
   @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
@@ -84,7 +86,7 @@
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
   .brandrow{display:flex;align-items:center;gap:4px}
   .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px -2px -3px 0;mix-blend-mode:screen}
-  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
   .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .navb.on{color:var(--gold)}
@@ -152,7 +154,7 @@
     .res .rn{font-size:13px}.res .rp{font-family:var(--mono);font-size:12px;color:var(--gold)}
     .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:9px;padding:8px 12px;min-height:34px;font-size:13px;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
   .scanbtn:active{transform:scale(.97)}
-  #scanModal{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column}
+  #scanModal{position:fixed;inset:0;background:#000;z-index:var(--z-scan);display:none;flex-direction:column}
   #scanModal.show{display:flex}
   .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
   #cropWrap{position:absolute;inset:0;background:#000;z-index:2}
@@ -254,12 +256,12 @@
   .wl-chip{display:inline-flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:5px 6px 5px 11px;font-size:12px;color:var(--ink)}
   .wl-chip button{background:none;border:none;color:var(--ink3);font-size:15px;line-height:1;cursor:pointer;padding:2px 5px}
   .wl-chip button:active{color:var(--down)}
-  #tourWrap{display:none;position:fixed;inset:0;z-index:9000}
+  #tourWrap{display:none;position:fixed;inset:0;z-index:var(--z-tour)}
   #tourWrap.on{display:block}
   #tourDim{position:fixed;inset:0;background:rgba(4,6,14,.58);backdrop-filter:blur(1px)}
   @keyframes fxpulse{0%{box-shadow:0 0 0 0 rgba(216,169,63,.55)}70%{box-shadow:0 0 0 12px rgba(216,169,63,0)}100%{box-shadow:0 0 0 0 rgba(216,169,63,0)}}
   .fxglow{animation:fxpulse 1.3s ease-out 2;border-radius:12px;position:relative;z-index:2}
-  #featModal{display:none;position:fixed;inset:0;z-index:8600;background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #featModal{display:none;position:fixed;inset:0;z-index:var(--z-feat);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
   #featModal.show{display:flex}
     .fm-g{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.01em;
     text-transform:none;margin:26px 0 8px;
@@ -271,7 +273,7 @@
   .fm-t{display:block;font-size:14px;color:var(--ink);font-weight:600}
   .fm-d{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:2px}
   .fm-go{display:inline-block;font-size:11px;font-family:var(--mono);color:var(--gold);margin-top:5px}
-  #condModal{display:none;position:fixed;inset:0;z-index:8600;background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #condModal{display:none;position:fixed;inset:0;z-index:var(--z-cond);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
   #condModal.show{display:flex}
   .cg-card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:20px 16px;width:min(560px,100%);max-height:88vh;overflow-y:auto}
   .cg-sub{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-bottom:14px}
@@ -290,7 +292,7 @@
   .qa-l{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
   .qa{font-size:11.5px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg3);color:var(--ink2);cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
   .qa:active{border-color:var(--gold);color:var(--ink)}
-  #cfmModal{display:none;position:fixed;inset:0;z-index:8700;background:rgba(4,6,14,.72);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #cfmModal{display:none;position:fixed;inset:0;z-index:var(--z-confirm);background:rgba(4,6,14,.72);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
   #cfmModal.show{display:flex}
   .cfm-b{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:8px}
   .cfm-b p{margin:0 0 8px}
@@ -348,11 +350,11 @@
   #toast .tu{margin-left:12px;background:transparent;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;padding:0 2px;text-decoration:underline}
   .chip.live{background:rgba(70,227,172,.16);color:var(--up);border:1px solid rgba(70,227,172,.35)}
   .pcond{margin-left:6px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:10.5px;font-family:var(--mono);padding:2px 3px}
-  #scanChoose{display:none;position:fixed;inset:0;z-index:8400;background:rgba(4,6,14,.66);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
+  #scanChoose{display:none;position:fixed;inset:0;z-index:var(--z-picker);background:rgba(4,6,14,.66);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
   #scanChoose.show{display:flex}
   .sc-card{background:var(--bg2);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:min(520px,100%);display:flex;flex-direction:column;gap:9px}
   .sc-t{font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:2px}
-  #lotModal{display:none;position:fixed;inset:0;z-index:8500;background:var(--bg);overflow-y:auto}
+  #lotModal{display:none;position:fixed;inset:0;z-index:var(--z-modal);background:var(--bg);overflow-y:auto}
   #lotModal.show{display:block}
   .lot-inner{max-width:560px;margin:0 auto;padding:56px 18px 40px}
   .lot-head{margin-bottom:20px}
@@ -380,13 +382,39 @@
   .lot-tot .tr.big{font-size:17px;font-weight:600;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
   .lot-verdict{margin-top:14px;padding:13px 16px;border-radius:12px;font-weight:600;text-align:center;font-size:15px}
   .lot-actions{display:flex;gap:8px;margin-top:16px}
-  #tourCard{position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
+  :root{--navh:64px;
+    /* One ordered scale. Values used to sit in two disconnected bands, 60 to 200 and
+       8400 to 9200, with nothing between, so anything new got a number picked by feel
+       and ties kept appearing. Ties resolve by DOM order, which is invisible in CSS
+       and breaks on any reorder. Add new layers here, never inline. */
+    --z-nav:100; --z-sheetbg:110; --z-sheet:120; --z-scan:130; --z-toast:140;
+    --z-splash:200;
+    --z-picker:300; --z-modal:310; --z-cond:320; --z-feat:330; --z-confirm:340;
+    --z-tour:400; --z-age:410}
+  body{padding-bottom:calc(var(--navh) + 14px)}
+  #tourDim{z-index:1}
+  #tourCard{z-index:2;position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
   .tour-dots{display:flex;gap:5px;margin-bottom:12px}
   .tour-dots i{width:16px;height:3px;border-radius:2px;background:var(--line);transition:.2s}
   .tour-dots i.on{background:var(--gold);width:24px}
   .tour-t{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);margin-bottom:7px;line-height:1.25}
   .tour-b{font-size:13.5px;line-height:1.6;color:var(--ink2);margin-bottom:16px}
   .tour-b b{color:var(--ink)}
+  /* Berman: notice sits directly against the button, is not smaller than the
+     surrounding text, and the links are visually distinct rather than the same
+     colour as the prose around them. */
+  .tour-legal{display:none;margin-top:12px;font-size:13.5px;line-height:1.55;color:var(--ink2)}
+  .tour-legal.on{display:block}
+  .dl-stale{font-size:12px;color:var(--ink2);padding:7px 2px 9px;border-bottom:1px solid var(--line)}
+  .tour-legal a{color:#7fd4ff;text-decoration:underline;text-underline-offset:2px}
+  .tour-legal b{color:var(--ink)}
+  #ageWrap{display:none;position:fixed;inset:0;z-index:var(--z-age)}
+  #ageWrap.on{display:block}
+  #ageDim{position:fixed;inset:0;background:rgba(4,6,14,.72)}
+  #ageCard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,calc(100vw - 28px));
+    background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:20px;z-index:2}
+  #ageCard input{width:120px;font-size:17px;padding:9px 11px;border-radius:9px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:center}
   .tour-nav{display:flex;gap:8px}
   .tour-nav .act{width:auto}
   .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:9px 12px;margin:10px 0 2px;font-size:12px;line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
@@ -398,11 +426,11 @@
   .dl-flip{margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--ink2);line-height:1.35}
   .dl-flip.pos{color:var(--up)}
   .dl-flip .mk{color:var(--ink3)}
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:14px;padding:12px 20px;border-radius:11px;opacity:0;transition:.3s;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .toast{position:fixed;left:50%;bottom:calc(var(--navh) + 14px);transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:14px;padding:12px 20px;border-radius:11px;opacity:0;transition:.3s;z-index:var(--z-toast);box-shadow:0 8px 24px rgba(0,0,0,.4)}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-  .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:64}
+  .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:var(--z-sheetbg)}
   .sheetbg.show{opacity:1;pointer-events:auto}
-  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:.3s cubic-bezier(.3,.9,.3,1);z-index:65;max-height:82vh;overflow-y:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:.3s cubic-bezier(.3,.9,.3,1);z-index:var(--z-sheet);max-height:82vh;overflow-y:auto}
   .sheet.show{transform:translateY(0)}
   .sheet h3{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:14px}
   .sheet .field{margin-bottom:12px}
@@ -750,6 +778,9 @@
       <button class="ghost" id="tourSkip">Skip</button>
       <button class="act" id="tourNext" style="flex:1">Next</button>
     </div>
+    <div class="tour-legal" id="tourLegal">By tapping <b>Continue</b> you agree to the
+      <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and
+      <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
   </div>
 </div>
 
@@ -777,9 +808,19 @@ const PriceEngine=(function(){
   async function loadData(){
     window.CatalogState='loading';
     let gotProducts=false;
-    try{const r=await fetch('products.json');if(r.ok){const p=await r.json();if(Array.isArray(p)&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
-    try{const r=await fetch('prices.json');if(r.ok){Object.assign(cache,await r.json());Store.save('pricesAt',new Date().toISOString());}}catch(e){}
-    try{const r=await fetch('history.json');if(r.ok)history=await r.json();}catch(e){}
+    // These used to run serially, so the 743KB price file waited behind the 10MB product
+    // file and nothing could be priced until every byte of both had landed. They are
+    // independent, so they are fetched together and each is applied the moment it lands.
+    // Wall time is now the slowest single file instead of the sum of all three.
+    const [pRes,cRes,hRes]=await Promise.allSettled([
+      fetch('prices.json'),fetch('products.json'),fetch('history.json')]);
+    try{if(pRes.status==='fulfilled'&&pRes.value.ok){
+      Object.assign(cache,await pRes.value.json());
+      Store.save('pricesAt',new Date().toISOString());}}catch(e){}
+    try{if(cRes.status==='fulfilled'&&cRes.value.ok){
+      const p=await cRes.value.json();
+      if(Array.isArray(p)&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
+    try{if(hRes.status==='fulfilled'&&hRes.value.ok)history=await hRes.value.json();}catch(e){}
     // A silent failure here leaves every search empty forever with no explanation, which
     // reads as a broken app rather than a missing download.
     window.CatalogState=gotProducts?'ready':'failed';
@@ -807,8 +848,16 @@ const PriceEngine=(function(){
       }
       const byScore=(a,b)=>b[0]-a[0];en.sort(byScore);jp.sort(byScore);
       const lim=limit||8;
-      if(langFilter==='en')return en.slice(0,lim).map(x=>x[1]);
-      if(langFilter==='jp')return jp.slice(0,lim).map(x=>x[1]);
+      // Dice scores vary enough that this path never had the tie collapse the typed
+      // search did, but a set that reprints a card four times still took four of eight
+      // rows. Same two-per-set rule, so other printings stay reachable from a scan.
+      const spread=(arr,n)=>{const per={},a=[],b=[];
+        for(const [,c] of arr){const k=c.set||'';
+          if((per[k]=(per[k]||0)+1)<=2)a.push(c);else b.push(c);
+          if(a.length>=n)break;}
+        return a.concat(b).slice(0,n);};
+      if(langFilter==='en')return spread(en,lim);
+      if(langFilter==='jp')return spread(jp,lim);
       const out=[];for(let i=0;i<lim;i++){if(en[i])out.push(en[i][1]);if(jp[i])out.push(jp[i][1]);}
       return out.slice(0,lim);
     },
@@ -825,17 +874,38 @@ const PriceEngine=(function(){
         if(!toks.every(t=>hay.includes(t)))continue;
         let score=hay.indexOf(toks[0]);
         let _nm=c._n;if(_nm===undefined)_nm=c._n=norm(c.name);
-        if(_nm.startsWith(toks[0]))score-=50;
+        // Every candidate used to land on the same score: match at position 0, name
+        // prefix, in print. Fifteen identical values meant the stable sort fell through
+        // to catalog file order, so the newest set took every visible row and promos,
+        // vintage, and exclusives were unreachable. These break the tie on real signal.
+        if(_nm===raw.replace(/\s+/g,''))score-=400;      // exact whole-name match wins outright
+        else if(_nm.startsWith(toks[0]))score-=50;
+        // A card worth twenty dollars should outrank a near-worthless printing of the
+        // same name. Log scale, so it orders without ever overpowering a name match.
+        const _pv=+cache[c.id]||0;
+        if(_pv>0)score-=Math.min(24,Math.log10(_pv+1)*12);
         if(c.status!=='oop')score-=5;
         (c.jp?jp:en).push([score,c]);
-        if(en.length+jp.length>1200)break;
+        if(en.length+jp.length>4000)break;
       }
       const bySc=(a,b)=>a[0]-b[0];en.sort(bySc);jp.sort(bySc);
-      if(langFilter==='en')return en.slice(0,10).map(x=>x[1]);
+      // Ranking alone still lets one set fill every row, because a set that reprints a
+      // card three times gets three high scores. Take at most two per set on the first
+      // pass, then backfill, so a different printing is always reachable without paging.
+      const spread=(arr,n)=>{
+        const per={},first=[],rest=[];
+        for(const [,c] of arr){
+          const k=c.set||'';
+          if((per[k]=(per[k]||0)+1)<=2)first.push(c);else rest.push(c);
+          if(first.length>=n)break;
+        }
+        return first.concat(rest).slice(0,n);
+      };
+      if(langFilter==='en')return spread(en,14);
       if(langFilter==='jp')return jp.slice(0,10).map(x=>x[1]);
       // 'all': guarantee both languages a fair share instead of EN crowding JP out
-      const out=[],take=arr=>{for(const x of arr)out.push(x[1]);};
-      take(en.slice(0,6));take(jp.slice(0,6));
+      const out=[],take=arr=>{for(const x of arr)out.push(x);};
+      take(spread(en,8));take(spread(jp,4));
       return out.slice(0,12);
     },
     getPrice(id){return cache[id]??0;},
@@ -865,7 +935,7 @@ const Premium=(function(){
     key=(key||'').trim();
     if(!key)return false;
     try{
-      const r=await fetch(API+'/api/license?k='+encodeURIComponent(key),{cache:'no-store'});
+      const r=await fetch(API+'/api/license',{cache:'no-store',headers:{'X-License':key}});
       if(r.status===503)return 'unknown';   // authority unreachable: not the key's fault
       const d=await r.json();
       if(d&&d.valid){lic={key,valid:true,at:Date.now(),strikes:0};Store.save('license',lic);return true;}
@@ -879,7 +949,7 @@ const Premium=(function(){
   async function recheck(){
     if(!lic||!lic.key)return;
     try{
-      const r=await fetch(API+'/api/license?k='+encodeURIComponent(lic.key),{cache:'no-store'});
+      const r=await fetch(API+'/api/license',{cache:'no-store',headers:{'X-License':lic.key}});
       if(r.status===503)return;                       // authority unreachable: keep Pro
       const d=await r.json();
       if(d&&d.valid===false){
@@ -1024,7 +1094,7 @@ function restoreFile(file){const rd=new FileReader();
       : (confirm('Restore this backup? It replaces all current data ('+cur+' holdings) with '+inc+' from the file.') && doRestore(d));
   }catch(e){toast('Bad file');}};rd.readAsText(file);}
 function doRestore(d){
-  ['holdings','sold','deals','fees','hotlist','credit','buyRate','acct','drops','lang','license','alertPrefs','caught','consent','tourSeen'].forEach(k=>{if(d[k]!=null)Store.save(k,d[k]);});
+  ['holdings','sold','deals','fees','hotlist','credit','buyRate','acct','drops','lang','license','alertPrefs','caught','tosOk','ageChk','consent','tourSeen'].forEach(k=>{if(d[k]!=null)Store.save(k,d[k]);});
   toast('Restored');setTimeout(()=>location.reload(),600);}
 const fileIn=document.createElement('input');fileIn.type='file';fileIn.accept='application/json';fileIn.style.display='none';document.body.appendChild(fileIn);
 fileIn.onchange=()=>{if(fileIn.files[0])restoreFile(fileIn.files[0]);fileIn.value='';};
@@ -1078,8 +1148,16 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-caught]');
 /* ---- Drop alerts (Web Push) --------------------------------------------
    The service worker receives these with the app CLOSED. That is the whole
    point: a restock feed you have to sit and watch is not a product.        */
-const VAPID_PUBLIC = 'BARRiGidgkZWMEBkg9-q8sQVB_w5g7N5JUczl6JJSDpmFJkl-ctu4brTEutHbpABSDh9A6rhV932BUNG3CfqJqo';
+let VAPID_PUBLIC = 'BARRiGidgkZWMEBkg9-q8sQVB_w5g7N5JUczl6JJSDpmFJkl-ctu4brTEutHbpABSDh9A6rhV932BUNG3CfqJqo';
 const FEED_API = 'https://holomint-feed.mmilliard2516.workers.dev';
+/* The same key lived in two places, so rotating it would have silently broken whichever
+   one was not updated. The server copy is now authoritative and the literal above is
+   only the offline fallback. enable() reads this at call time, so a late answer is fine.
+   This must stay BELOW the FEED_API declaration: it runs at parse time, and a const is
+   in its temporal dead zone until its own line, so reading it earlier throws. The throw
+   was swallowed by the try, which meant the key silently never refreshed. */
+try{fetch(FEED_API+'/api/vapid',{cache:'no-store'}).then(r=>r.json())
+  .then(d=>{if(d&&d.key)VAPID_PUBLIC=d.key;}).catch(()=>{});}catch(e){}
 
 const Alerts=(function(){
   const b64=s=>{const pad='='.repeat((4-s.length%4)%4);const b=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/'));const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;};
@@ -1093,7 +1171,7 @@ const Alerts=(function(){
 
   function payload(sub){
     const p=prefs();
-    return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',
+    return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',device:DeviceId,
       prefs:{channel:p.channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'].concat(p.queueAlerts?['queue']:[]).concat(p.intelAlerts?['invite','preload']:[]),
         watch:(p.watch||[]).map(x=>String(x.id)),watchOnly:!!p.watchOnly,
         quietStart:p.quietOn?+p.quietStart:0,quietEnd:p.quietOn?+p.quietEnd:0,dailyCap:+p.dailyCap,
@@ -1121,7 +1199,46 @@ const Alerts=(function(){
     return Premium.active()?'on-pro':'on-free';
   }
 
+  /* The only thing Holomint stores server-side is a push subscription, and a push
+     endpoint is a persistent identifier under 16 CFR 312.2. So the age question sits
+     exactly on that line and nowhere else: the pile, scanner, portfolio and slab math
+     stay open to everyone because none of them leave the device. Neutral by design,
+     a year field rather than "are you 13 or older", which invites the useful answer.
+     The year itself is never stored and never sent; only a yes or no survives. */
+  function askAge(){
+    return new Promise(res=>{
+      const prev=Store.load('ageChk',null);
+      if(prev&&prev.v===1)return res(!!prev.ok);
+      let w=document.getElementById('ageWrap');
+      if(!w){
+        w=document.createElement('div');w.id='ageWrap';
+        w.innerHTML='<div id="ageDim"></div><div id="ageCard" role="dialog" aria-modal="true">'+
+          '<div class="tour-t">One quick thing</div>'+
+          '<div class="tour-b">Drop alerts register this device with our server, so we need to know your age first. '+
+          'Everything else in Holomint stays on your device and stays available either way.</div>'+
+          '<div style="margin:14px 0 4px;font-size:13px;color:var(--ink2)">What year were you born?</div>'+
+          '<input id="ageYr" type="number" inputmode="numeric" placeholder="YYYY" min="1900" max="2100">'+
+          '<div class="tour-nav" style="margin-top:16px"><button class="ghost" id="ageNo">Cancel</button>'+
+          '<button class="act" id="ageGo" style="flex:1">Continue</button></div></div>';
+        document.body.appendChild(w);
+      }
+      w.classList.add('on');
+      const fin=v=>{w.classList.remove('on');res(v);};
+      w.querySelector('#ageNo').onclick=()=>fin(false);
+      w.querySelector('#ageGo').onclick=()=>{
+        const y=parseInt(w.querySelector('#ageYr').value,10);
+        const now=new Date().getFullYear();
+        if(!y||y<1900||y>now){toast('Enter the year you were born.');return;}
+        const age=now-y, ok=age>=13;
+        Store.save('ageChk',{v:1,ok:ok});
+        if(!ok)toast('Alerts are not available under 13. The rest of Holomint still works.');
+        fin(ok);
+      };
+    });
+  }
+
   async function enable(){
+    if(!(await askAge())){render();return;}
     const perm=await Notification.requestPermission();
     if(perm!=='granted'){toast('Alerts not allowed. You can change this in browser settings.');render();return;}
     const reg=await navigator.serviceWorker.ready;
@@ -1379,6 +1496,13 @@ const Tour=(function(){
   let i=0;
 
   const STEPS=[
+    /* Assent gate. No target element, so paint() centres it. Non-dismissible:
+       Skip is hidden here and the backdrop has no click handler, so Continue is
+       the only way past. The disclaimer sits in the body rather than behind a
+       link, because conspicuousness of THAT line is what answers a reliance
+       claim about a margin figure. */
+    {tab:null, sel:null, gate:true, title:'Before you start',
+     body:'Holomint prices sealed product and singles against live market data, tracks what you hold as a running P&amp;L, and can alert you the moment a drop lands.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, the second it lands',
@@ -1411,8 +1535,11 @@ const Tour=(function(){
     $('#tourDots').innerHTML=STEPS.map((_,n)=>'<i class="'+(n===i?'on':'')+'"></i>').join('');
     const last=(i===STEPS.length-1);
     const isAlerts=st.sel==='#alertCard';
-    $('#tourNext').textContent=last?(isAlerts?'Turn on alerts':'Done'):'Next';
+    $('#tourNext').textContent=st.gate?'Continue':(last?(isAlerts?'Turn on alerts':'Done'):'Next');
     $('#tourSkip').textContent=last?'Close':'Skip';
+    // Hidden rather than disabled: a greyed Skip still reads as an escape hatch.
+    $('#tourSkip').style.display=st.gate?'none':'';
+    $('#tourLegal').classList.toggle('on',!!st.gate);
     requestAnimationFrame(()=>{
       const card=$('#tourCard');
       const r=el?el.getBoundingClientRect():null;
@@ -1429,11 +1556,13 @@ const Tour=(function(){
     i=n;
     const st=STEPS[i];
     if(!st)return done();
-    if(st.tab)switchTab(st.tab);
+    if(st.tab)switchTab(st.tab);  // gate step has none
     // let the tab paint before we measure the target
     requestAnimationFrame(()=>setTimeout(paint,90));
   }
   function done(finish){
+    // Nothing closes the tour while the assent step is showing.
+    if(STEPS[i]&&STEPS[i].gate)return;
     Store.save(KEY,1);
     const wasAlerts=STEPS[i]&&STEPS[i].sel==='#alertCard';
     clear();
@@ -1446,13 +1575,47 @@ const Tour=(function(){
     $('#tourWrap').setAttribute('aria-hidden','false');
     go(0);
   }
-  function maybe(){ if(!Store.load(KEY,0)) setTimeout(start,900); }
+  /* Sign-in wrap leaves no checkbox event to log, so the record has to say which
+     Terms version AND which build were on screen. Terms version alone cannot tell
+     you what the notice looked like in March. Stored locally so it survives an
+     offline first run, and mirrored to the Worker where it is ours rather than
+     the customer's to delete. */
+  function recordTos(){
+    const rec={kind:'tos',at:Date.now(),terms:TERMS_VERSION,build:APP_VERSION,tos:1,renew:0};
+    Store.save('tosOk',{v:TERMS_VERSION,at:rec.at,build:APP_VERSION});
+    try{
+      fetch(FEED_API+'/api/consent',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({consent:rec}),keepalive:true}).catch(()=>{});
+    }catch(e){}
+  }
+  function tosCurrent(){
+    const t=Store.load('tosOk',null);
+    return !!(t&&t.v===TERMS_VERSION);
+  }
+  /* Two separate reasons to open. The tour runs once. The gate runs whenever the
+     stored assent is missing or stale, including for someone who toured months ago,
+     which is what makes a TERMS_VERSION bump an actual re-prompt. */
+  function maybe(){
+    if(!tosCurrent()) return setTimeout(start,700);
+    if(!Store.load(KEY,0)) setTimeout(start,900);
+  }
 
   addEventListener('resize',()=>{ if($('#tourWrap').classList.contains('on'))paint(); });
   return {start,maybe,
     wire(){
-      $('#tourNext').onclick=()=>{ (i===STEPS.length-1)?done(true):go(i+1); };
-      $('#tourSkip').onclick=()=>done(false);
+      $('#tourNext').onclick=()=>{
+        if(STEPS[i]&&STEPS[i].gate){
+          recordTos();
+          if(Store.load(KEY,0)){                 // already toured: they needed the gate only
+            i=-1;
+            $('#tourWrap').classList.remove('on');
+            $('#tourWrap').setAttribute('aria-hidden','true');
+            return;
+          }
+        }
+        (i===STEPS.length-1)?done(true):go(i+1);
+      };
+      $('#tourSkip').onclick=()=>{ if(STEPS[i]&&STEPS[i].gate)return; done(false); };
     }};
 })();
 
@@ -1513,7 +1676,7 @@ const Checkout=(function(){
       if(g.disabled)return;
       // record the consent: timestamp + the exact terms shown. Without this a ToS is
       // decoration; clickwrap is enforceable, browsewrap routinely is not.
-      Store.save('consent',{at:Date.now(),price:o.amount,list:o.list,founder:!!o.founder,currency:p.currency,interval:p.interval,terms:'1.0',renew:true,tos:true});
+      Store.save('consent',{at:Date.now(),price:o.amount,list:o.list,founder:!!o.founder,currency:p.currency,interval:p.interval,terms:TERMS_VERSION,build:APP_VERSION,kind:'checkout',renew:true,tos:true});
       window.open(o.checkout,'_blank','noopener');
     };
   }
@@ -1576,7 +1739,11 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.00';
+const APP_VERSION='1.06';
+/* Bump this whenever the Terms change materially: price, venue, arbitration,
+   liability, or what we collect. A user whose stored assent carries an older
+   value is re-gated on next open. Typo fixes do not need a bump. */
+const TERMS_VERSION='1.2';
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 Store.load('lotItems',[]).forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
@@ -2148,8 +2315,11 @@ const SetMatch=(function(){
 })();
 const LiveDrops=(function(){
   let cdTimer=null;
-  const FEED_URL='https://holomint-feed.mmilliard2516.workers.dev/api/drops';
-  const feedUrl=()=>FEED_URL+(Premium.key()?'?k='+encodeURIComponent(Premium.key())+'&d='+encodeURIComponent(DeviceId):'');
+  const FEED_URL=FEED_API+'/api/drops';
+  const feedUrl=()=>FEED_URL;
+  // Key and device id ride in headers now. They used to sit in the query string, and
+  // query strings are logged by every hop between the phone and the Worker.
+  const feedHdrs=()=>Premium.key()?{'X-License':Premium.key(),'X-Device':DeviceId}:{};
   const MAXAGE=7*24*3600; // seconds. hide events older than a week (also hides the old test event)
   let cache=Store.load('liveDrops',[]),timer=null;
   function recent(){
@@ -2164,16 +2334,17 @@ const LiveDrops=(function(){
   function changed(a,b){a=a||[];b=b||[];if(a.length!==b.length)return true;return ((a[0]||{}).event_id)!==((b[0]||{}).event_id);}
   async function refresh(){
     try{
-      var r=await fetch(feedUrl(),{cache:'no-store'});
+      var r=await fetch(feedUrl(),{cache:'no-store',headers:feedHdrs()});
       if(!r.ok)return;
       var j=await r.json();
       // The server tells us when a valid key is over its device limit. Say so plainly,
       // once, rather than letting Pro look like it silently stopped working.
-      if(j&&j.deviceLimit&&!window.__devLimShown){
+      if(j&&j.seatChurn&&!window.__devLimShown){
         window.__devLimShown=true;
-        Sheet.info('This Pro key is on too many devices',
-          '<p>Your key is active on <b>'+(j.seats||'')+'</b> devices, and the limit is <b>'+(j.seatCap||'')+'</b>. This device is seeing the free view until a seat is free.</p>'+
-          '<p>Open <b>Settings, Holomint Pro, Manage devices</b> on any device that is already active to release one.</p>');
+        Sheet.info('This Pro key is on more devices than its limit',
+          '<p>Your key is active on <b>'+(j.seatCap||'')+'</b> devices, which is the limit, so signing in here signed out whichever device had gone longest without being used.</p>'+
+          '<p><b>Pro is working normally on this device.</b> If that keeps happening, someone else may be using your key. '+
+          'Open <b>Settings, Holomint Pro, Manage devices</b> to see what is active.</p>');
       }
       var next=(j&&j.drops)||[];
       if(changed(cache,next)){cache=next;Store.save('liveDrops',cache);if(typeof renderDrops==='function')renderDrops();}
@@ -2237,8 +2408,13 @@ const LiveDrops=(function(){
   }
   function html(){
     var list=recent();
+    // Silence and breakage look identical from the feed. Saying how old the newest row
+    // is turns "is this thing even on" into a fact the user can read.
+    var _n=list[0]&&(list[0].received_at||(list[0].ts?list[0].ts*1000:0));
+    var _head=(_n&&(Date.now()-_n)>6*3600000)
+      ? '<div class="dl-stale">Quiet spell. Newest drop is '+timeAgo(_n)+'.</div>' : '';
     if(!list.length)return '<div class="dl-empty">No live drops right now. Pokémon Center restocks, queues, and signals land here automatically.</div>';
-    return list.map(row).join('');
+    return _head+list.map(row).join('');
   }
   function trackFromFeed(name,date){
     if(!name||!date)return;
@@ -2668,7 +2844,7 @@ Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});
   history.replaceState(null,'',location.pathname);   // never re-claim on refresh
   toast('Finalizing your purchase\u2026');
   try{
-    const r=await fetch('https://holomint-feed.mmilliard2516.workers.dev/api/claim?id='+encodeURIComponent(co),{cache:'no-store'});
+    const r=await fetch(FEED_API+'/api/claim?id='+encodeURIComponent(co),{cache:'no-store'});
     const d=await r.json();
     if(d&&d.ok&&d.key&&(await Premium.validate(d.key))===true){
       toast('Pro activated. Welcome aboard.');
@@ -2686,6 +2862,14 @@ document.addEventListener('click',e=>{
   PriceEngine.loadData().then(ok=>{recompute();renderPortfolio();toast(ok?'Catalog loaded.':'Still could not load it.');});
 });
 setTimeout(()=>{const sp=$('#splash');if(sp)sp.classList.add('gone');},900);
+/* The nav is fixed, so content scrolled under it and its border-top landed on top of
+   whatever row was beneath. offsetHeight already includes the safe-area padding the
+   nav applies to itself, so measuring beats hardcoding, and the raised Scan FAB makes
+   the height non-obvious anyway. */
+(function(){var n=document.getElementById('botnav');if(!n)return;
+  var sync=function(){document.documentElement.style.setProperty('--navh',n.offsetHeight+'px');};
+  sync();addEventListener('resize',sync);addEventListener('orientationchange',sync);
+  if(window.visualViewport)visualViewport.addEventListener('resize',sync);})();
 /* A confirm dialog in the app's own voice, for actions that cannot be undone. */
 if(typeof Sheet!=='undefined'&&!Sheet.confirm){
   Sheet.confirm=function(title,html,okLabel,onOk){
@@ -2792,7 +2976,7 @@ const Devices=(function(){
     if(!k){Sheet.info('Manage devices','<p>Device seats apply to Holomint Pro. Once a Pro key is active, this is where you can see and release the devices using it.</p>');return;}
     Sheet.info('Manage devices','<p>Loading…</p>');
     var d=null;
-    try{d=await (await fetch(API+'/api/devices?k='+encodeURIComponent(k),{cache:'no-store'})).json();}catch(e){}
+    try{d=await (await fetch(API+'/api/devices',{cache:'no-store',headers:{'X-License':k}})).json();}catch(e){}
     if(!d||d.error){Sheet.info('Manage devices','<p>Could not reach the licence server. Try again in a minute.</p>');return;}
     var rows=(d.devices||[]).map(function(x){
       var me=x.device===DeviceId;

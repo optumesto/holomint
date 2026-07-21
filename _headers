@@ -1,0 +1,23 @@
+# api.holomint.app is pre-authorised in connect-src even though nothing uses it yet.
+# Otherwise the two migrations trap each other: move to Pages first and this CSP goes
+# live listing only workers.dev, then bind the Worker's custom domain and every API
+# call is blocked by policy, which surfaces as a silently dead app rather than an error
+# anyone would recognise. Listing both means the order stops mattering.
+# Cloudflare Pages reads this file. GitHub Pages ignores it, so it does nothing
+# until holomint.app is served from Pages. The meta tags in index.html cover the
+# little that can be set from markup; frame-ancestors and HSTS cannot be, which is
+# the reason to move.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://holomint-feed.mmilliard2516.workers.dev https://api.holomint.app https://api.pokemontcg.io https://images.pokemontcg.io https://raw.githubusercontent.com; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+/products.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+/prices.json
+  Cache-Control: public, max-age=1800, stale-while-revalidate=86400
+/hashes.json
+  Cache-Control: public, max-age=86400

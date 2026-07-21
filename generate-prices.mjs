@@ -113,6 +113,39 @@ async function main() {
     process.exit(1);
   }
 
+  // A floor only catches total collapse. The realistic failure is partial: getJSON
+  // swallows a fetch error, returns null, and a whole category is skipped, so the run
+  // still produces tens of thousands of rows and commits happily over a good file.
+  // Compare against what is already committed and refuse to shrink the catalog sharply.
+  // Growth is never blocked, since new sets are the normal case.
+  try {
+    // readFile is not imported at module scope in this file, only dynamically further down.
+    const { readFile } = await import('node:fs/promises');
+    const prevRaw = await readFile('products.json', 'utf8').catch(() => null);
+    if (prevRaw) {
+      const prev = JSON.parse(prevRaw);
+      if (Array.isArray(prev) && prev.length > 1000) {
+        const drop = 1 - (products.length / prev.length);
+        if (drop > 0.15) {
+          console.error(`Catalog shrank ${(drop * 100).toFixed(1)}% (${prev.length} to ${products.length}). ` +
+            `That is a partial fetch, not a real change. Leaving files untouched.`);
+          process.exit(1);
+        }
+      }
+    }
+    const prevPricesRaw = await readFile('prices.json', 'utf8').catch(() => null);
+    if (prevPricesRaw) {
+      const prevPrices = JSON.parse(prevPricesRaw);
+      const prevN = Object.keys(prevPrices).length, nowN = Object.keys(prices).length;
+      if (prevN > 1000 && (1 - nowN / prevN) > 0.15) {
+        console.error(`Priced rows fell from ${prevN} to ${nowN}. Leaving files untouched.`);
+        process.exit(1);
+      }
+    }
+  } catch (e) {
+    console.error('Sanity comparison failed, continuing:', e.message);
+  }
+
   await writeFile('products.json', JSON.stringify(products));
   await writeFile('prices.json', JSON.stringify(prices));
 
