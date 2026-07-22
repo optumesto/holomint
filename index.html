@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.12",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.14",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -635,7 +635,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.12 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.14 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -734,7 +734,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   <div class="sc-card">
     <div class="sc-t">Scan</div>
     <button class="act" id="scGoCard" style="width:100%">Scan a card</button>
-    <button class="ghost" id="scGoLot" style="width:100%">Price a lot from a photo</button>
+    <button class="ghost" id="scGoLot" style="width:100%;display:none" hidden>Price a lot from a photo</button>
     <button class="ghost" id="scGoX" style="width:100%;color:var(--ink3)">Cancel</button>
   </div>
 </div>
@@ -1080,7 +1080,7 @@ function switchTab(name){
   // announce the current tab to assistive tech, not just visually
   setTimeout(function(){try{document.querySelectorAll('.navb').forEach(function(b){
     if(b.classList.contains('on'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}catch(e){}},0);
-  if(name==='scan'){var sc=$('#scanChoose');if(sc){sc.classList.add('show');}else{Scanner.open(false);}return;}
+  if(name==='scan'){Scanner.open(false);return;}   // lot scanner hidden; go straight to card scan
   lastTab=name;
   $$('.panel').forEach(p=>p.classList.toggle('on',p.id===name));
   $$('.navb').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
@@ -1422,7 +1422,7 @@ const GradedPrices=(function(){
   function fetchOne(h){
     var g=(h.grader||'psa'), gr=(h.grade||'10');
     var num=h.number||h.cardNum||'';
-    return fetch(base+'?name='+encodeURIComponent(h.name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(g)+'&grade='+encodeURIComponent(gr),{cache:'no-store'})
+    return fetch(base+'?name='+encodeURIComponent(h.name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(g)+'&grade='+encodeURIComponent(gr),{cache:'no-store',headers:Premium.key()?{'X-License':Premium.key()}:{}})
       .then(function(r){return r.json();}).catch(function(){return null;});
   }
   async function refresh(opts){
@@ -1774,7 +1774,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.12';
+const APP_VERSION='1.14';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -1824,7 +1824,7 @@ const CondLive=(function(){
   function want(pid){
     if(off||mem[pid]||inflight[pid])return;
     inflight[pid]=1;
-    fetch(base+'?pid='+encodeURIComponent(pid),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    fetch(base+'?pid='+encodeURIComponent(pid),{cache:'no-store',headers:Premium.key()?{'X-License':Premium.key()}:{}}).then(function(r){return r.json();}).then(function(d){
       delete inflight[pid];
       if(d&&d.configured===false){off=true;return;}
       if(d&&d.found){mem[pid]=d;if(typeof recompute==='function')recompute();
@@ -2772,7 +2772,7 @@ const SlabData={
     if(!name)return null;
     var base=FEED_API+'/api/graded';
     function one(g){
-      return fetch(base+'?name='+encodeURIComponent(name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(grader)+'&grade='+g,{cache:'no-store'})
+      return fetch(base+'?name='+encodeURIComponent(name)+'&num='+encodeURIComponent(num)+'&grader='+encodeURIComponent(grader)+'&grade='+g,{cache:'no-store',headers:Premium.key()?{'X-License':Premium.key()}:{}})
         .then(function(r){return r.json();}).catch(function(){return null;});
     }
     var res=await Promise.all([one('10'),one('9'),one('8')]);
