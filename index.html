@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.11",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.12",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -366,6 +366,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .es-h{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--ink3);font-style:normal;line-height:1.5;max-width:280px}
   #toast .tu{margin-left:12px;background:transparent;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;padding:0 2px;text-decoration:underline}
   .chip.live{background:rgba(70,227,172,.16);color:var(--up);border:1px solid rgba(70,227,172,.35)}
+  .chip.est{background:var(--bg3);color:var(--ink3);border:1px solid var(--line)}
   .pcond{margin-left:6px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:10.5px;font-family:var(--mono);padding:2px 3px}
   #scanChoose{display:none;position:fixed;inset:0;z-index:var(--z-picker);background:rgba(4,6,14,.66);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
   #scanChoose.show{display:flex}
@@ -476,7 +477,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
       <div id="quickAdd" class="qa-row" style="display:none"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px;flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot">▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
+      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px;flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot" style="display:none" hidden>▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
       <div id="pile" style="margin-top:4px"></div>
       <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
@@ -634,7 +635,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.11 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.12 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -676,6 +677,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       </div>
     </div>
     <div class="card">
+      <div style="font-size:12px;color:var(--ink3);line-height:1.5;margin-bottom:10px">Enter the graded values you are pricing against. These are starting placeholders, not live quotes. Automatic graded pricing is not switched on yet.</div>
       <table style="margin-top:0">
         <thead><tr><th>Grade</th><th>Value</th><th>Pop</th><th>vs raw</th></tr></thead>
         <tbody>
@@ -1535,7 +1537,7 @@ const Tour=(function(){
        link, because conspicuousness of THAT line is what answers a reliance
        claim about a margin figure. */
     {tab:null, sel:null, gate:true, title:'Before you start',
-     body:'Holomint prices sealed product and singles against live market data, tracks what you hold as a running P&amp;L, and can alert you the moment a drop lands.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
+     body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you the moment a drop lands.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, the second it lands',
@@ -1772,7 +1774,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.11';
+const APP_VERSION='1.12';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -1961,7 +1963,7 @@ function renderPile(arr,containerId,showRate){const el=$('#'+containerId);
   el.innerHTML=arr.map((p,pi)=>{const it=resolveItem(p.key),price=linePrice(p);
     const chip=(it.jp?'<span class="chip jp">JP</span> ':'')+(it.type==='graded'?'<span class="chip graded">graded</span>':(it.type==='single'?'<span class="chip raw">raw</span>':'<span class="chip sealed">sealed</span>'));
     const stat=it.status==='oop'?'<span class="chip oop">oop</span>':(it.type==='sealed'?'<span class="chip ip">in print</span>':'');
-    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${price>0?usd(price)+' ea':'<span class="nopx">no market price</span>'}${(it.type==='single'&&p.c&&p.c!=='nm'&&price>0)?(CondLive.has(p.key,p.c)?' <span class="chip live">live</span>':''):''} ${chip}${stat}${it.type==='single'?`<select class="pcond" data-pile="${containerId}" data-pi="${pi}">${['nm','lp','mp','hp','dg'].map(c=>`<option value="${c}" ${((p.c||'nm')===c)?'selected':''}>${COND_LABEL[c]}</option>`).join('')}</select>`:''}</div></div>
+    return `<div class="pile-item">${thumbHtml(it,'pthumb')}<div class="pi-name"><div class="n">${it.name}</div><div class="m">${price>0?usd(price)+' ea':'<span class="nopx">no market price</span>'}${(it.type==='single'&&p.c&&p.c!=='nm'&&price>0)?(CondLive.has(p.key,p.c)?' <span class="chip live">live</span>':' <span class="chip est" title="Estimated from a condition multiplier, not a live comp">est</span>'):''} ${chip}${stat}${it.type==='single'?`<select class="pcond" data-pile="${containerId}" data-pi="${pi}">${['nm','lp','mp','hp','dg'].map(c=>`<option value="${c}" ${((p.c||'nm')===c)?'selected':''}>${COND_LABEL[c]}</option>`).join('')}</select>`:''}</div></div>
       <button class="qtybtn" data-dec="${p.key}">\u2212</button><span class="val">${p.qty}</span><button class="qtybtn" data-inc="${p.key}">+</button>
       <span class="val">${usd(price*p.qty)}</span><span class="x" data-rm="${p.key}">\u00d7</span></div>`;}).join('');
   el.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{arr.find(p=>p.key===b.dataset.inc).qty++;recompute();});
@@ -3063,7 +3065,6 @@ const FeatureMap=(function(){
     {tab:'block',name:'Trade Block',items:[
       {sel:'#channels',t:'Resell channel',d:'Pick eBay, TCGplayer, Whatnot, or cash. Every number in the app goes net of that channel\u2019s fees.'},
       {sel:'#pile',t:'The pile',d:'Search sealed, graded, or singles and build a buy or trade. Singles carry a condition, NM through DG.'},
-      {sel:'#scanLot',t:'Lot scanner',d:'Photograph a binder page or listing photo. Holomint reads the cards, prices each one, and totals the lot against the asking price.'},
       {sel:'#copyReceipt',t:'Deal and trade receipts',d:'Render the deal as a branded image and share it straight to the other party.'},
     ]},
     {tab:'port',name:'Portfolio',items:[
