@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.15",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.16",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -570,6 +570,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0"><span style="font-size:14px">Holomint Pro</span><button class="ghost" id="setProBtn" style="padding:8px 14px">Manage</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Back up / restore</span><div class="row" style="gap:6px"><button class="ghost" id="setBkBtn" style="padding:8px 12px">Back up</button><button class="ghost" id="setRsBtn" style="padding:8px 12px">Restore</button></div></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Device storage</span><div class="row" style="gap:6px;align-items:center"><span id="persistState" style="font-size:12px;color:var(--ink3)">Checking</span><button class="ghost" id="persistBtn" style="padding:8px 12px;display:none">Protect</button></div></div>
     </div>
 
     <div class="card" id="alertCard">
@@ -635,7 +636,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.15 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.16 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -1094,6 +1095,43 @@ const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard']);
 const colState=k=>(k in collapsed)?collapsed[k]:DEFAULT_COLLAPSED.has(k);
 function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',colState(k));});}
 $$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!colState(k);Store.save('collapsed',collapsed);applyCollapse();});
+
+/* ---- storage durability -------------------------------------------------
+   The app deliberately caches ~16MB (products.json, hashes.json, card images) so it
+   works offline at a show. That same footprint makes this origin a prime eviction
+   candidate: by default browsers treat site storage as BEST EFFORT, and under device
+   storage pressure they can clear the whole origin bucket. That would take
+   localStorage with it, which is the pile, the sold log, deals, fees, and the Pro key.
+   A release cannot do this (the service worker only deletes old shell caches, and
+   localStorage is a different store entirely), but the browser can.
+
+   Requesting persistence tells the browser not to evict without the user's say-so.
+   Chrome decides on engagement (installed, bookmarked, used often), so an early
+   request can be denied and a later one granted. So: never prompt on first load,
+   ask once the user actually has holdings to lose, and offer a manual button. */
+const Persist={
+  supported(){return !!(navigator.storage&&navigator.storage.persist&&navigator.storage.persisted);},
+  async status(){
+    if(!this.supported())return 'unsupported';
+    try{return (await navigator.storage.persisted())?'granted':'denied';}catch(e){return 'unsupported';}
+  },
+  async ensure(){
+    if(!this.supported())return 'unsupported';
+    try{
+      if(await navigator.storage.persisted())return 'granted';
+      return (await navigator.storage.persist())?'granted':'denied';
+    }catch(e){return 'unsupported';}
+  }
+};
+function renderPersist(){
+  const el=document.getElementById('persistState'),btn=document.getElementById('persistBtn');
+  if(!el)return;
+  Persist.status().then(function(st){
+    if(st==='granted'){el.textContent='Protected';el.style.color='var(--up)';if(btn)btn.style.display='none';}
+    else if(st==='denied'){el.textContent='Back up often';el.style.color='var(--ink3)';if(btn)btn.style.display='';}
+    else{el.textContent='Not available here';el.style.color='var(--ink3)';if(btn)btn.style.display='none';}
+  });
+}
 
 /* backup / restore */
 const SCHEMA=1;
@@ -1727,6 +1765,8 @@ function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
   if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
 ['setProBtn','setCurBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.onclick=()=>$('#proBtn').click();});
 const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();const _sr=document.getElementById('setRsBtn');if(_sr)_sr.onclick=()=>fileIn.click();
+const _pb=document.getElementById('persistBtn');if(_pb)_pb.onclick=function(){Persist.ensure().then(function(st){renderPersist();toast(st==='granted'?'Your data is protected on this device':'Browser declined for now. Back up regularly.');});};
+renderPersist();   // status only, never prompts on load
 $('#proBtn').onclick=async()=>{
   const PR=await Checkout.load();
   if(Premium.active()){
@@ -1774,7 +1814,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.15';
+const APP_VERSION='1.16';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -2147,7 +2187,13 @@ let holdings=Store.load('holdings',[]);
 /* migration: purge legacy sample holdings for good */
 if(holdings.some(h=>h&&h.sample)){holdings=holdings.filter(h=>!h.sample);Store.save('holdings',holdings);}
 let soldLog=Store.load('sold',[]);
-function saveHoldings(){Store.save('holdings',holdings);}
+let _persistAsked=false;
+function saveHoldings(){Store.save('holdings',holdings);
+  /* First real holding: now there is something worth protecting, and the save is a
+     user action, which is when a persistence request is most likely to be granted. */
+  if(!_persistAsked&&holdings.length){_persistAsked=true;
+    try{Persist.ensure().then(function(){if(typeof renderPersist==='function')renderPersist();});}catch(e){}}
+}
 function saveSold(){Store.save('sold',soldLog);}
 function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis*100:0;}
 
