@@ -1,7 +1,7 @@
 {
-  "name": "Holomint — Sealed & Graded Desk",
+  "name": "Holomint: restock alerts that do the math",
   "short_name": "Holomint",
-  "description": "Flip, value, and track sealed and graded Pokemon as a portfolio.",
+  "description": "Pokemon restock drops with the flip margin computed net of your fees.",
   "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
