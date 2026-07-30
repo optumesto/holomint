@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.18",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.19",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -636,14 +636,16 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.18 · early access</span></div>
-      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development. Things improve quickly and can change; back up your data now and then from Currency &amp; data.</div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.19 · early access</span></div>
+      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development and updates often. Things improve quickly and can change, so back up your data now and then from Currency &amp; data. If a number looks wrong or something does not behave, please report it and it will get fixed.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">What is Holomint?</span><a class="ghost" href="about.html" style="padding:8px 14px">Read</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Follow Holomint</span><a class="ghost" href="https://instagram.com/holomint.app" target="_blank" rel="noopener noreferrer" style="padding:8px 14px">Instagram</a></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Drop receipts, margin logs, and what is being built next.</div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Report a problem</span><button class="ghost" id="bugBtn" style="padding:8px 14px">Report</button></div>
+      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Opens an email with your version filled in. Review it before sending; delete anything you would rather not share.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:8px 14px">Email</a></div>
     </div>
     <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.7">
@@ -1181,7 +1183,12 @@ const Sheet=(function(){
     $('#sheetOk').textContent=okLabel||'Save';$('#sheetOk').style.display=(okLabel==='Cancel')?'none':'';$('#sheetCancel').style.flex=(okLabel==='Cancel')?'1':'';
     okFn=()=>{const out={};fields.forEach(f=>{if(f.type==='static')return;const v=$('#sf-'+f.key).value;out[f.key]=f.type==='number'?(parseFloat(v)||0):v;});close();cb(out);};
     $('#sheetbg').classList.add('show');$('#sheet').classList.add('show');
-    const first=$('#sheetBody input');if(first)setTimeout(()=>first.focus(),250);
+    // Opt in only. Add autofocus:true to a field where typing is the immediate intent.
+    // Never focus by default: the first input is often not what the reader came for, and
+    // on mobile an unrequested focus throws up the keyboard over the content.
+    clearDrag();
+    const fa=fields.find(f=>f.autofocus&&f.type!=='static'&&f.type!=='select');
+    if(fa){const el=$('#sf-'+fa.key);if(el)setTimeout(()=>el.focus(),250);}
   }
   function close(){$('#sheetbg').classList.remove('show');$('#sheet').classList.remove('show');okFn=null;}
   $('#sheetCancel').onclick=close;$('#sheetbg').onclick=close;
@@ -1192,8 +1199,66 @@ const Sheet=(function(){
     $('#sheetOk').style.display='none';
     $('#sheetCancel').textContent='Got it';$('#sheetCancel').style.flex='1';
     okFn=null;
+    clearDrag();
     $('#sheetbg').classList.add('show');$('#sheet').classList.add('show');
   }
+  /* ---- swipe down to dismiss ------------------------------------------------
+     The sheet is its own scroll container, so a drag may only begin when it is
+     scrolled to the top; otherwise the gesture belongs to the content. Touches that
+     start on a form control are left alone so the caret and selection still work. */
+  /* Close on a long drag, or on a genuine flick. FLICK_MIN_PX exists because velocity
+     alone is treacherous: a 10px twitch delivered in a couple of milliseconds computes an
+     enormous px/ms and would dismiss the sheet by accident. A flick has to actually
+     travel before its speed counts for anything. */
+  const CLOSE_PX=90, CLOSE_VEL=0.5, FLICK_MIN_PX=28;
+  let dy=0, y0=0, t0=0, dragging=false;
+
+  function clearDrag(){
+    const sh=$('#sheet'); if(!sh)return;
+    sh.style.transition=''; sh.style.transform='';
+    dragging=false; dy=0;
+  }
+
+  (function bindDrag(){
+    const sh=$('#sheet');
+    if(!sh||!('ontouchstart' in window))return;
+
+    sh.addEventListener('touchstart',function(e){
+      if(e.touches.length!==1)return;
+      const t=e.target;
+      if(t&&t.closest&&t.closest('input,select,textarea,a,button'))return;
+      if(sh.scrollTop>0)return;
+      y0=e.touches[0].clientY; t0=Date.now(); dy=0; dragging=true;
+      sh.style.transition='none';
+    },{passive:true});
+
+    sh.addEventListener('touchmove',function(e){
+      if(!dragging)return;
+      dy=e.touches[0].clientY-y0;
+      if(dy<=0){sh.style.transform='';return;}   // upward drag does nothing
+      sh.style.transform='translateY('+dy+'px)';
+      if(e.cancelable)e.preventDefault();        // do not scroll the page behind
+    },{passive:false});
+
+    sh.addEventListener('touchend',function(){
+      if(!dragging)return;
+      dragging=false;
+      const vel=dy/Math.max(1,Date.now()-t0);
+      sh.style.transition='';
+      if(dy>CLOSE_PX||(dy>FLICK_MIN_PX&&vel>CLOSE_VEL)){
+        // Animate on from wherever the finger let go rather than snapping back first.
+        sh.style.transform='translateY(105%)';
+        close();
+        setTimeout(function(){sh.style.transform='';},320);
+      }else{
+        sh.style.transform='';
+      }
+      dy=0;
+    },{passive:true});
+
+    sh.addEventListener('touchcancel',clearDrag,{passive:true});
+  })();
+
   return{open,close,info};
 })();
 
@@ -1765,6 +1830,21 @@ function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
   if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
 ['setProBtn','setCurBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.onclick=()=>$('#proBtn').click();});
 const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();const _sr=document.getElementById('setRsBtn');if(_sr)_sr.onclick=()=>fileIn.click();
+const _bug=document.getElementById('bugBtn');
+if(_bug)_bug.onclick=function(){
+  var lines=[
+    'What happened:','','What you expected:','','Steps, if you can repeat it:','',
+    '--- the bit that helps me find it, edit or delete freely ---',
+    'Version: '+APP_VERSION,
+    'Pro: '+((typeof Premium!=='undefined'&&Premium.active())?'yes':'no'),
+    'Screen: '+(window.innerWidth||'?')+'x'+(window.innerHeight||'?'),
+    'Browser: '+String(navigator.userAgent||'').slice(0,160)
+  ];
+  var href='mailto:mmmilliard@optumeventures.com'
+    +'?subject='+encodeURIComponent('Holomint problem report (v'+APP_VERSION+')')
+    +'&body='+encodeURIComponent(lines.join('\n'));
+  try{window.location.href=href;}catch(e){toast('Could not open your mail app. Email mmmilliard@optumeventures.com');}
+};
 const _pb=document.getElementById('persistBtn');if(_pb)_pb.onclick=function(){Persist.ensure().then(function(st){renderPersist();toast(st==='granted'?'Your data is protected on this device':'Browser declined for now. Back up regularly.');});};
 renderPersist();   // status only, never prompts on load
 $('#proBtn').onclick=async()=>{
@@ -1814,7 +1894,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.18';
+const APP_VERSION='1.19';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -4178,8 +4258,16 @@ CondGuide.wire();FeatureMap.wire();Gestures.wire();
 (function(){
   var OVERLAYS=['#lotModal','#featModal','#condModal','#cfmModal','#scanChoose','#scanModal','#sheet'];
   var lastFocus=null;
+  /* Move focus INTO the dialog without summoning a keyboard.
+     This used to return the first focusable descendant, which in the sheet's DOM order
+     is the first input in #sheetBody. On the Pro sheet that is the licence key field, so
+     opening Pro threw the mobile keyboard up over the offer the person came to read, and
+     invited the browser to autofill a key they do not have yet. Focusing the dialog
+     container instead still announces it to a screen reader and still traps Tab, and it
+     also avoids landing on Cancel, where a stray Enter would dismiss the sheet. */
   function firstFocusable(el){
-    return el.querySelector('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])');
+    if(!el.hasAttribute('tabindex'))el.setAttribute('tabindex','-1');
+    return el;
   }
   OVERLAYS.forEach(function(sel){
     var el=document.querySelector(sel);if(!el)return;
