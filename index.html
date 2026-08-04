@@ -21,7 +21,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","applicationCategory":"BusinessApplication",
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
- "image":"https://holomint.app/og.png","softwareVersion":"1.20",
+ "image":"https://holomint.app/og.png","softwareVersion":"1.22",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
@@ -605,7 +605,7 @@ catch(e){document.documentElement.style.display="none";}</script>
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alQueue"><span><b>Queue alerts</b> (Pokemon Center waiting room and similar)</span></label>
-            <div class="sub">At Pokemon Center the queue is usually the only window that matters, and you cannot tell what is dropping until you are in line. Getting in costs nothing, so this is on by default.</div>
+            <div class="sub">At Pokemon Center the queue is usually the only window that matters, and you cannot tell what is dropping until you are in line. It is not always cards: site maintenance and JP releases raise the same waiting room. Getting in costs nothing, so this is on by default.</div>
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alIntel"><span><b>Pre-drop intel</b> (invites and staged pages)</span></label>
@@ -636,7 +636,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.20 · early access</span></div>
+      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.22 · early access</span></div>
       <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development and updates often. Things improve quickly and can change, so back up your data now and then from Currency &amp; data. If a number looks wrong or something does not behave, please report it and it will get fixed.</div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
       <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
@@ -1826,7 +1826,19 @@ const Checkout=(function(){
       // record the consent: timestamp + the exact terms shown. Without this a ToS is
       // decoration; clickwrap is enforceable, browsewrap routinely is not.
       Store.save('consent',{at:Date.now(),price:o.amount,list:o.list,founder:!!o.founder,currency:p.currency,interval:p.interval,terms:TERMS_VERSION,build:APP_VERSION,kind:'checkout',renew:true,tos:true});
-      window.open(o.checkout,'_blank','noopener');
+      // window.open('_blank') is the fragile way to leave the app. In an INSTALLED PWA
+      // there is often no tab to open into, and iOS Safari blocks a popup whose click is
+      // even slightly asynchronous. Either way it fails SILENTLY: no error, the button
+      // simply does nothing, which from the user's side is "there is no purchase link".
+      // So: try the popup, and if the handle comes back null or blocked, navigate this
+      // window instead. Leaving the app is fine here, the person is going to Polar to pay
+      // and the Success URL brings them straight back to activate.
+      let w=null;
+      try{w=window.open(o.checkout,'_blank','noopener');}catch(e){w=null;}
+      if(!w||w.closed||typeof w.closed==='undefined'){
+        try{window.location.href=o.checkout;}
+        catch(e){toast('Could not open checkout. Link: '+o.checkout);}
+      }
     };
   }
   return {load,refresh,offer,offerHtml,wire,money,get:()=>P};
@@ -1905,7 +1917,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.20';
+const APP_VERSION='1.22';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
