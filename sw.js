@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v1.23';        // app shell, replaced on every release
+const CACHE = 'holomint-v1.24';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin - persists across releases
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
@@ -10,12 +10,44 @@ self.addEventListener('activate', e => {
   // Drop old shell caches, but keep the current shell and the persistent media cache.
   e.waitUntil(caches.keys().then(keys =>
     Promise.all(keys.filter(k => k !== CACHE && k !== MEDIA).map(k => caches.delete(k)))
-  ).then(() => self.clients.claim()));
+  ).then(async () => {
+    // Evict any /api/ responses an older Service Worker cached. Existing installs are
+    // carrying a stale pricing and licence answer in the persistent media cache, and the
+    // fetch handler's offline fallback would keep serving it. This is what un-sticks a
+    // phone that has been told "Subscriptions are not open yet" since before Polar was
+    // wired. Runs once per release and is cheap.
+    for (const name of [MEDIA, CACHE]) {
+      try {
+        const c = await caches.open(name);
+        const reqs = await c.keys();
+        await Promise.all(reqs
+          .filter(r => { try { return new URL(r.url).pathname.startsWith('/api/'); } catch (e) { return false; } })
+          .map(r => c.delete(r)));
+      } catch (e) {}
+    }
+  }).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
+
+  // The API is LIVE DATA and must never be served cache-first. It lives on
+  // api.holomint.app, a different origin from the app, so it used to fall into the
+  // cross-origin card-image rule below: cache-first, into a cache that deliberately
+  // survives version bumps. The effect was that the FIRST response an install ever saw
+  // was replayed forever. A `configured:false` captured while Polar was still being
+  // wired kept hiding the Pro purchase link release after release, and no client change
+  // could fix it because the Service Worker answers before fetch() ever reaches the
+  // network, `cache: no-store` included.
+  //
+  // Network only, with cache purely as an offline fallback, and nothing new written.
+  // The app keeps its own copies of what matters (drops in localStorage, licence state
+  // in Premium), so it does not need the Service Worker to hold anything here.
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
 
   // The perceptual-hash DB (hashes.json) is large and changes rarely. Serve it
   // cache-first from the persistent media cache (survives version bumps, no 5MB
