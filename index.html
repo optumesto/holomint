@@ -827,6 +827,47 @@ const PriceEngine=(function(){
   let history={};
   let cache={'es-bb':480,'lo-bb':230,'cz-etb':92,'151-bb':40,'151-etb':74,'ss-bb':132,'pe-etb':90,'zard151':300,'moon':1100,'gira':250};
   let catIndex=null,catIndexFor=null;
+  // Off the critical path on purpose -- see the note in loadData(). Fire-and-forget:
+  // it must never reject, because nothing awaits it and an unhandled rejection here
+  // would surface as a console error on a page that is working perfectly well.
+  //
+  // HistoryState is deliberately three-valued. 'idle' and 'failed' are different
+  // outcomes and a blank 30-day badge looks identical either way, so a download that
+  // never happened must not be indistinguishable from one that came back empty.
+  let historyStarted=false;
+  window.HistoryState='idle';
+  async function loadHistory(){
+    if(historyStarted)return;                 // loadData can be called again on refresh
+    historyStarted=true;
+    window.HistoryState='loading';
+    try{
+      const r=await fetch('history.json');
+      if(r&&r.ok){
+        const h=await r.json();
+        if(h&&typeof h==='object'){history=h;window.HistoryState='ready';}
+        else window.HistoryState='failed';
+      } else window.HistoryState='failed';
+    }catch(e){window.HistoryState='failed';}
+    // Anything already on screen rendered without change badges. Let it redraw rather
+    // than leaving a stale empty state until the next keystroke.
+    document.dispatchEvent(new CustomEvent('history',{detail:window.HistoryState}));
+  }
+
+  // Redraw only what is actually on screen and actually stale. Re-dispatching 'input'
+  // reuses whichever handler wireSearch bound rather than reaching into its internals,
+  // and the .show test means a dismissed dropdown is not yanked back open under someone
+  // mid-scroll. If history failed there is nothing new to draw, so we skip entirely.
+  document.addEventListener('history',function(e){
+    if(e.detail!=='ready')return;
+    ['results','results2'].forEach(function(rid){
+      var res=document.getElementById(rid);
+      if(!res||!res.classList.contains('show'))return;
+      var inp=document.getElementById(rid==='results'?'search':'search2');
+      if(!inp||!inp.value)return;
+      try{inp.dispatchEvent(new Event('input',{bubbles:true}));}catch(err){}
+    });
+  });
+
   async function loadData(){
     window.CatalogState='loading';
     let gotProducts=false;
@@ -834,19 +875,26 @@ const PriceEngine=(function(){
     // file and nothing could be priced until every byte of both had landed. They are
     // independent, so they are fetched together and each is applied the moment it lands.
     // Wall time is now the slowest single file instead of the sum of all three.
-    const [pRes,cRes,hRes]=await Promise.allSettled([
-      fetch('prices.json'),fetch('products.json'),fetch('history.json')]);
+    //
+    // history.json is deliberately NOT in this batch. It is by far the biggest download
+    // (~3MB compressed, ~73% of the blocking bytes) and nothing here needs it: readiness
+    // below is decided by gotProducts alone, and its only consumer, getHistory(), already
+    // returns [] when a card is missing. Leaving it in meant every visitor waited on 3MB
+    // to render a 30-day change badge they had not asked for yet. Loaded after the ready
+    // event instead, so time-to-interactive tracks products.json, not history.json.
+    const [pRes,cRes]=await Promise.allSettled([
+      fetch('prices.json'),fetch('products.json')]);
     try{if(pRes.status==='fulfilled'&&pRes.value.ok){
       Object.assign(cache,await pRes.value.json());
       Store.save('pricesAt',new Date().toISOString());}}catch(e){}
     try{if(cRes.status==='fulfilled'&&cRes.value.ok){
       const p=await cRes.value.json();
       if(Array.isArray(p)&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
-    try{if(hRes.status==='fulfilled'&&hRes.value.ok)history=await hRes.value.json();}catch(e){}
     // A silent failure here leaves every search empty forever with no explanation, which
     // reads as a broken app rather than a missing download.
     window.CatalogState=gotProducts?'ready':'failed';
     document.dispatchEvent(new CustomEvent('catalog',{detail:window.CatalogState}));
+    loadHistory();
     return gotProducts;
   }
   return{
@@ -935,7 +983,7 @@ const PriceEngine=(function(){
     getItem(id){if(catIndexFor!==catalog){catIndex=new Map();for(const c of catalog)catIndex.set(c.id,c);catIndexFor=catalog;}return catIndex.get(id);},
     getHistory(id){return history[id]||[];},
     list(){return catalog;},
-    loadData
+    loadData, loadHistory
   };
 })();
 const FeeCalc=(function(){

@@ -1,0 +1,7 @@
+# Dev/test only. Nothing here ships to holomint.app -- the site is static and
+# has no Python runtime. This exists so test_loader.py is reproducible in CI
+# and on a fresh machine.
+#
+# After installing, fetch the browser binary too (it is not a pip package):
+#     python3 -m playwright install --with-deps chromium
+playwright==1.58.0

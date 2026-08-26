@@ -1,0 +1,21 @@
+# Deliberately a short blacklist, not the allow-list used in ~/newsletter.
+# This repo IS the deployed site: GitHub Pages publishes what is committed, so
+# anything ignored here simply does not ship. Keep it to genuine local noise.
+#
+# The data files (prices/products/history/sealed/hashes.json) are NOT ignored --
+# the daily Actions job commits them on purpose and the site fetches them.
+
+# Local test + tooling noise
+__pycache__/
+*.pyc
+.venv/
+venv/
+.memsearch/
+test-results/
+playwright-report/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
