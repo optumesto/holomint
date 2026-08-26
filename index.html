@@ -2102,6 +2102,13 @@ function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'
     }
     if(e.key==='Escape'){res.classList.remove('show');inp.blur();}
   };
+  // Debounce was 130ms. PriceEngine.search() is a local lookup measuring
+  // 1.4-10.9ms across the full 60k catalog, so that delay was ~93% of the gap
+  // between a keystroke and a visible result -- paying for a network round trip
+  // this search does not make. A debounce still earns its keep for a fast typist
+  // (it avoids a re-render per character), but it only has to be shorter than
+  // the gap between keystrokes, not longer than the work. 30ms sits under the
+  // threshold where a delay reads as lag at all.
   inp.oninput=()=>{clearTimeout(sd);sd=setTimeout(()=>{
     // Explain an empty result rather than showing a blank box.
     if(window.CatalogState==='loading'&&inp.value.trim()){
@@ -2115,7 +2122,7 @@ function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'
     res.innerHTML=r.map((i,ri)=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
       const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
       return `<div class="res" role="option" id="res-${ri}" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
-    res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});},130);};}
+    res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});},30);};}
 /* The same dealer buys the same products over and over. Remember what actually gets
    added and offer it as one tap, so a show shift is not the same search fifty times. */
 function noteRecent(key){
