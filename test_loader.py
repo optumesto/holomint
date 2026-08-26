@@ -57,6 +57,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass  # the transcript is the assertions, not 40 lines of GET
 
+    def handle_error(self, request, client_address):
+        # Aborting a route or closing a page mid-fetch resets the connection, and
+        # socketserver prints a full traceback for it. That is expected here --
+        # sections 2 and 3 abort requests deliberately -- but an unexplained
+        # traceback in a CI log reads as a crash, which is exactly the signal this
+        # suite must not blur. Real handler bugs still surface as failed assertions.
+        exc = sys.exc_info()[1]
+        if isinstance(exc, (ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
 
 def serve():
     handler = functools.partial(Handler, directory=ROOT)
@@ -162,9 +173,22 @@ with sync_playwright() as pw:
     page.on("request", lambda r: hits.append(r.url) if "history.json" in r.url else None)
     page.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="commit")
     wait_state(page, "window.HistoryState", "ready", 60000)
-    page.evaluate("PriceEngine.loadHistory();PriceEngine.loadHistory();")
-    page.wait_for_timeout(600)
-    check(f"history.json requested exactly once (got {len(hits)})", len(hits) == 1)
+    # Guarded: against an index.html that predates loadHistory this raises, and an
+    # uncaught exception aborts the run mid-suite. A crash and a failure look
+    # nothing alike in CI -- the crash loses every result after it, including the
+    # ones that already passed -- so the missing-API case is reported as a plain
+    # FAIL with its reason and the suite carries on to its verdict.
+    exposed = page.evaluate(
+        "(()=>{try{return typeof PriceEngine.loadHistory==='function'}"
+        "catch(e){return false}})()")
+    check("PriceEngine.loadHistory is exposed", exposed is True)
+    if exposed:
+        page.evaluate("PriceEngine.loadHistory();PriceEngine.loadHistory();")
+        page.wait_for_timeout(600)
+        check(f"history.json requested exactly once (got {len(hits)})", len(hits) == 1)
+    else:
+        check("history.json requested exactly once — cannot test, loadHistory absent",
+              False)
     page.close(); tctx.close()
 
     browser.close()
