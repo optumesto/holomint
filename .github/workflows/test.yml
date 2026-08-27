@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'sw.js'
       - 'test_loader.py'
+      - 'test_install_offer.py'
       - 'requirements-dev.txt'
       - '.github/workflows/test.yml'
   schedule:
@@ -33,4 +34,7 @@ jobs:
       - run: pip install -r requirements-dev.txt
       # --with-deps pulls the system libs headless chromium needs on a bare runner.
       - run: python3 -m playwright install --with-deps chromium
+      # Separate steps, not one script: a failure names which suite broke in the
+      # job list without anyone opening the log.
       - run: python3 test_loader.py
+      - run: python3 test_install_offer.py

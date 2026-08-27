@@ -994,6 +994,15 @@ const FeeCalc=(function(){
 let _stWarn=false;
 const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){if(!_stWarn){_stWarn=true;try{if(typeof toast==='function')toast('Storage full - export a backup to avoid losing data.');}catch(_){}}}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
 
+/* Captured HERE, at the top of the script, because beforeinstallprompt fires
+   once and early -- often before the catalog has even landed. Miss it and the
+   browser will not hand it back, so there is no way to offer installation for
+   the rest of the visit. Stashing the event is not the same as using it; the
+   offer itself is made later, by InstallOffer, once someone has got something
+   out of the app. */
+let _bip=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_bip=e;});
+
 const API_LEGACY = 'https://holomint-feed.mmilliard2516.workers.dev';
 const API_CUSTOM = 'https://api.holomint.app';
 /* Read once from storage so the value is fixed for the whole session and nothing races
@@ -1117,6 +1126,19 @@ function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms||12);}catch(e){}
 let _undoT=null;
 function toast(msg,opts){const t=$('#toast');
   if(_undoT){clearTimeout(_undoT);_undoT=null;}
+  /* Same shape as the undo variant, with its own label, so a toast can offer
+     something that is not "Undo". It dwells longer than undo does: undo confirms
+     a thing you just chose, this one asks you to read an offer first. */
+  if(opts&&opts.action&&typeof opts.action.fn==='function'){
+    t.innerHTML='<span></span><button class="tu"></button>';
+    t.firstChild.textContent=msg;
+    const ab=t.querySelector('.tu');
+    ab.textContent=opts.action.label||'OK';
+    ab.onclick=function(){t.classList.remove('show');buzz(8);opts.action.fn();};
+    t.classList.add('show');
+    _undoT=setTimeout(()=>t.classList.remove('show'),8000);
+    return;
+  }
   if(opts&&typeof opts.undo==='function'){
     t.innerHTML='<span></span><button class="tu">Undo</button>';
     t.firstChild.textContent=msg;
@@ -2079,6 +2101,95 @@ $('#creditBump').oninput=e=>{storeCredit.bump=parseFloat(e.target.value)||0;Stor
 $('#theirCash').oninput=e=>{theirCash=Math.max(0,parseFloat(e.target.value)||0);if(theirCash!=e.target.value)e.target.value=theirCash;recompute();};
 $('#yourCash').oninput=e=>{yourCash=Math.max(0,parseFloat(e.target.value)||0);if(yourCash!=e.target.value)e.target.value=yourCash;recompute();};
 
+/* ---- InstallOffer ------------------------------------------------------
+   Holomint is an installable PWA that never asked to be installed, so almost
+   everyone stayed on the cold path: ~23s to usable on slow 4G, every visit,
+   versus ~0.6s once it is on the home screen. The download is not the problem;
+   paying for it repeatedly is.
+
+   WHEN it asks is the whole design. Nobody installs an app that has not yet
+   done anything for them, and an install sheet thrown at a first-time visitor
+   is just another thing between them and a price. So the offer waits until
+   someone has run a real search that found something, on two separate opens.
+   Two opens, not two keystrokes: coming back is the signal that this is
+   becoming a habit, and it is the habit we are trying to make cheap.
+
+   Declining is remembered. An offer that reappears after a no is a nag. */
+const InstallOffer=(function(){
+  var offered=false;
+  // Local copies rather than reaching into Alerts, which keeps its own. Three
+  // one-liners duplicated beats refactoring a working push module from here.
+  const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=()=>{try{return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
+  // Facebook/Instagram/Discord webviews cannot install anything. Offering there
+  // produces a button that does nothing, which is worse than staying quiet.
+  const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
+
+  window.addEventListener('appinstalled',function(){
+    Store.save('installed',1);_bip=null;
+  });
+
+  function eligible(){
+    if(standalone()||Store.load('installed',0))return false;   // already done
+    if(inApp())return false;                                    // cannot install
+    if(Store.load('installNo',0))return false;                  // they said no
+    if((Store.load('installAsks',0)|0)>=3)return false;          // asked enough
+    return !!_bip||isIOS();                                     // a route exists
+  }
+
+  function iosSteps(){
+    Sheet.open('Add Holomint to your Home Screen',[{type:'static',html:
+      '<div class="sub">Opens instantly, works offline at a show, and keeps your'+
+      ' portfolio on this device.<br><br>'+
+      '1. Tap the Share button in Safari<br>'+
+      '2. Scroll and tap <b>Add to Home Screen</b><br>'+
+      '3. Open Holomint from the new icon</div>'}],'Got it',function(){});
+  }
+
+  function accept(){
+    if(isIOS()&&!_bip){iosSteps();return;}
+    if(!_bip)return;
+    var p=_bip;_bip=null;
+    try{
+      p.prompt();
+      // Recording the dismissal matters as much as the install: without it the
+      // same offer returns on the next visit and reads as nagging.
+      p.userChoice.then(function(c){
+        if(c&&c.outcome==='accepted')Store.save('installed',1);
+        else Store.save('installNo',1);
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  function decline(){Store.save('installNo',1);}
+
+  /* Called when a search actually found something. Counts at most once per page
+     load: within one visit a person types many queries, and none of the extras
+     say anything new about intent. */
+  var countedThisLoad=false;
+  function noteUsefulSearch(){
+    if(countedThisLoad||offered)return;
+    countedThisLoad=true;
+    var n=(Store.load('goodSearches',0)|0)+1;
+    Store.save('goodSearches',n);
+    if(n<2||!eligible())return;
+    offered=true;
+    // Ignoring the toast is not a no. Suppressing forever on a single ignored
+    // toast throws away the people who were simply mid-task, so instead the
+    // offer is capped: three visits, then it stops asking on its own. An
+    // explicit dismissal in the browser's own sheet still ends it immediately,
+    // via decline() in accept().
+    var shown=(Store.load('installAsks',0)|0)+1;
+    Store.save('installAsks',shown);
+    // Deliberately a toast, not a modal. It is an offer, and it should be
+    // possible to ignore by simply carrying on typing.
+    toast('Add Holomint to your home screen for instant opens',
+          {action:{label:isIOS()&&!_bip?'How':'Add',fn:accept}});
+  }
+
+  return {noteUsefulSearch:noteUsefulSearch,eligible:eligible,accept:accept};
+})();
+
 function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'+resultsId);let sd;
   // Desktop: Enter takes the top hit, Escape dismisses. Typing a name and pressing
   // Enter is what a keyboard user expects, and the desktop layout is real now.
@@ -2118,6 +2229,10 @@ function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'
       res.innerHTML='<div class="res-msg">Could not load the card catalog.<br><span>Check your connection, then <b data-recat>tap here to retry</b>.</span></div>';
       res.classList.add('show');return;}
     const r=PriceEngine.search(inp.value,lang);if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
+    // A query of 3+ characters that found something is the closest signal we
+    // have that the app just did its job. Two of those, on two separate opens,
+    // is what unlocks the install offer.
+    if(inp.value.trim().length>=3){try{InstallOffer.noteUsefulSearch();}catch(e){}}
     res.setAttribute('role','listbox');
     res.innerHTML=r.map((i,ri)=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
       const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
