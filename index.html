@@ -87,6 +87,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   --s7:14px; --s8:16px; --s9:20px; --s10:24px; --s11:32px; --s12:40px;
   --s13:56px; --s14:96px;
   --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-pill:999px;
+  --tap:44px;  /* smallest comfortable finger target; grow the box, or expand ::after to it */
   --t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
   .ck-founder{background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s5) var(--s6);margin:6px 0 10px;font-size:var(--t3);line-height:1.55;color:var(--ink2)}
   .ck-founder b{color:var(--gold)}
@@ -100,7 +101,11 @@ catch(e){document.documentElement.style.display="none";}</script>
   .ck-chk input{margin-top:var(--s1);flex:none;width:17px;height:17px;accent-color:var(--gold)}
   .ck-chk b{color:var(--ink)}
   .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:var(--t2);font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
-  .hint::after{content:'';position:absolute;inset:-9px}   /* 35px touch target, 17px visual */
+  /* 35px hit target, 17px visual. Deliberately NOT --tap: a hint sits on the
+     label line directly above a field, and measuring showed that expanding to
+     44 puts 13px of the field's top edge inside the hint, so tapping the field
+     opens the tooltip instead. 35 is the most that clears the neighbour. */
+  .hint::after{content:'';position:absolute;inset:-9px}
   .hint:active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
   .hintbody{font-size:var(--t4);line-height:1.65;color:var(--ink2)}
   .hintbody b{color:var(--ink);font-weight:600}
@@ -135,7 +140,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .brand{font-family:var(--serif);font-weight:600;font-size:var(--t10);line-height:1;letter-spacing:.02em;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);will-change:background-position;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
   @keyframes holo{from{background-position:0 center}to{background-position:240% center}}
-  .probtn{font-family:var(--mono);font-size:var(--t2);letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s7);min-height:34px;cursor:pointer}
+  .probtn{font-family:var(--mono);font-size:var(--t2);letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s7);min-height:var(--tap);cursor:pointer}
   .probtn.on{border-color:transparent;background:var(--holo);background-size:240% auto;color:#101010;font-weight:600;animation:holo 7s linear infinite}
   .netpill{display:none;margin:-6px 0 12px;text-align:center}
   .netpill span{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:#1e1a36;border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s2) var(--s6)}
@@ -148,14 +153,28 @@ catch(e){document.documentElement.style.display="none";}</script>
   .panel.on{animation:fade .32s cubic-bezier(.22,.8,.3,1)}
   .seg{display:flex;gap:var(--s3);background:var(--bg2);padding:var(--s2);border-radius:var(--r-md);border:1px solid var(--line);margin-bottom:var(--s7)}
   .seg button{position:relative;flex:1;padding:var(--s5);border:none;background:none;border-radius:var(--r-sm);color:var(--ink2);font-family:var(--sans);font-size:var(--t4);font-weight:500;cursor:pointer;transition:var(--dur-fast) var(--ease)}
-  .seg.sm button::after{content:"";position:absolute;inset:-6px 0}  /* touch target without changing the look */
+  /* Touch target without changing the look, and both axes are capped by a
+     neighbour, not by taste: sideways the chips sit 2px apart, so widening only
+     lets each chip steal the next one's taps; upward there are 6px to the
+     control above, and -11px (to reach --tap) was measured eating the bottom of
+     the holdings search field. 34px is what actually fits. */
+  .seg.sm button::after{content:"";position:absolute;inset:-6px 0}
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .seg.sm{width:fit-content;padding:var(--s1);gap:var(--s1);border-radius:var(--r-sm)}
   .seg.sm button{flex:initial;padding:var(--s2) var(--s4);font-size:var(--t2);border-radius:var(--r-xs)}
   .card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s8);margin-bottom:var(--s7)}
   .row{display:flex;align-items:center;gap:var(--s5)}.between{justify-content:space-between}
   .hide{display:none}
-  input,select{font-family:var(--sans);font-size:var(--t5);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s5) var(--s6);width:100%;outline:none;transition:var(--dur-fast) var(--ease)}
+  /* Fields grow rather than faking it: ::after does not render on replaced
+     elements, so an input's hit area IS its box. 44px also just types better. */
+  input,select{font-family:var(--sans);font-size:var(--t5);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s5) var(--s6);width:100%;min-height:var(--tap);outline:none;transition:var(--dur-fast) var(--ease)}
+  /* Exempt: a checkbox is toggled through its .ck-chk label, which is already a
+     full-width target, and min-height beats height -- these would become 44px boxes. */
+  input[type=checkbox],input[type=radio]{min-height:0}
+  /* A hint's expanded ::after reaches ~8px down into the field beneath it, so
+     tapping the top of the field opened the tooltip. Let the field win the
+     overlap: the hint keeps its 35px everywhere it is not covering an input. */
+  input,select,textarea{position:relative;z-index:1}
   input:focus,select:focus{border-color:var(--gold-dim)}input::placeholder{color:var(--ink3)}
   select option{background:var(--bg2);color:var(--ink)}
   .choice{display:flex;flex-direction:column;gap:var(--s4)}
@@ -166,13 +185,13 @@ catch(e){document.documentElement.style.display="none";}</script>
   .choice button.danger b{color:var(--down)}
   .num{font-family:var(--mono);text-align:right}
   label{font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:var(--s2)}
-  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:var(--r-sm);padding:var(--s5) var(--s6);min-height:34px;cursor:pointer;font-size:var(--t4);font-family:var(--sans)}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:var(--r-sm);padding:var(--s5) var(--s6);min-height:var(--tap);cursor:pointer;font-size:var(--t4);font-family:var(--sans)}
   button.ghost:active{transform:scale(.98)}
   button.ghost.proglow{border:1.5px solid transparent;background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--holo) border-box;background-size:auto,240% auto;color:var(--ink);animation:holo 7s linear infinite}
   button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:var(--r-md);padding:var(--s7);font-family:var(--sans);font-weight:600;font-size:var(--t5);cursor:pointer}
   button.act:active{transform:scale(.99)}button.act:disabled{opacity:.4;cursor:default}
   .btnrow{display:flex;gap:var(--s4)}
-  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s8);min-height:34px;font-family:var(--mono);font-size:var(--t3);cursor:pointer}
+  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s8);min-height:var(--tap);font-family:var(--mono);font-size:var(--t3);cursor:pointer}
   .swbtn.on{border-color:var(--gold);color:var(--gold);background:#1e1a36}
   .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s2)}
   .sidehead .st{font-family:var(--mono);font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
@@ -189,7 +208,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .results{margin-top:var(--s4);max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md);display:none}.results.show{display:block}
   .res{display:flex;justify-content:space-between;align-items:center;gap:var(--s5);padding:var(--s5) var(--s6);cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
     .res .rn{font-size:var(--t4)}.res .rp{font-family:var(--mono);font-size:var(--t3);color:var(--gold)}
-    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:var(--r-sm);padding:var(--s4) var(--s6);min-height:34px;font-size:var(--t4);font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:var(--s3)}
+    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:var(--r-sm);padding:var(--s4) var(--s6);min-height:var(--tap);font-size:var(--t4);font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:var(--s3)}
   .scanbtn:active{transform:scale(.97)}
   #scanModal{position:fixed;inset:0;background:#000;z-index:var(--z-scan);display:none;flex-direction:column}
   #scanModal.show{display:flex}
@@ -219,8 +238,13 @@ catch(e){document.documentElement.style.display="none";}</script>
   .hot{display:flex;gap:var(--s4);overflow-x:auto;padding:var(--s2) 0 var(--s1)}.hot::-webkit-scrollbar{height:0}
   .hchip{flex:0 0 auto;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-xl);padding:var(--s4) var(--s6);font-size:var(--t3);white-space:nowrap;cursor:pointer;font-family:var(--mono);color:var(--ink)}
   .hchip:active{transform:scale(.97)}.hchip b{color:var(--gold);font-weight:500;margin-left:7px}
-  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background:var(--bg3);border-radius:var(--r-xs);padding:0;border:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
+  /* A 6px-tall slider is a 6px-tall grab area. Give the input the full tap
+     height and hand the painted 6px track to the track pseudo-element, so the
+     row is draggable anywhere while looking exactly as it did. */
+  input[type=range]{-webkit-appearance:none;appearance:none;height:var(--tap);background:none;border-radius:0;padding:0;border:none}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--bg3);border-radius:var(--r-xs)}
+  input[type=range]::-moz-range-track{height:6px;background:var(--bg3);border-radius:var(--r-xs)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg);margin-top:-9px}
   input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
   .bigrate{font-family:var(--mono);font-size:var(--t12);font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
   .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:var(--s5) 0;border-bottom:1px solid var(--line)}
@@ -262,7 +286,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .weight{display:flex;height:14px;border-radius:var(--r-sm);overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
   .wleg{display:flex;gap:var(--s8);font-family:var(--mono);font-size:var(--t2);color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:var(--s3)}.dot{width:9px;height:9px;border-radius:var(--r-xs);display:inline-block}
   .empty{text-align:center;color:var(--ink3);font-size:var(--t4);padding:var(--s8) 0;font-style:italic}
-  a.ghost{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  a.ghost{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap)}
   .dl-note{font-family:var(--mono);font-size:var(--t1);color:var(--ink3);line-height:1.5;margin:8px 2px 2px}
   .live-head{font-size:var(--t1);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:12px 2px 6px;font-family:var(--mono)}
   .live-head:first-child{margin-top:var(--s1)}
@@ -571,7 +595,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="margin-bottom:var(--s2)"><label style="margin:0">Holdings</label>
         <div class="row" style="gap:var(--s3)"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button><button class="ghost" id="addHolding" style="padding:var(--s4) var(--s5)">+ Add</button></div>
       </div>
-      <div class="row" style="gap:var(--s3);margin-bottom:var(--s3)"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><select id="holdSort" style="padding:var(--s3) var(--s3);font-size:var(--t2);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
+      <div class="row" style="gap:var(--s3);margin-bottom:var(--s3)"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><select id="holdSort" style="width:auto;flex:none;padding:var(--s3) var(--s3);font-size:var(--t2);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
       <div class="seg sm" id="holdTypeSeg" style="margin-bottom:var(--s5)"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>

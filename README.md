@@ -15,6 +15,8 @@ Installable PWA (offline-capable). Free tier + Pro tier (license key).
 | `generate-prices.mjs` | Build step: pulls TCGcsv → writes prices.json |
 | `.github/workflows/prices.yml` | GitHub Action: runs the build step daily, commits fresh prices |
 | `market/` | Public SEO product pages (acquisition layer + affiliate links) |
+| `test_*.py` | Behavioural suites (run each directly; CI runs them per-file). `test_tap_targets.py` covers hit sizes and tap-stealing |
+| `shots.py` | Visual regression harness — `capture` two dirs, then `compare`. Reports what moved; deliberately not a pass/fail gate |
 
 ## Architecture
 
@@ -24,6 +26,12 @@ Installable PWA (offline-capable). Free tier + Pro tier (license key).
 1. *Sealed prices* — TCGcsv via daily build step (free). **Required before launch.**
 2. *Raw card lookup* — pokemontcg.io, live client-side (free). Already wired in Slab Math.
 3. *Graded values / pop / recent sales* — `SlabData.gradeData` adapter. Needs paid source (e.g. PriceCharting API) + PSA Public API (free 100 calls/day, no browser CORS → route via build step or proxy). **Post-launch, funded by revenue; ships as the Pro data feed.**
+
+**Tap targets** — `--tap` (44px) is the floor, and there are two ways to reach it that are *not* interchangeable. Controls that own their row **grow** (`min-height:var(--tap)`); controls sitting inside someone else's row **expand** a transparent `::after` instead, so no pixel moves. Three things to know before touching this:
+
+- `::after` does **not** render on replaced elements, so an `<input>`/`<select>` hit area *is* its box — fields have to grow.
+- `min-height` beats a smaller `height`, which is why checkboxes and `input[type=range]` carry explicit carve-outs. Without them the 44px rule turns a 17px checkbox into a 44px slab and a 6px slider track into a grey bar.
+- An expansion that reaches past its own row **silently steals its neighbour's taps** — invisible in a screenshot and in a diff. `.hint` (35px) and `.seg.sm button` (34px) are capped *below* 44 for exactly this reason; both caps were measured, not guessed. `test_tap_targets.py` pins them and says which neighbour does the capping.
 
 **Grading dataset** (Slab Math): fees, business-day turnarounds, declared-value caps, and paused-tier flags for PSA, CGC, Beckett, TAG, SGC — sourced June 2026. Industry reprices often (PSA changed twice in 5 months); refresh quarterly. Beckett mid-tiers and CGC/SGC caps are the least-certain figures. TAG = no value upcharges (encoded as unlimited caps).
 
