@@ -19,3 +19,6 @@ playwright-report/
 *.swp
 .idea/
 .vscode/
+
+# Visual regression captures — large PNGs, regenerated on demand by shots.py
+.shots/

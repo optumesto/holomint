@@ -68,259 +68,278 @@ catch(e){document.documentElement.style.display="none";}</script>
 <style>
   :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#757c98;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   /* type scale: every size in the app is one of these twelve steps */
-  :root{--t1:10px;--t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
-  .ck-founder{background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink2)}
+  :root{--t1:10px;
+  /* Motion. Three durations replace seventeen: the file had .15/.16/.18 and
+     .25/.26/.28 sitting side by side, differences nobody can perceive but which
+     guarantee nothing looks co-ordinated. --ease is the curve already chosen
+     for the panel transition, promoted to the default; interface motion wants
+     to start quickly and settle, which the browser default 'ease' does not. */
+  --dur-fast:.15s; --dur-base:.22s; --dur-slow:.32s;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-emph:cubic-bezier(.4,0,.2,1);
+  /* Radii. Five steps replace eighteen. 5px, 6px and 7px corners cannot be told
+     apart by eye, but collectively they stop anything looking like a set. */
+  /* Spacing. A 4px rhythm with 6 and 10 as half-steps, because both are load
+     bearing here (6px appears 24 times, 10px 17). 151 padding declarations used
+     78 different values before this; the strays (3,5,7,9,11,13,22,26,34) are
+     snapped to their nearest step, ties downward so nothing grows. */
+  --s0:0; --s1:2px; --s2:4px; --s3:6px; --s4:8px; --s5:10px; --s6:12px;
+  --s7:14px; --s8:16px; --s9:20px; --s10:24px; --s11:32px; --s12:40px;
+  --s13:56px; --s14:96px;
+  --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-pill:999px;
+  --t2:11px;--t3:12px;--t4:13px;--t5:14px;--t6:16px;--t7:18px;--t8:20px;--t9:24px;--t10:26px;--t11:30px;--t12:34px}
+  .ck-founder{background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s5) var(--s6);margin:6px 0 10px;font-size:var(--t3);line-height:1.55;color:var(--ink2)}
   .ck-founder b{color:var(--gold)}
   .ck-founder span{color:var(--ink3)}
-  .ck-price em{font-size:16px;color:var(--ink3);font-family:var(--sans);font-style:normal;text-decoration:line-through;margin-left:8px;font-weight:400}
-  .ck-price{font-family:var(--serif);font-size:34px;font-weight:600;color:var(--ink);margin:2px 0 8px}
-  .ck-price span{font-size:16px;color:var(--ink3);font-family:var(--sans);font-weight:400}
-  .ck-terms{font-size:12.5px;line-height:1.6;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:12px}
+  .ck-price em{font-size:var(--t6);color:var(--ink3);font-family:var(--sans);font-style:normal;text-decoration:line-through;margin-left:8px;font-weight:400}
+  .ck-price{font-family:var(--serif);font-size:var(--t12);font-weight:600;color:var(--ink);margin:2px 0 8px}
+  .ck-price span{font-size:var(--t6);color:var(--ink3);font-family:var(--sans);font-weight:400}
+  .ck-terms{font-size:var(--t3);line-height:1.6;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s5) var(--s6);margin-bottom:var(--s6)}
   .ck-terms b{color:var(--ink)}
-  .ck-chk{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--ink2);margin-bottom:10px;cursor:pointer}
-  .ck-chk input{margin-top:2px;flex:none;width:17px;height:17px;accent-color:var(--gold)}
+  .ck-chk{display:flex;gap:var(--s4);align-items:flex-start;font-size:var(--t3);line-height:1.5;color:var(--ink2);margin-bottom:var(--s5);cursor:pointer}
+  .ck-chk input{margin-top:var(--s1);flex:none;width:17px;height:17px;accent-color:var(--gold)}
   .ck-chk b{color:var(--ink)}
-  .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:11px;font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
+  .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:var(--t2);font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
   .hint::after{content:'';position:absolute;inset:-9px}   /* 35px touch target, 17px visual */
   .hint:active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
-  .hintbody{font-size:13px;line-height:1.65;color:var(--ink2)}
+  .hintbody{font-size:var(--t4);line-height:1.65;color:var(--ink2)}
   .hintbody b{color:var(--ink);font-weight:600}
-  .hintbody .hrow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px}
+  .hintbody .hrow{display:flex;justify-content:space-between;gap:var(--s6);padding:var(--s2) 0;border-top:1px solid var(--line);font-family:var(--mono);font-size:var(--t3)}
   .hintbody .hrow:first-child{border-top:none}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t5);line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
-  #splash{position:fixed;inset:0;z-index:var(--z-splash);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:opacity .5s ease,visibility .5s}
+  #splash{position:fixed;inset:0;z-index:var(--z-splash);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s4);transition:opacity .5s ease,visibility .5s}
   #splash.gone{opacity:0;visibility:hidden}
   #splash img{width:150px;height:150px;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 8px 30px rgba(125,240,200,.22));animation:sfloat 2.4s ease-in-out infinite}
   @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-  #splash .sname{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);animation:holo 7s linear infinite}
+  #splash .sname{font-family:var(--serif);font-size:var(--t11);font-weight:600;line-height:1;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);animation:holo 7s linear infinite}
   #splash .sdot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:spulse 1s ease-in-out infinite}
   @keyframes spulse{0%,100%{opacity:.3}50%{opacity:1}}
-  .brandrow{display:flex;align-items:center;gap:4px}
+  .brandrow{display:flex;align-items:center;gap:var(--s2)}
   .brandrow img{width:32px;height:32px;flex:0 0 auto;object-fit:contain;margin:-3px -2px -3px 0;mix-blend-mode:screen}
   .botnav{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);display:flex;justify-content:space-around;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:rgba(14,17,34,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
-  .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:10px;cursor:pointer;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .18s;position:relative}
+  .navb{flex:1;border:none;background:none;color:var(--ink3);font-family:var(--sans);font-size:var(--t1);cursor:pointer;padding:var(--s4) var(--s1) var(--s4);display:flex;flex-direction:column;align-items:center;gap:var(--s1);transition:color var(--dur-fast) var(--ease);position:relative}
   .navb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .navb.on{color:var(--gold)}
-  .navb.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;border-radius:2px;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite}
+  .navb.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;border-radius:var(--r-xs);background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite}
   .navb.scan-fab{color:var(--ink)}
-  .navb.scan-fab .fabwrap{width:46px;height:46px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;display:flex;align-items:center;justify-content:center;margin-top:-14px;box-shadow:0 4px 16px rgba(125,240,200,.3);border:3px solid var(--bg)}
+  .navb.scan-fab .fabwrap{width:46px;height:46px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;display:flex;align-items:center;justify-content:center;margin-top:-var(--s7);box-shadow:0 4px 16px rgba(125,240,200,.3);border:3px solid var(--bg)}
   .navb.scan-fab .fabwrap svg{width:24px;height:24px;stroke:#0c1020;stroke-width:2}
-  header{padding:calc(14px + env(safe-area-inset-top)) 0 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none}
-  .brand{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1;letter-spacing:.02em;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);will-change:background-position;animation:holo 7s linear infinite}
+  header{padding:calc(14px + env(safe-area-inset-top)) 0 12px;display:flex;align-items:center;justify-content:space-between;gap:var(--s5);background:none}
+  .brand{font-family:var(--serif);font-weight:600;font-size:var(--t10);line-height:1;letter-spacing:.02em;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);will-change:background-position;animation:holo 7s linear infinite}
   .brand b{font-weight:600;-webkit-text-fill-color:transparent}
   @keyframes holo{from{background-position:0 center}to{background-position:240% center}}
-  .probtn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:18px;padding:9px 14px;min-height:34px;cursor:pointer}
+  .probtn{font-family:var(--mono);font-size:var(--t2);letter-spacing:.12em;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s7);min-height:34px;cursor:pointer}
   .probtn.on{border-color:transparent;background:var(--holo);background-size:240% auto;color:#101010;font-weight:600;animation:holo 7s linear infinite}
   .netpill{display:none;margin:-6px 0 12px;text-align:center}
-  .netpill span{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:#1e1a36;border:1px solid var(--gold-dim);border-radius:12px;padding:4px 12px}
+  .netpill span{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.1em;color:var(--gold);background:#1e1a36;border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s2) var(--s6)}
   .netpill.show{display:block}
-  .tab{flex:1;padding:11px 4px;text-align:center;border-radius:8px;font-weight:500;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;border:none;background:none;font-family:var(--sans)}
+  .tab{flex:1;padding:var(--s5) var(--s2);text-align:center;border-radius:var(--r-sm);font-weight:500;font-size:var(--t4);color:var(--ink2);cursor:pointer;transition:var(--dur-fast) var(--ease);border:none;background:none;font-family:var(--sans)}
   .tab.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .panel{display:none;animation:paneIn .26s cubic-bezier(.22,.61,.36,1)}
   @keyframes paneIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.panel.on{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .panel.on{animation:fade .32s cubic-bezier(.22,.8,.3,1)}
-  .seg{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:11px;border:1px solid var(--line);margin-bottom:14px}
-  .seg button{position:relative;flex:1;padding:10px;border:none;background:none;border-radius:7px;color:var(--ink2);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+  .seg{display:flex;gap:var(--s3);background:var(--bg2);padding:var(--s2);border-radius:var(--r-md);border:1px solid var(--line);margin-bottom:var(--s7)}
+  .seg button{position:relative;flex:1;padding:var(--s5);border:none;background:none;border-radius:var(--r-sm);color:var(--ink2);font-family:var(--sans);font-size:var(--t4);font-weight:500;cursor:pointer;transition:var(--dur-fast) var(--ease)}
   .seg.sm button::after{content:"";position:absolute;inset:-6px 0}  /* touch target without changing the look */
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
-  .seg.sm{width:fit-content;padding:3px;gap:3px;border-radius:8px}
-  .seg.sm button{flex:initial;padding:4px 9px;font-size:11px;border-radius:5px}
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-  .row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+  .seg.sm{width:fit-content;padding:var(--s1);gap:var(--s1);border-radius:var(--r-sm)}
+  .seg.sm button{flex:initial;padding:var(--s2) var(--s4);font-size:var(--t2);border-radius:var(--r-xs)}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s8);margin-bottom:var(--s7)}
+  .row{display:flex;align-items:center;gap:var(--s5)}.between{justify-content:space-between}
   .hide{display:none}
-  input,select{font-family:var(--sans);font-size:14px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;outline:none;transition:.15s}
+  input,select{font-family:var(--sans);font-size:var(--t5);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s5) var(--s6);width:100%;outline:none;transition:var(--dur-fast) var(--ease)}
   input:focus,select:focus{border-color:var(--gold-dim)}input::placeholder{color:var(--ink3)}
   select option{background:var(--bg2);color:var(--ink)}
-  .choice{display:flex;flex-direction:column;gap:8px}
-  .choice button{width:100%;text-align:left;background:var(--bg3);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:13px 14px;font-family:var(--sans);font-size:14px;cursor:pointer}
+  .choice{display:flex;flex-direction:column;gap:var(--s4)}
+  .choice button{width:100%;text-align:left;background:var(--bg3);border:1px solid var(--line);color:var(--ink);border-radius:var(--r-md);padding:var(--s6) var(--s7);font-family:var(--sans);font-size:var(--t5);cursor:pointer}
   .choice button:active{transform:scale(.99)}
-  .choice button b{display:block;font-weight:600;margin-bottom:1px}
-  .choice button span{font-size:12px;color:var(--ink2)}
+  .choice button b{display:block;font-weight:600;margin-bottom:var(--s0)}
+  .choice button span{font-size:var(--t3);color:var(--ink2)}
   .choice button.danger b{color:var(--down)}
   .num{font-family:var(--mono);text-align:right}
-  label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:5px}
-  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:9px;padding:10px 12px;min-height:34px;cursor:pointer;font-size:13px;font-family:var(--sans)}
+  label{font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:var(--s2)}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:var(--r-sm);padding:var(--s5) var(--s6);min-height:34px;cursor:pointer;font-size:var(--t4);font-family:var(--sans)}
   button.ghost:active{transform:scale(.98)}
   button.ghost.proglow{border:1.5px solid transparent;background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--holo) border-box;background-size:auto,240% auto;color:var(--ink);animation:holo 7s linear infinite}
-  button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:11px;padding:14px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
+  button.act{width:100%;background:var(--gold);color:#1a1407;border:none;border-radius:var(--r-md);padding:var(--s7);font-family:var(--sans);font-weight:600;font-size:var(--t5);cursor:pointer}
   button.act:active{transform:scale(.99)}button.act:disabled{opacity:.4;cursor:default}
-  .btnrow{display:flex;gap:8px}
-  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:20px;padding:8px 16px;min-height:34px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .btnrow{display:flex;gap:var(--s4)}
+  .swbtn{border:1px solid var(--line);background:var(--bg3);color:var(--ink2);border-radius:var(--r-xl);padding:var(--s4) var(--s8);min-height:34px;font-family:var(--mono);font-size:var(--t3);cursor:pointer}
   .swbtn.on{border-color:var(--gold);color:var(--gold);background:#1e1a36}
-  .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
-  .sidehead .st{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
-  .sidehead .sv2{font-family:var(--mono);font-size:16px;color:var(--gold);font-weight:600}
-  .pile-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);touch-action:pan-y}.pile-item:last-child{border-bottom:none}
-  .pi-name{flex:1;min-width:0}.pi-name .n{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pi-name .m{font-family:var(--mono);font-size:11px;color:var(--ink3)}
-  .chip{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;margin-left:6px}
+  .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s2)}
+  .sidehead .st{font-family:var(--mono);font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
+  .sidehead .sv2{font-family:var(--mono);font-size:var(--t6);color:var(--gold);font-weight:600}
+  .pile-item{display:flex;align-items:center;gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line);touch-action:pan-y}.pile-item:last-child{border-bottom:none}
+  .pi-name{flex:1;min-width:0}.pi-name .n{font-size:var(--t5);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pi-name .m{font-family:var(--mono);font-size:var(--t2);color:var(--ink3)}
+  .chip{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.06em;padding:var(--s1) var(--s3);border-radius:var(--r-xs);margin-left:6px}
   .chip.oop{background:#2a2410;color:var(--gold)}.chip.ip{background:var(--bg3);color:var(--ink3)}
   .chip.sealed{background:#10231c;color:var(--up)}.chip.graded{background:#1a1d2a;color:#9fb6ff}.chip.raw{background:#2a1626;color:#ff9ad2}.chip.jp{background:#2a1016;color:#ff7e8a}
   .chip.pro{background:var(--holo);background-size:240% auto;color:#101010;animation:holo 7s linear infinite}
-  .qtybtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:16px;cursor:pointer;line-height:1}
-  .val{font-family:var(--mono);font-size:14px;min-width:64px;text-align:right}.x{color:var(--ink3);cursor:pointer;font-size:18px;padding:0 2px}
-  .results{margin-top:8px;max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;display:none}.results.show{display:block}
-  .res{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
-    .res .rn{font-size:13px}.res .rp{font-family:var(--mono);font-size:12px;color:var(--gold)}
-    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:9px;padding:8px 12px;min-height:34px;font-size:13px;font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+  .qtybtn{width:28px;height:28px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:var(--t6);cursor:pointer;line-height:1}
+  .val{font-family:var(--mono);font-size:var(--t5);min-width:64px;text-align:right}.x{color:var(--ink3);cursor:pointer;font-size:var(--t7);padding:0 var(--s1)}
+  .results{margin-top:var(--s4);max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md);display:none}.results.show{display:block}
+  .res{display:flex;justify-content:space-between;align-items:center;gap:var(--s5);padding:var(--s5) var(--s6);cursor:pointer;border-bottom:1px solid var(--line)}.res:last-child{border-bottom:none}.res:active{background:var(--bg3)}
+    .res .rn{font-size:var(--t4)}.res .rp{font-family:var(--mono);font-size:var(--t3);color:var(--gold)}
+    .scanbtn{flex:0 0 auto;border:1px solid var(--line);background:var(--bg3);color:var(--ink);border-radius:var(--r-sm);padding:var(--s4) var(--s6);min-height:34px;font-size:var(--t4);font-family:var(--sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:var(--s3)}
   .scanbtn:active{transform:scale(.97)}
   #scanModal{position:fixed;inset:0;background:#000;z-index:var(--z-scan);display:none;flex-direction:column}
   #scanModal.show{display:flex}
-  .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--s10);text-align:center}
   #cropWrap{position:absolute;inset:0;background:#000;z-index:2}
   #cropCanvas{position:absolute;display:block}
-  #cropBox{position:absolute;border:0;border-radius:9px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
-  #cropBox::before{content:'';position:absolute;inset:0;border-radius:9px;padding:2px;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  #cropBox{position:absolute;border:0;border-radius:var(--r-sm);box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
+  #cropBox::before{content:'';position:absolute;inset:0;border-radius:var(--r-sm);padding:var(--s1);background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
   #cropHandle{position:absolute;right:-15px;bottom:-15px;width:36px;height:36px;border-radius:50%;background:var(--holo);background-size:240% auto;animation:holo 7s linear infinite;border:3px solid var(--bg);box-shadow:0 2px 10px rgba(125,240,200,.35);touch-action:none}
-  #cropBar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;z-index:4}
-  #cropMsg{color:#fff;font-family:var(--mono);font-size:12px;text-align:center;text-shadow:0 1px 3px #000}
+  #cropBar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:var(--s5);z-index:4}
+  #cropMsg{color:#fff;font-family:var(--mono);font-size:var(--t3);text-align:center;text-shadow:0 1px 3px #000}
   #cropGo{max-width:280px}
   #scanClose{z-index:7}
-  #scanStatus{font-family:var(--mono);font-size:14px;color:var(--gold)}
-  #scanHint{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-top:8px;max-width:300px}
-  .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
+  #scanStatus{font-family:var(--mono);font-size:var(--t5);color:var(--gold)}
+  #scanHint{font-family:var(--mono);font-size:var(--t3);color:var(--ink2);margin-top:var(--s4);max-width:300px}
+  .scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:78%;max-width:420px;aspect-ratio:63/88;border:2px solid var(--gold);border-radius:var(--r-md);box-shadow:0 0 0 100vmax rgba(0,0,0,.5);pointer-events:none}
   #scanVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
   #scanCapture{position:absolute;left:50%;bottom:calc(36px + env(safe-area-inset-bottom));transform:translateX(-50%);width:auto;min-width:210px;z-index:3;box-shadow:0 6px 24px rgba(0,0,0,.5)}
-  #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:12px;text-shadow:0 1px 4px #000;z-index:3}
-  .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:12px;text-shadow:0 1px 3px #000}
+  #scanVHint{position:absolute;left:18px;right:18px;top:calc(50% - 31vh);text-align:center;color:#fff;font-family:var(--mono);font-size:var(--t3);text-shadow:0 1px 4px #000;z-index:3}
+  .scanhint{position:absolute;top:calc(50% + 28vh);left:0;right:0;text-align:center;color:var(--ink);font-family:var(--mono);font-size:var(--t3);text-shadow:0 1px 3px #000}
   .scanx.on{background:var(--gold);color:#1a1407}
-  .scanx{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid var(--line);color:#fff;font-size:20px;cursor:pointer;z-index:2}
-  .scanstatus{position:absolute;top:calc(50% + 24vh);left:0;right:0;text-align:center;color:var(--gold);font-family:var(--mono);font-size:13px;text-shadow:0 1px 3px #000}
-  .thumb{width:52px;height:73px;flex:0 0 auto;border-radius:5px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
+  .scanx{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid var(--line);color:#fff;font-size:var(--t8);cursor:pointer;z-index:2}
+  .scanstatus{position:absolute;top:calc(50% + 24vh);left:0;right:0;text-align:center;color:var(--gold);font-family:var(--mono);font-size:var(--t4);text-shadow:0 1px 3px #000}
+  .thumb{width:52px;height:73px;flex:0 0 auto;border-radius:var(--r-xs);object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
   .res .rmeta{flex:1;min-width:0}
-  .pthumb{width:40px;height:56px;flex:0 0 auto;border-radius:4px;object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
-  .hot{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px}.hot::-webkit-scrollbar{height:0}
-  .hchip{flex:0 0 auto;background:var(--bg3);border:1px solid var(--line);border-radius:18px;padding:8px 13px;font-size:12px;white-space:nowrap;cursor:pointer;font-family:var(--mono);color:var(--ink)}
+  .pthumb{width:40px;height:56px;flex:0 0 auto;border-radius:var(--r-xs);object-fit:cover;background:var(--bg3);border:1px solid var(--line)}
+  .hot{display:flex;gap:var(--s4);overflow-x:auto;padding:var(--s2) 0 var(--s1)}.hot::-webkit-scrollbar{height:0}
+  .hchip{flex:0 0 auto;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-xl);padding:var(--s4) var(--s6);font-size:var(--t3);white-space:nowrap;cursor:pointer;font-family:var(--mono);color:var(--ink)}
   .hchip:active{transform:scale(.97)}.hchip b{color:var(--gold);font-weight:500;margin-left:7px}
-  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background:var(--bg3);border-radius:4px;padding:0;border:none}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background:var(--bg3);border-radius:var(--r-xs);padding:0;border:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
   input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
-  .bigrate{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
-  .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line)}
+  .bigrate{font-family:var(--mono);font-size:var(--t12);font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
+  .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:var(--s5) 0;border-bottom:1px solid var(--line)}
   /* The trade card ends on four stacked .anchor rows. Without this the last one draws a
      divider under itself and .card's own bottom border draws again 16px lower, so two
      parallel lines sit at the foot of the card with nothing between them. The file
      already uses this convention for .pile-item, .res, .brk, .drop-live, .wl-opt and
      .lot-row; these are the rows that were missed. */
   .anchor:last-child{border-bottom:none}.anchor:last-of-type{border-bottom:none}
-  .anchor .al{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
+  .anchor .al{font-family:var(--mono);font-size:var(--t2);text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
   .anchor 
   /* Lock digit widths so numbers never jitter as they change. */
   .av,.sv,.sl,.pr,.m,.dl-flip,.dl-cd,.cg-pct,.qa,.lot-tot,.lot-verdict,
   table td,table th,.stat .sv,#aMarket,#aPayout,#aNet,#aProfit,
   input[type="number"],[class*="tot"]{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'lnum' 1}
-  .anchor.hero .av{font-family:var(--mono);font-size:20px;font-weight:600}
-  .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 4px}
-  .ch{padding:9px 4px;text-align:center;border-radius:9px;border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:.15s}
-  .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:12px;font-weight:500}.ch .cf{font-family:var(--mono);font-size:10px;color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
-  .so{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--bg3);margin-bottom:6px}
+  .anchor.hero .av{font-family:var(--mono);font-size:var(--t8);font-weight:600}
+  .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin:6px 0 4px}
+  .ch{padding:var(--s4) var(--s2);text-align:center;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:var(--dur-fast) var(--ease)}
+  .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:var(--t3);font-weight:500}.ch .cf{font-family:var(--mono);font-size:var(--t1);color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
+  .so{display:flex;justify-content:space-between;align-items:center;padding:var(--s4) var(--s5);border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg3);margin-bottom:var(--s3)}
   .so.best{border-color:var(--gold);background:#1e1a36}
-  .so-l{display:flex;align-items:center;gap:2px}.so-n{font-size:13px;font-weight:500}
-  .so-r{text-align:right}.so-net{font-family:var(--mono);font-size:14px;display:block}.so.best .so-net{color:var(--up)}
-  .so-sub{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+  .so-l{display:flex;align-items:center;gap:var(--s1)}.so-n{font-size:var(--t4);font-weight:500}
+  .so-r{text-align:right}.so-net{font-family:var(--mono);font-size:var(--t5);display:block}.so.best .so-net{color:var(--up)}
+  .so-sub{font-family:var(--mono);font-size:var(--t1);color:var(--ink3)}
   .chip.best{background:var(--gold);color:#101010}
-  .feeEdit{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feeEdit>div{flex:1}.feeEdit input{font-size:14px;padding:9px 10px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid2 input,.grid2 select{font-size:14px;padding:9px 10px}
-  table{width:100%;border-collapse:collapse;margin-top:6px}
-  th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)}th:first-child{text-align:left}
-  td{font-family:var(--mono);font-size:13px;text-align:right;padding:11px 4px;border-bottom:1px solid var(--line)}
-  tbody tr:last-child td{border-bottom:none}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:14px}tr:last-child td{border-bottom:none}
+  .feeEdit{display:flex;gap:var(--s5);margin-top:var(--s6);padding-top:var(--s6);border-top:1px solid var(--line)}.feeEdit>div{flex:1}.feeEdit input{font-size:var(--t5);padding:var(--s4) var(--s5)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5)}.grid2 input,.grid2 select{font-size:var(--t5);padding:var(--s4) var(--s5)}
+  table{width:100%;border-collapse:collapse;margin-top:var(--s3)}
+  th{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);font-weight:400;text-align:right;padding:var(--s4) var(--s2);border-bottom:1px solid var(--line)}th:first-child{text-align:left}
+  td{font-family:var(--mono);font-size:var(--t4);text-align:right;padding:var(--s5) var(--s2);border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}td:first-child{text-align:left;font-weight:600;color:var(--gold);font-size:var(--t5)}tr:last-child td{border-bottom:none}
   .pos{color:var(--up)}.neg{color:var(--down)}
-  .toolbtn{color:var(--ink3);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}.toolbtn:active{color:var(--ink)}
-  .balance{text-align:center;padding:8px 0 4px}.balance .bv{font-family:var(--mono);font-size:26px;font-weight:600}.balance .bl{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5}.balance .bl b{font-weight:500}
-  .verdict{text-align:center;padding:10px 0 4px}.verdict .vv{font-family:var(--serif);font-size:24px;font-weight:600}.verdict .ve{font-family:var(--mono);font-size:14px;margin-top:4px}
-  .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
-  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}.stat .sl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:5px}.stat .sv{font-family:var(--mono);font-size:20px;font-weight:600}
-  .weight{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
-  .wleg{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
-  .empty{text-align:center;color:var(--ink3);font-size:13px;padding:18px 0;font-style:italic}
+  .toolbtn{color:var(--ink3);cursor:pointer;font-size:var(--t5);display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-6px 0}.toolbtn:active{color:var(--ink)}
+  .balance{text-align:center;padding:var(--s4) 0 var(--s2)}.balance .bv{font-family:var(--mono);font-size:var(--t10);font-weight:600}.balance .bl{font-size:var(--t4);color:var(--ink2);margin-top:var(--s3);line-height:1.5}.balance .bl b{font-weight:500}
+  .verdict{text-align:center;padding:var(--s5) 0 var(--s2)}.verdict .vv{font-family:var(--serif);font-size:var(--t9);font-weight:600}.verdict .ve{font-family:var(--mono);font-size:var(--t5);margin-top:var(--s2)}
+  .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:var(--t3);padding:var(--s4) 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s5);margin-bottom:var(--s7)}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s6) var(--s7)}.stat .sl{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:var(--s2)}.stat .sv{font-family:var(--mono);font-size:var(--t8);font-weight:600}
+  .weight{display:flex;height:14px;border-radius:var(--r-sm);overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
+  .wleg{display:flex;gap:var(--s8);font-family:var(--mono);font-size:var(--t2);color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:var(--s3)}.dot{width:9px;height:9px;border-radius:var(--r-xs);display:inline-block}
+  .empty{text-align:center;color:var(--ink3);font-size:var(--t4);padding:var(--s8) 0;font-style:italic}
   a.ghost{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-  .dl-note{font-family:var(--mono);font-size:10px;color:var(--ink3);line-height:1.5;margin:8px 2px 2px}
-  .live-head{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:12px 2px 6px;font-family:var(--mono)}
-  .live-head:first-child{margin-top:2px}
-  .drop-live{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+  .dl-note{font-family:var(--mono);font-size:var(--t1);color:var(--ink3);line-height:1.5;margin:8px 2px 2px}
+  .live-head{font-size:var(--t1);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:12px 2px 6px;font-family:var(--mono)}
+  .live-head:first-child{margin-top:var(--s1)}
+  .drop-live{display:flex;gap:var(--s5);align-items:flex-start;padding:var(--s4) 0;border-bottom:1px solid var(--line)}
   .drop-live:last-child{border-bottom:none}
   .dl-body{flex:1;min-width:0}
-  .dl-t{display:block;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none;line-height:1.3;overflow-wrap:anywhere}
+  .dl-t{display:block;color:var(--ink);font-weight:600;font-size:var(--t4);text-decoration:none;line-height:1.3;overflow-wrap:anywhere}
   a.dl-t:hover,a.dl-t:active{color:var(--gold)}
-  .dl-sub{color:var(--ink2);font-size:11px;margin-top:2px;font-family:var(--mono)}
-  .dl-meta{color:var(--ink3);font-size:11px;margin-top:3px;font-family:var(--mono)}
-  .dl-empty{color:var(--ink3);font-size:12px;padding:8px 2px;line-height:1.45}
-  .lk{flex:none;font-size:10px;font-weight:600;letter-spacing:.05em;padding:3px 6px;border-radius:5px;margin-top:1px;font-family:var(--mono)}
+  .dl-sub{color:var(--ink2);font-size:var(--t2);margin-top:var(--s1);font-family:var(--mono)}
+  .dl-meta{color:var(--ink3);font-size:var(--t2);margin-top:var(--s1);font-family:var(--mono)}
+  .dl-empty{color:var(--ink3);font-size:var(--t3);padding:var(--s4) var(--s1);line-height:1.45}
+  .lk{flex:none;font-size:var(--t1);font-weight:600;letter-spacing:.05em;padding:var(--s1) var(--s3);border-radius:var(--r-xs);margin-top:var(--s0);font-family:var(--mono)}
   .lk-queue{background:rgba(216,169,63,.18);color:#e8c46a}
   .lk-restock{background:rgba(70,227,172,.16);color:var(--up)}
   .lk-signal{background:rgba(255,255,255,.06);color:var(--ink2)}
   .lk-invite{background:rgba(178,140,255,.16);color:#c8a2ff}
   .lk-preload{background:rgba(127,176,255,.16);color:#7fb0ff}
   .lk-announce{background:rgba(255,255,255,.07);color:var(--ink2);border:1px dashed var(--line)}
-  .dl-ask{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
-  .dl-ask span{font-size:12px;color:var(--ink3);font-family:var(--mono)}
-  .dl-yes,.dl-no{font-size:12px;font-weight:600;border-radius:8px;padding:5px 12px;cursor:pointer;border:1px solid var(--line);background:var(--bg3);color:var(--ink)}
+  .dl-ask{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s4);flex-wrap:wrap}
+  .dl-ask span{font-size:var(--t3);color:var(--ink3);font-family:var(--mono)}
+  .dl-yes,.dl-no{font-size:var(--t3);font-weight:600;border-radius:var(--r-sm);padding:var(--s2) var(--s6);cursor:pointer;border:1px solid var(--line);background:var(--bg3);color:var(--ink)}
   .dl-yes{border-color:rgba(70,227,172,.4);color:var(--up)}
   .dl-yes:active{background:rgba(70,227,172,.14)}
   .dl-no:active{background:var(--bg2)}
-  .dl-caught{margin-top:9px;font-size:11.5px;color:var(--up);font-family:var(--mono)}
-  .dl-act{display:inline-block;margin-top:5px;font-family:var(--mono);font-size:11px;color:var(--gold);text-decoration:none}
+  .dl-caught{margin-top:var(--s4);font-size:var(--t2);color:var(--up);font-family:var(--mono)}
+  .dl-act{display:inline-block;margin-top:var(--s2);font-family:var(--mono);font-size:var(--t2);color:var(--gold);text-decoration:none}
   .dl-act:active{opacity:.6}
-  .dl-track{margin-top:8px;padding:7px 12px;font-size:12px}
-  .wl-sug{display:none;position:absolute;left:0;right:0;top:64px;z-index:40;background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-  .wl-opt{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--bg3)}
+  .dl-track{margin-top:var(--s4);padding:var(--s3) var(--s6);font-size:var(--t3)}
+  .wl-sug{display:none;position:absolute;left:0;right:0;top:64px;z-index:40;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .wl-opt{padding:var(--s5) var(--s6);font-size:var(--t4);cursor:pointer;border-bottom:1px solid var(--bg3)}
   .wl-opt:last-child{border-bottom:none}
   .wl-opt:active{background:var(--bg3)}
-  .wl-opt span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:2px}
-  .wl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .wl-chip{display:inline-flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--line);border-radius:16px;padding:5px 6px 5px 11px;font-size:12px;color:var(--ink)}
-  .wl-chip button{background:none;border:none;color:var(--ink3);font-size:15px;line-height:1;cursor:pointer;padding:2px 5px}
+  .wl-opt span{display:block;font-family:var(--mono);font-size:var(--t1);color:var(--ink3);margin-top:var(--s1)}
+  .wl-chips{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s4)}
+  .wl-chip{display:inline-flex;align-items:center;gap:var(--s3);background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s2) var(--s3) var(--s2) var(--s5);font-size:var(--t3);color:var(--ink)}
+  .wl-chip button{background:none;border:none;color:var(--ink3);font-size:var(--t5);line-height:1;cursor:pointer;padding:var(--s1) var(--s2)}
   .wl-chip button:active{color:var(--down)}
   #tourWrap{display:none;position:fixed;inset:0;z-index:var(--z-tour)}
   #tourWrap.on{display:block}
   #tourDim{position:fixed;inset:0;background:rgba(4,6,14,.58);backdrop-filter:blur(1px)}
   @keyframes fxpulse{0%{box-shadow:0 0 0 0 rgba(216,169,63,.55)}70%{box-shadow:0 0 0 12px rgba(216,169,63,0)}100%{box-shadow:0 0 0 0 rgba(216,169,63,0)}}
-  .fxglow{animation:fxpulse 1.3s ease-out 2;border-radius:12px;position:relative;z-index:2}
-  #featModal{display:none;position:fixed;inset:0;z-index:var(--z-feat);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  .fxglow{animation:fxpulse 1.3s ease-out 2;border-radius:var(--r-md);position:relative;z-index:2}
+  #featModal{display:none;position:fixed;inset:0;z-index:var(--z-feat);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:var(--s8)}
   #featModal.show{display:flex}
-    .fm-g{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.01em;
+    .fm-g{font-family:var(--serif);font-size:var(--t7);font-weight:600;letter-spacing:.01em;
     text-transform:none;margin:26px 0 8px;
     background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;
     -webkit-text-fill-color:transparent;color:#c8a2ff}
-  .fm-g:first-child{margin-top:6px}
-  .fm-row{display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid var(--line);padding:11px 0;cursor:pointer}
+  .fm-g:first-child{margin-top:var(--s3)}
+  .fm-row{display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid var(--line);padding:var(--s5) 0;cursor:pointer}
   .fm-row:first-child{border-top:none}
   .fm-row:active{background:var(--bg3)}
-  .fm-t{display:block;font-size:14px;color:var(--ink);font-weight:600}
-  .fm-d{display:block;font-size:12px;color:var(--ink3);line-height:1.5;margin-top:2px}
-  .fm-go{display:inline-block;font-size:11px;font-family:var(--mono);color:var(--gold);margin-top:5px}
-  #condModal{display:none;position:fixed;inset:0;z-index:var(--z-cond);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  .fm-t{display:block;font-size:var(--t5);color:var(--ink);font-weight:600}
+  .fm-d{display:block;font-size:var(--t3);color:var(--ink3);line-height:1.5;margin-top:var(--s1)}
+  .fm-go{display:inline-block;font-size:var(--t2);font-family:var(--mono);color:var(--gold);margin-top:var(--s2)}
+  #condModal{display:none;position:fixed;inset:0;z-index:var(--z-cond);background:rgba(4,6,14,.7);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:var(--s8)}
   #condModal.show{display:flex}
-  .cg-card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:20px 16px;width:min(560px,100%);max-height:88vh;overflow-y:auto}
-  .cg-sub{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-bottom:14px}
-  .cg-row{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .cg-card{position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-xl);padding:var(--s9) var(--s8);width:min(560px,100%);max-height:88vh;overflow-y:auto}
+  .cg-sub{font-size:var(--t3);color:var(--ink2);line-height:1.55;margin-bottom:var(--s7)}
+  .cg-row{display:flex;gap:var(--s6);align-items:center;padding:var(--s5) 0;border-top:1px solid var(--line)}
   .cg-row:first-child{border-top:none}
   .cg-row svg{flex:0 0 auto}
   .cg-tx{flex:1;min-width:0}
-  .cg-tx b{font-size:14px;color:var(--ink)}
-  .cg-k{font-family:var(--mono);font-size:11px;color:var(--gold);margin-left:4px}
-  .cg-tx p{font-size:12px;color:var(--ink3);line-height:1.5;margin-top:3px}
-  .cg-pct{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap}
-  .cg-pct input{width:52px;background:var(--bg3);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:5px 6px;font-family:var(--mono);font-size:13px;text-align:right}
+  .cg-tx b{font-size:var(--t5);color:var(--ink)}
+  .cg-k{font-family:var(--mono);font-size:var(--t2);color:var(--gold);margin-left:4px}
+  .cg-tx p{font-size:var(--t3);color:var(--ink3);line-height:1.5;margin-top:var(--s1)}
+  .cg-pct{font-family:var(--mono);font-size:var(--t4);color:var(--ink);white-space:nowrap}
+  .cg-pct input{width:52px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);padding:var(--s2) var(--s3);font-family:var(--mono);font-size:var(--t4);text-align:right}
   /* The catalog deliberately keeps cards with no price so they stay searchable. Saying
      so beats showing $0.00 and letting someone think the total is broken. */
   .nopx{color:var(--gold);font-style:italic}
-  .qa-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:8px}
-  .qa-l{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
-  .qa{font-size:11.5px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg3);color:var(--ink2);cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+  .qa-row{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin-top:var(--s4)}
+  .qa-l{font-family:var(--mono);font-size:var(--t1);color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
+  .qa{font-size:var(--t2);padding:var(--s2) var(--s4);border:1px solid var(--line);border-radius:var(--r-pill);background:var(--bg3);color:var(--ink2);cursor:pointer;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
   .qa:active{border-color:var(--gold);color:var(--ink)}
-  #cfmModal{display:none;position:fixed;inset:0;z-index:var(--z-confirm);background:rgba(4,6,14,.72);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px}
+  #cfmModal{display:none;position:fixed;inset:0;z-index:var(--z-confirm);background:rgba(4,6,14,.72);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:var(--s8)}
   #cfmModal.show{display:flex}
-  .cfm-b{font-size:13px;color:var(--ink2);line-height:1.6;margin-top:8px}
+  .cfm-b{font-size:var(--t4);color:var(--ink2);line-height:1.6;margin-top:var(--s4)}
   .cfm-b p{margin:0 0 8px}
-  #ptr{height:0;opacity:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--ink3);transition:height .2s ease,opacity .2s ease}
-  .res-msg{padding:14px 12px;font-size:13px;color:var(--ink2);line-height:1.5}
-  .res-msg span{font-size:11.5px;color:var(--ink3)}
+  #ptr{height:0;opacity:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:var(--t2);color:var(--ink3);transition:height var(--dur-base) ease,opacity var(--dur-base) ease}
+  .res-msg{padding:var(--s7) var(--s6);font-size:var(--t4);color:var(--ink2);line-height:1.5}
+  .res-msg span{font-size:var(--t2);color:var(--ink3)}
   .res-msg b{color:var(--gold);cursor:pointer;text-decoration:underline}
   .dots::after{content:'';animation:dots 1.4s steps(4,end) infinite}
   @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
@@ -329,7 +348,7 @@ catch(e){document.documentElement.style.display="none";}</script>
      and it does not zoom back out. It is the single most recognisable "this is a website"
      moment on an iPhone. Touch pointers get 16px; desktop keeps the tighter 14px. */
   @media (pointer: coarse){
-    input,select,textarea{font-size:16px}
+    input,select,textarea{font-size:var(--t6)}
   }
   /* Contain the rubber-band. Without this the browser's own overscroll fights the
      pull-to-refresh gesture and the whole page bounces like a web view. */
@@ -340,7 +359,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .sheet,.cg-card,.sc-card,#lotModal,#featModal,#condModal,
   #scanModal,#scanChoose,#tourWrap{overscroll-behavior:contain}
   /* a grab handle, because a rounded top edge already promises one */
-  .sheet::before,.sc-card::before{content:'';display:block;width:40px;height:4px;border-radius:99px;
+  .sheet::before,.sc-card::before{content:'';display:block;width:40px;height:4px;border-radius:var(--r-pill);
     background:var(--line);margin:-6px auto 14px}
   .sheet.drag,.sc-card.drag,.cg-card.drag{transition:none}
   /* Small table actions were a 14px glyph with 4px of padding, which is a long way under
@@ -351,65 +370,65 @@ catch(e){document.documentElement.style.display="none";}</script>
   @media (pointer: fine){
     ::-webkit-scrollbar{width:10px;height:10px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:#1c2140;border-radius:8px;border:2px solid var(--bg)}
+    ::-webkit-scrollbar-thumb{background:#1c2140;border-radius:var(--r-sm);border:2px solid var(--bg)}
     ::-webkit-scrollbar-thumb:hover{background:#282f56}
   }
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;
       transition-duration:.001ms !important;scroll-behavior:auto !important}
   }
-  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:var(--r-sm)}
   button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .navb:focus-visible{outline-offset:-3px}
-  #ticker{display:none;background:var(--bg2);border:1px solid var(--line);border-radius:14px;
-    padding:16px 18px;margin-bottom:14px}
+  #ticker{display:none;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:var(--s8) var(--s8);margin-bottom:var(--s7)}
   #ticker.on{display:block}
-  #ticker .tl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--ink3);margin-bottom:6px}
-  #ticker .tv{font-family:var(--mono);font-size:27px;font-weight:600;color:var(--up);
+  #ticker .tl{font-family:var(--mono);font-size:var(--t1);letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink3);margin-bottom:var(--s3)}
+  #ticker .tv{font-family:var(--mono);font-size:var(--t10);font-weight:600;color:var(--up);
     font-variant-numeric:tabular-nums;line-height:1.1}
   #ticker.free .tv{color:var(--gold)}
-  #ticker .tn{font-size:11.5px;color:var(--ink3);line-height:1.5;margin-top:6px}
-  #ticker .tup{display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--gold);
-    background:rgba(216,169,63,.1);border:1px solid rgba(216,169,63,.4);border-radius:9px;
-    padding:7px 13px;cursor:pointer}
-  .es-h{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--ink3);font-style:normal;line-height:1.5;max-width:280px}
-  #toast .tu{margin-left:12px;background:transparent;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;padding:0 2px;text-decoration:underline}
+  #ticker .tn{font-size:var(--t2);color:var(--ink3);line-height:1.5;margin-top:var(--s3)}
+  #ticker .tup{display:inline-block;margin-top:var(--s5);font-size:var(--t3);font-weight:600;color:var(--gold);
+    background:rgba(216,169,63,.1);border:1px solid rgba(216,169,63,.4);border-radius:var(--r-sm);
+    padding:var(--s3) var(--s6);cursor:pointer}
+  .es-h{display:inline-block;margin-top:var(--s3);font-size:var(--t2);color:var(--ink3);font-style:normal;line-height:1.5;max-width:280px}
+  #toast .tu{margin-left:12px;background:transparent;border:none;color:var(--gold);font-weight:700;font-size:var(--t4);cursor:pointer;padding:0 var(--s1);text-decoration:underline}
   .chip.live{background:rgba(70,227,172,.16);color:var(--up);border:1px solid rgba(70,227,172,.35)}
   .chip.est{background:var(--bg3);color:var(--ink3);border:1px solid var(--line)}
-  .pcond{margin-left:6px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:10.5px;font-family:var(--mono);padding:2px 3px}
+  .pcond{margin-left:6px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);font-size:var(--t1);font-family:var(--mono);padding:var(--s1) var(--s1)}
   #scanChoose{display:none;position:fixed;inset:0;z-index:var(--z-picker);background:rgba(4,6,14,.66);backdrop-filter:blur(2px);align-items:flex-end;justify-content:center}
   #scanChoose.show{display:flex}
-  .sc-card{background:var(--bg2);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:min(520px,100%);display:flex;flex-direction:column;gap:9px}
-  .sc-t{font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:2px}
+  .sc-card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:min(520px,100%);display:flex;flex-direction:column;gap:var(--s4)}
+  .sc-t{font-family:var(--serif);font-size:var(--t7);color:var(--ink);margin-bottom:var(--s1)}
   #lotModal{display:none;position:fixed;inset:0;z-index:var(--z-modal);background:var(--bg);overflow-y:auto}
   #lotModal.show{display:block}
-  .lot-inner{max-width:560px;margin:0 auto;padding:56px 18px 40px}
-  .lot-head{margin-bottom:20px}
-  .lot-sub{font-size:13px;color:var(--ink2);line-height:1.55;margin-top:6px}
-  .lot-drop{border:1.5px dashed var(--line);border-radius:16px;padding:34px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+  .lot-inner{max-width:560px;margin:0 auto;padding:var(--s13) var(--s8) var(--s12)}
+  .lot-head{margin-bottom:var(--s9)}
+  .lot-sub{font-size:var(--t4);color:var(--ink2);line-height:1.55;margin-top:var(--s3)}
+  .lot-drop{border:1.5px dashed var(--line);border-radius:var(--r-lg);padding:var(--s11) var(--s9);text-align:center;cursor:pointer;transition:border-color var(--dur-fast),background var(--dur-fast) var(--ease)}
   .lot-drop:active,.lot-drop.drag{border-color:var(--gold);background:rgba(216,169,63,.05)}
-  .lot-drop-i{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink2)}
+  .lot-drop-i{display:flex;flex-direction:column;align-items:center;gap:var(--s4);color:var(--ink2)}
   .lot-drop-i b{color:var(--ink)}
-  .lot-hint{font-size:12px;color:var(--ink3)}
-  .lot-ask{margin-top:16px}
-  .lot-progress{text-align:center;padding:40px 0}
+  .lot-hint{font-size:var(--t3);color:var(--ink3)}
+  .lot-ask{margin-top:var(--s8)}
+  .lot-progress{text-align:center;padding:var(--s12) 0}
   @keyframes spin{to{transform:rotate(360deg)}}
   .lot-progress .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
-  .lot-progress .msg{font-size:13px;color:var(--ink3);font-family:var(--mono)}
-  .lot-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .lot-progress .msg{font-size:var(--t4);color:var(--ink3);font-family:var(--mono)}
+  .lot-row{display:flex;align-items:center;gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line)}
   .lot-row:last-child{border-bottom:none}
   .lot-row .nm{flex:1;min-width:0}
-  .lot-row .nm b{display:block;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lot-row .nm span{font-size:11px;color:var(--ink3);font-family:var(--mono)}
-  .lot-row .pr{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .lot-row .nm b{display:block;font-size:var(--t5);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lot-row .nm span{font-size:var(--t2);color:var(--ink3);font-family:var(--mono)}
+  .lot-row .pr{font-size:var(--t5);font-weight:600;color:var(--ink);white-space:nowrap}
   .lot-row.miss .nm b{color:var(--ink3)}
-  .lot-row .fixbtn{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg3);color:var(--ink2);cursor:pointer}
-  .lot-tot{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--bg2)}
-  .lot-tot .tr{display:flex;justify-content:space-between;padding:5px 0;font-size:14px}
-  .lot-tot .tr.big{font-size:17px;font-weight:600;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
-  .lot-verdict{margin-top:14px;padding:13px 16px;border-radius:12px;font-weight:600;text-align:center;font-size:15px}
-  .lot-actions{display:flex;gap:8px;margin-top:16px}
+  .lot-row .fixbtn{font-size:var(--t2);padding:var(--s2) var(--s4);border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg3);color:var(--ink2);cursor:pointer}
+  .lot-tot{margin-top:var(--s8);padding:var(--s8);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg2)}
+  .lot-tot .tr{display:flex;justify-content:space-between;padding:var(--s2) 0;font-size:var(--t5)}
+  .lot-tot .tr.big{font-size:var(--t6);font-weight:600;border-top:1px solid var(--line);margin-top:var(--s3);padding-top:var(--s6)}
+  .lot-verdict{margin-top:var(--s7);padding:var(--s6) var(--s8);border-radius:var(--r-md);font-weight:600;text-align:center;font-size:var(--t5)}
+  .lot-actions{display:flex;gap:var(--s4);margin-top:var(--s8)}
   :root{--navh:64px;
     /* One ordered scale. Values used to sit in two disconnected bands, 60 to 200 and
        8400 to 9200, with nothing between, so anything new got a number picked by feel
@@ -421,52 +440,52 @@ catch(e){document.documentElement.style.display="none";}</script>
     --z-tour:400; --z-age:410}
   body{padding-bottom:calc(var(--navh) + 14px)}
   #tourDim{z-index:1}
-  #tourCard{z-index:2;position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top .28s cubic-bezier(.4,0,.2,1)}
-  .tour-dots{display:flex;gap:5px;margin-bottom:12px}
-  .tour-dots i{width:16px;height:3px;border-radius:2px;background:var(--line);transition:.2s}
+  #tourCard{z-index:2;position:fixed;left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s8) var(--s8) var(--s8);box-shadow:0 20px 60px rgba(0,0,0,.6);transition:top var(--dur-slow) cubic-bezier(.4,0,.2,1)}
+  .tour-dots{display:flex;gap:var(--s2);margin-bottom:var(--s6)}
+  .tour-dots i{width:16px;height:3px;border-radius:var(--r-xs);background:var(--line);transition:var(--dur-base) var(--ease)}
   .tour-dots i.on{background:var(--gold);width:24px}
-  .tour-t{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--ink);margin-bottom:7px;line-height:1.25}
-  .tour-b{font-size:13.5px;line-height:1.6;color:var(--ink2);margin-bottom:16px}
+  .tour-t{font-family:var(--serif);font-size:var(--t8);font-weight:600;color:var(--ink);margin-bottom:var(--s3);line-height:1.25}
+  .tour-b{font-size:var(--t4);line-height:1.6;color:var(--ink2);margin-bottom:var(--s8)}
   .tour-b b{color:var(--ink)}
   /* Berman: notice sits directly against the button, is not smaller than the
      surrounding text, and the links are visually distinct rather than the same
      colour as the prose around them. */
-  .tour-legal{display:none;margin-top:12px;font-size:13.5px;line-height:1.55;color:var(--ink2)}
+  .tour-legal{display:none;margin-top:var(--s6);font-size:var(--t4);line-height:1.55;color:var(--ink2)}
   .tour-legal.on{display:block}
-  .dl-stale{font-size:12px;color:var(--ink2);padding:7px 2px 9px;border-bottom:1px solid var(--line)}
+  .dl-stale{font-size:var(--t3);color:var(--ink2);padding:var(--s3) var(--s1) var(--s4);border-bottom:1px solid var(--line)}
   .tour-legal a{color:#7fd4ff;text-decoration:underline;text-underline-offset:2px}
   .tour-legal b{color:var(--ink)}
   #ageWrap{display:none;position:fixed;inset:0;z-index:var(--z-age)}
   #ageWrap.on{display:block}
   #ageDim{position:fixed;inset:0;background:rgba(4,6,14,.72)}
   #ageCard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(400px,calc(100vw - 28px));
-    background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:20px;z-index:2}
-  #ageCard input{width:120px;font-size:17px;padding:9px 11px;border-radius:9px;
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s9);z-index:2}
+  #ageCard input{width:120px;font-size:var(--t6);padding:var(--s4) var(--s5);border-radius:var(--r-sm);
     border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:center}
-  .tour-nav{display:flex;gap:8px}
+  .tour-nav{display:flex;gap:var(--s4)}
   .tour-nav .act{width:auto}
-  .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:10px;padding:9px 12px;margin:10px 0 2px;font-size:12px;line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
+  .dl-founder{display:none;background:rgba(216,169,63,.1);border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s4) var(--s6);margin:10px 0 2px;font-size:var(--t3);line-height:1.5;color:var(--ink2);cursor:pointer;font-family:var(--mono)}
   .dl-founder b{color:var(--gold)}
   .dl-lock{opacity:.72}
   .lk-locked{background:rgba(255,255,255,.05);color:var(--ink3);border:1px dashed var(--line)}
   .dl-lock .dl-title{color:var(--ink3);font-style:italic}
   .dl-cd{font-family:var(--mono);color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums}
-  .dl-flip{margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--ink2);line-height:1.35}
+  .dl-flip{margin-top:var(--s2);font-size:var(--t2);font-family:var(--mono);color:var(--ink2);line-height:1.35}
   .dl-flip.pos{color:var(--up)}
   .dl-flip .mk{color:var(--ink3)}
-  .toast{position:fixed;left:50%;bottom:calc(var(--navh) + 14px);transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:14px;padding:12px 20px;border-radius:11px;opacity:0;transition:.3s;z-index:var(--z-toast);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .toast{position:fixed;left:50%;bottom:calc(var(--navh) + 14px);transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:var(--t5);padding:var(--s6) var(--s9);border-radius:var(--r-md);opacity:0;transition:var(--dur-slow) var(--ease);z-index:var(--z-toast);box-shadow:0 8px 24px rgba(0,0,0,.4)}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-  .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.25s;z-index:var(--z-sheetbg)}
+  .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:var(--dur-base) var(--ease);z-index:var(--z-sheetbg)}
   .sheetbg.show{opacity:1;pointer-events:auto}
-  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:.3s cubic-bezier(.3,.9,.3,1);z-index:var(--z-sheet);max-height:82vh;overflow-y:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:var(--dur-slow) cubic-bezier(.3,.9,.3,1);z-index:var(--z-sheet);max-height:82vh;overflow-y:auto}
   .sheet.show{transform:translateY(0)}
-  .sheet h3{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:14px}
-  .sheet .field{margin-bottom:12px}
-  .holo-line{height:2px;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2);border-radius:2px;width:44px;margin:0 auto 16px}
-  .feat{display:flex;gap:10px;align-items:baseline;padding:7px 0;font-size:14px;color:var(--ink2)}
+  .sheet h3{font-family:var(--serif);font-size:var(--t7);font-weight:500;margin-bottom:var(--s7)}
+  .sheet .field{margin-bottom:var(--s6)}
+  .holo-line{height:2px;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2);border-radius:var(--r-xs);width:44px;margin:0 auto 16px}
+  .feat{display:flex;gap:var(--s5);align-items:baseline;padding:var(--s3) 0;font-size:var(--t5);color:var(--ink2)}
   .feat i{font-style:normal;color:var(--up)}
   .colhead{cursor:pointer;user-select:none}
-  .chev{font-size:12px;color:var(--ink3);transition:.2s;display:inline-block}
+  .chev{font-size:var(--t3);color:var(--ink3);transition:var(--dur-base) var(--ease);display:inline-block}
   .collapsed .chev{transform:rotate(-90deg)}
   .collapsed .colbody{display:none}
   .toolbtn.arm{color:var(--down);font-weight:600}
@@ -481,21 +500,21 @@ catch(e){document.documentElement.style.display="none";}</script>
 
   <!-- ============ TRADE BLOCK ============ -->
   <section class="panel on" id="block" data-tour-block>
-    <div class="seg sm" id="langSeg" style="margin-bottom:8px"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
+    <div class="seg sm" id="langSeg" style="margin-bottom:var(--s4)"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
       <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
       <div id="quickAdd" class="qa-row" style="display:none"></div>
-      <div class="row" style="justify-content:flex-end;margin-top:8px;gap:8px;flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot" style="display:none" hidden>▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:7px 12px">+ Manual</button></div>
-      <div id="pile" style="margin-top:4px"></div>
-      <div class="row between hide" id="theirCashRow" style="margin-top:10px"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:var(--s4);gap:var(--s4);flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot" style="display:none" hidden>▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:var(--s3) var(--s6)">+ Manual</button></div>
+      <div id="pile" style="margin-top:var(--s2)"></div>
+      <div class="row between hide" id="theirCashRow" style="margin-top:var(--s5)"><label style="margin:0">+ Cash, their side</label><input class="num" id="theirCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
     <div class="card hide" id="yourCard">
       <div class="sidehead"><span class="st">Your side</span><span class="sv2" id="pileTotal2">$0</span></div>
       <input id="search2" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results2"></div>
-      <div id="pile2" style="margin-top:6px"></div>
-      <div class="row between" style="margin-top:10px"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" min="0" value="0" style="width:96px"></div>
+      <div id="pile2" style="margin-top:var(--s3)"></div>
+      <div class="row between" style="margin-top:var(--s5)"><label style="margin:0">+ Cash, your side</label><input class="num" id="yourCash" type="number" min="0" value="0" style="width:96px"></div>
     </div>
     <div class="card hide" id="balanceCard"><label>Balance</label><div class="balance"><div class="bv" id="balVal">$0</div><div class="bl" id="balText">Add to both sides.</div></div></div>
     <div class="card" id="channelCard">
@@ -505,7 +524,7 @@ catch(e){document.documentElement.style.display="none";}</script>
     <div class="card" id="sellOptCard">
       <div class="row between colhead" data-col="sellOptCard"><label style="margin:0">Net by channel<button class="hint" data-hint="fees" aria-label="What is this?">i</button></label><span class="chev">▾</span></div>
       <div class="colbody">
-        <div class="row" style="gap:8px;margin-bottom:8px"><input class="num" id="sellOptPrice" type="number" step="0.01" inputmode="decimal" placeholder="Sale price" style="flex:1;padding:9px 10px;font-size:14px"><button class="ghost" id="sellOptPile" style="padding:9px 12px;white-space:nowrap">Use pile</button></div>
+        <div class="row" style="gap:var(--s4);margin-bottom:var(--s4)"><input class="num" id="sellOptPrice" type="number" step="0.01" inputmode="decimal" placeholder="Sale price" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><button class="ghost" id="sellOptPile" style="padding:var(--s4) var(--s6);white-space:nowrap">Use pile</button></div>
         <div id="sellOptList"></div>
       </div>
     </div>
@@ -513,10 +532,10 @@ catch(e){document.documentElement.style.display="none";}</script>
       <label>Rate</label>
       <div class="bigrate" id="rateLabel">75%</div>
       <input type="range" id="rate" min="40" max="100" step="1" value="75">
-      <div class="row between" style="margin-top:14px"><label style="margin:0">Store-credit bump</label>
-        <div class="row" style="gap:8px"><input class="num" id="creditBump" type="number" value="10" style="width:62px;padding:8px 10px"><span style="font-family:var(--mono);font-size:12px;color:var(--ink3)">%</span><button class="swbtn" id="creditTog">Off</button></div>
+      <div class="row between" style="margin-top:var(--s7)"><label style="margin:0">Store-credit bump</label>
+        <div class="row" style="gap:var(--s4)"><input class="num" id="creditBump" type="number" value="10" style="width:62px;padding:var(--s4) var(--s5)"><span style="font-family:var(--mono);font-size:var(--t3);color:var(--ink3)">%</span><button class="swbtn" id="creditTog">Off</button></div>
       </div>
-      <div style="margin-top:12px">
+      <div style="margin-top:var(--s6)">
         <div class="anchor"><span class="al">Market total</span><span class="av" id="aMarket">$0</span></div>
         <div class="anchor hero"><span class="al" id="payLabel">Cash payout</span><span class="av" id="aPayout">$0</span></div>
         <div class="anchor"><span class="al">Net resale</span><span class="av" id="aNet">$0</span></div>
@@ -528,8 +547,8 @@ catch(e){document.documentElement.style.display="none";}</script>
      
       <button class="act" id="sendDesk" style="flex:1" disabled>Send to Desk →</button>
     </div>
-    <div class="card" id="hotCard" style="display:none;margin-top:14px">
-      <div class="row between" style="margin-bottom:6px"><label style="margin:0">Quick recall</label><button class="ghost" id="hotClear" style="padding:6px 10px">Clear</button></div>
+    <div class="card" id="hotCard" style="display:none;margin-top:var(--s7)">
+      <div class="row between" style="margin-bottom:var(--s3)"><label style="margin:0">Quick recall</label><button class="ghost" id="hotClear" style="padding:var(--s3) var(--s5)">Clear</button></div>
       <div class="hot" id="hotlist"></div>
     </div>
   </section>
@@ -544,11 +563,11 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="wleg" id="weightLeg"></div>
     </div>
     <div class="card">
-      <div class="row between" style="margin-bottom:4px"><label style="margin:0">Holdings</label>
-        <div class="row" style="gap:6px"><button class="ghost proglow" id="importCsv" style="padding:8px 11px">Import</button><button class="ghost proglow" id="exportCsv" style="padding:8px 11px">Export</button><button class="ghost" id="refreshGraded" style="padding:8px 11px" title="Update graded card values">Price graded</button><button class="ghost" id="addHolding" style="padding:8px 11px">+ Add</button></div>
+      <div class="row between" style="margin-bottom:var(--s2)"><label style="margin:0">Holdings</label>
+        <div class="row" style="gap:var(--s3)"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button><button class="ghost" id="addHolding" style="padding:var(--s4) var(--s5)">+ Add</button></div>
       </div>
-      <div class="row" style="gap:6px;margin-bottom:7px"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:9px 11px;font-size:14px"><select id="holdSort" style="padding:6px 7px;font-size:11px;background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
-      <div class="seg sm" id="holdTypeSeg" style="margin-bottom:10px"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
+      <div class="row" style="gap:var(--s3);margin-bottom:var(--s3)"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><select id="holdSort" style="padding:var(--s3) var(--s3);font-size:var(--t2);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
+      <div class="seg sm" id="holdTypeSeg" style="margin-bottom:var(--s5)"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
     <div class="card hide" id="soldCard">
@@ -556,11 +575,11 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="colbody"><table><thead><tr><th>Item</th><th>Basis</th><th>Net</th><th>P&amp;L</th><th></th></tr></thead><tbody id="soldBody"></tbody></table></div>
     </div>
     <div class="card" id="dealCard">
-      <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span><button class="hint" data-hint="deal" aria-label="What is this?">i</button></label><span class="row" style="gap:8px"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
+      <div class="row between colhead" data-col="dealCard"><label style="margin:0">Deal log <span class="chip pro">pro</span><button class="hint" data-hint="deal" aria-label="What is this?">i</button></label><span class="row" style="gap:var(--s4)"><span class="toolbtn" id="dealCount"></span><span class="chev">▾</span></span></div>
       <div class="colbody" id="dealBody"></div>
     </div>
     <div class="card" id="dropsCard">
-      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">Drops <span class="chip pro">pro</span><button class="hint" data-hint="flip" aria-label="What is this?">i</button></label><span class="row" style="gap:8px"><button class="ghost" id="addDrop" style="padding:6px 10px">+ Add</button><span class="chev">▾</span></span></div>
+      <div class="row between colhead" data-col="dropsCard"><label style="margin:0">Drops <span class="chip pro">pro</span><button class="hint" data-hint="flip" aria-label="What is this?">i</button></label><span class="row" style="gap:var(--s4)"><button class="ghost" id="addDrop" style="padding:var(--s3) var(--s5)">+ Add</button><span class="chev">▾</span></span></div>
       <div class="colbody" id="dropsBody"></div>
     </div>
     <div class="card" id="taxCard">
@@ -571,16 +590,16 @@ catch(e){document.documentElement.style.display="none";}</script>
 
   <!-- ============ SETTINGS ============ -->
   <section class="panel" id="settings">
-    <div class="card" style="text-align:center;padding:22px 16px">
-      <img src="leaf-splash.png" alt="" style="width:76px;height:76px;margin-bottom:6px;object-fit:contain;mix-blend-mode:screen">
-      <div class="brand" style="font-size:26px">Holomint</div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px">sealed · graded · singles</div>
+    <div class="card" style="text-align:center;padding:var(--s9) var(--s8)">
+      <img src="leaf-splash.png" alt="" style="width:76px;height:76px;margin-bottom:var(--s3);object-fit:contain;mix-blend-mode:screen">
+      <div class="brand" style="font-size:var(--t10)">Holomint</div>
+      <div style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3);margin-top:var(--s2)">sealed · graded · singles</div>
     </div>
     <div class="card">
-      <div class="row between" style="padding:6px 0"><span style="font-size:14px">Holomint Pro</span><button class="ghost" id="setProBtn" style="padding:8px 14px">Manage</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:8px 14px">Open</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Back up / restore</span><div class="row" style="gap:6px"><button class="ghost" id="setBkBtn" style="padding:8px 12px">Back up</button><button class="ghost" id="setRsBtn" style="padding:8px 12px">Restore</button></div></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Device storage</span><div class="row" style="gap:6px;align-items:center"><span id="persistState" style="font-size:12px;color:var(--ink3)">Checking</span><button class="ghost" id="persistBtn" style="padding:8px 12px;display:none">Protect</button></div></div>
+      <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t5)">Holomint Pro</span><button class="ghost" id="setProBtn" style="padding:var(--s4) var(--s7)">Manage</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:var(--s4) var(--s7)">Open</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Back up / restore</span><div class="row" style="gap:var(--s3)"><button class="ghost" id="setBkBtn" style="padding:var(--s4) var(--s6)">Back up</button><button class="ghost" id="setRsBtn" style="padding:var(--s4) var(--s6)">Restore</button></div></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Device storage</span><div class="row" style="gap:var(--s3);align-items:center"><span id="persistState" style="font-size:var(--t3);color:var(--ink3)">Checking</span><button class="ghost" id="persistBtn" style="padding:var(--s4) var(--s6);display:none">Protect</button></div></div>
     </div>
 
     <div class="card" id="alertCard">
@@ -590,7 +609,7 @@ catch(e){document.documentElement.style.display="none";}</script>
         <div id="alertPrefs" style="display:none">
           <div class="field">
             <label>Only wake me above</label>
-            <div class="row" style="gap:8px">
+            <div class="row" style="gap:var(--s4)">
               <div style="flex:1"><input id="alMinProfit" type="number" inputmode="decimal" step="1" placeholder="25"><div class="sub">$ net profit</div></div>
               <div style="flex:1"><input id="alMinRoi" type="number" inputmode="decimal" step="1" placeholder="20"><div class="sub">% ROI</div></div>
             </div>
@@ -611,7 +630,7 @@ catch(e){document.documentElement.style.display="none";}</script>
             <div id="alWatchSug" class="wl-sug"></div>
             <div id="alWatchChips" class="wl-chips"></div>
             <div class="sub">Watched products alert you on every restock, whether or not they clear your floors.</div>
-            <label class="ck-chk" style="margin-top:8px"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
+            <label class="ck-chk" style="margin-top:var(--s4)"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alQueue"><span><b>Queue alerts</b> (Pokemon Center waiting room and similar)</span></label>
@@ -622,8 +641,8 @@ catch(e){document.documentElement.style.display="none";}</script>
             <div class="sub">Invite signups and preloaded product pages, before the drop exists. The calm way to be early.</div>
           </div>
           <div class="field">
-            <label class="ck-chk" style="margin-bottom:6px"><input type="checkbox" id="alQuiet"><span><b>Quiet hours</b> (no alerts overnight)</span></label>
-            <div class="row" style="gap:8px" id="alQuietRow">
+            <label class="ck-chk" style="margin-bottom:var(--s3)"><input type="checkbox" id="alQuiet"><span><b>Quiet hours</b> (no alerts overnight)</span></label>
+            <div class="row" style="gap:var(--s4)" id="alQuietRow">
               <div style="flex:1"><input id="alQs" type="number" inputmode="numeric" min="0" max="23" placeholder="23"><div class="sub">from (24h)</div></div>
               <div style="flex:1"><input id="alQe" type="number" inputmode="numeric" min="0" max="23" placeholder="7"><div class="sub">to (24h)</div></div>
             </div>
@@ -633,7 +652,7 @@ catch(e){document.documentElement.style.display="none";}</script>
             <input id="alCap" type="number" inputmode="numeric" min="1" max="20" placeholder="8">
             <div class="sub">A hard ceiling. Protects the alert permission from a threshold set too low.</div>
           </div>
-          <div class="row" style="gap:8px;margin-top:4px">
+          <div class="row" style="gap:var(--s4);margin-top:var(--s2)">
             <button class="ghost" id="alSave" style="flex:1">Save</button>
             <button class="ghost" id="alOff" style="flex:1">Turn off alerts</button>
           </div>
@@ -642,23 +661,23 @@ catch(e){document.documentElement.style.display="none";}</script>
     </div>
 
     <div class="card">
-      <div class="row between" style="padding:6px 0"><span style="font-size:14px">How Holomint works</span><button class="ghost" id="setTour" style="padding:8px 14px">Replay tour</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Manage devices</span><button class="ghost" data-open-dev style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:8px 14px">Open</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Card condition guide</span><button class="ghost" data-open-cond style="padding:8px 14px">View</button></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Version</span><span id="verTag" style="font-size:13px;color:var(--ink3);font-family:var(--mono)">v1.24 · early access</span></div>
-      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Holomint is in active development and updates often. Things improve quickly and can change, so back up your data now and then from Currency &amp; data. If a number looks wrong or something does not behave, please report it and it will get fixed.</div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:8px 14px">Open</a></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Terms of Service</span><a class="ghost" href="terms.html" style="padding:8px 14px">Open</a></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:8px 14px">Open</a></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">What is Holomint?</span><a class="ghost" href="about.html" style="padding:8px 14px">Read</a></div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Follow Holomint</span><a class="ghost" href="https://instagram.com/holomint.app" target="_blank" rel="noopener noreferrer" style="padding:8px 14px">Instagram</a></div>
-      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Drop receipts, margin logs, and what is being built next.</div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Report a problem</span><button class="ghost" id="bugBtn" style="padding:8px 14px">Report</button></div>
-      <div style="font-size:11.5px;color:var(--ink3);line-height:1.55;padding:0 0 8px">Opens an email with your version filled in. Review it before sending; delete anything you would rather not share.</div>
-      <div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:14px">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:8px 14px">Email</a></div>
+      <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t5)">How Holomint works</span><button class="ghost" id="setTour" style="padding:var(--s4) var(--s7)">Replay tour</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Manage devices</span><button class="ghost" data-open-dev style="padding:var(--s4) var(--s7)">View</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:var(--s4) var(--s7)">Open</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Card condition guide</span><button class="ghost" data-open-cond style="padding:var(--s4) var(--s7)">View</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Version</span><span id="verTag" style="font-size:var(--t4);color:var(--ink3);font-family:var(--mono)">v1.24 · early access</span></div>
+      <div style="font-size:var(--t2);color:var(--ink3);line-height:1.55;padding:0 0 var(--s4)">Holomint is in active development and updates often. Things improve quickly and can change, so back up your data now and then from Currency &amp; data. If a number looks wrong or something does not behave, please report it and it will get fixed.</div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Privacy Policy</span><a class="ghost" href="privacy.html" style="padding:var(--s4) var(--s7)">Open</a></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Terms of Service</span><a class="ghost" href="terms.html" style="padding:var(--s4) var(--s7)">Open</a></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Refund Policy</span><a class="ghost" href="refunds.html" style="padding:var(--s4) var(--s7)">Open</a></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">What is Holomint?</span><a class="ghost" href="about.html" style="padding:var(--s4) var(--s7)">Read</a></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Follow Holomint</span><a class="ghost" href="https://instagram.com/holomint.app" target="_blank" rel="noopener noreferrer" style="padding:var(--s4) var(--s7)">Instagram</a></div>
+      <div style="font-size:var(--t2);color:var(--ink3);line-height:1.55;padding:0 0 var(--s4)">Drop receipts, margin logs, and what is being built next.</div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Report a problem</span><button class="ghost" id="bugBtn" style="padding:var(--s4) var(--s7)">Report</button></div>
+      <div style="font-size:var(--t2);color:var(--ink3);line-height:1.55;padding:0 0 var(--s4)">Opens an email with your version filled in. Review it before sending; delete anything you would rather not share.</div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:var(--s4) var(--s7)">Email</a></div>
     </div>
-    <div class="card" style="font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.7">
+    <div class="card" style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3);line-height:1.7">
       <b style="color:var(--ink2)">Estimates only. Not financial advice.</b> Prices, margins, and profit figures are estimates derived from third-party data and may be inaccurate, incomplete, or out of date. You are solely responsible for your own buying and selling decisions.<br><br>
       Prices from TCGplayer via TCGcsv, refreshed daily. Card data from pokemontcg.io.<br>
       Independent tool. Not affiliated with Nintendo, The Pokémon Company, PSA, CGC, eBay, Whatnot, or TCGplayer. All card names, images, and trademarks are the property of their respective owners.<br><br>
@@ -669,20 +688,20 @@ catch(e){document.documentElement.style.display="none";}</script>
   <!-- ============ SLAB MATH ============ -->
   <section class="panel" id="slab">
     <div class="card" id="slabCard">
-      <div class="grid2" style="margin-bottom:10px">
+      <div class="grid2" style="margin-bottom:var(--s5)">
         <div><label>Card</label><input id="cardName" placeholder="Mega Charizard X EX"></div>
         <div><label>Number</label><input id="cardNum" placeholder="125/094 or SWSH284"></div>
       </div>
       <button class="act" id="findCard">Find card</button>
       <div class="results" id="cardResults"></div>
-      <div id="cardHit" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
-        <div class="row between"><div><div id="chName" style="font-weight:500"></div><div id="chSet" style="font-family:var(--mono);font-size:11px;color:var(--ink3)"></div></div></div>
-        <div class="row" id="finishRow" style="gap:6px;margin-top:10px;flex-wrap:wrap"></div>
+      <div id="cardHit" class="hide" style="margin-top:var(--s6);padding-top:var(--s6);border-top:1px solid var(--line)">
+        <div class="row between"><div><div id="chName" style="font-weight:500"></div><div id="chSet" style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3)"></div></div></div>
+        <div class="row" id="finishRow" style="gap:var(--s3);margin-top:var(--s5);flex-wrap:wrap"></div>
       </div>
     </div>
     <div class="card">
-      <div class="grid2" style="margin-bottom:10px"><div><label>Grader</label><select id="gBrand"></select></div><div><label>Service</label><select id="gService"></select></div></div>
-      <div class="grid2" style="margin-bottom:12px"><div><label>Ship / card</label><input class="num" id="gShip" type="number" value="3"></div></div>
+      <div class="grid2" style="margin-bottom:var(--s5)"><div><label>Grader</label><select id="gBrand"></select></div><div><label>Service</label><select id="gService"></select></div></div>
+      <div class="grid2" style="margin-bottom:var(--s6)"><div><label>Ship / card</label><input class="num" id="gShip" type="number" value="3"></div></div>
       <div class="stats" style="grid-template-columns:repeat(3,1fr);margin:0">
         <div class="stat"><div class="sl">Fee 🔒</div><div class="sv" id="tFee">-</div></div>
         <div class="stat"><div class="sl">Days 🔒</div><div class="sv" id="tDays">-</div></div>
@@ -690,13 +709,13 @@ catch(e){document.documentElement.style.display="none";}</script>
       </div>
     </div>
     <div class="card">
-      <div style="font-size:12px;color:var(--ink3);line-height:1.5;margin-bottom:10px">Enter the graded values you are pricing against. These are starting placeholders, not live quotes. Automatic graded pricing is not switched on yet.</div>
+      <div style="font-size:var(--t3);color:var(--ink3);line-height:1.5;margin-bottom:var(--s5)">Enter the graded values you are pricing against. These are starting placeholders, not live quotes. Automatic graded pricing is not switched on yet.</div>
       <table style="margin-top:0">
         <thead><tr><th>Grade</th><th>Value</th><th>Pop</th><th>vs raw</th></tr></thead>
         <tbody>
-          <tr><td>10</td><td><input class="num" id="g10" type="number" value="300" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p10pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d10">-</td></tr>
-          <tr><td>9</td><td><input class="num" id="g9" type="number" value="140" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p9pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d9">-</td></tr>
-          <tr><td>8</td><td><input class="num" id="g8" type="number" value="90" style="padding:7px 9px;font-size:13px"></td><td><input class="num" id="p8pop" type="number" placeholder="-" style="padding:7px 9px;font-size:13px"></td><td id="d8">-</td></tr>
+          <tr><td>10</td><td><input class="num" id="g10" type="number" value="300" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td><input class="num" id="p10pop" type="number" placeholder="-" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td id="d10">-</td></tr>
+          <tr><td>9</td><td><input class="num" id="g9" type="number" value="140" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td><input class="num" id="p9pop" type="number" placeholder="-" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td id="d9">-</td></tr>
+          <tr><td>8</td><td><input class="num" id="g8" type="number" value="90" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td><input class="num" id="p8pop" type="number" placeholder="-" style="padding:var(--s3) var(--s4);font-size:var(--t4)"></td><td id="d8">-</td></tr>
         </tbody>
       </table>
     </div>
@@ -725,12 +744,12 @@ catch(e){document.documentElement.style.display="none";}</script>
 </nav>
 <div class="sheetbg" id="sheetbg"></div>
 <div class="sheet" id="sheet"><div class="holo-line"></div><h3 id="sheetTitle"></h3><div id="sheetBody"></div>
-  <div class="btnrow" style="margin-top:6px"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
+  <div class="btnrow" style="margin-top:var(--s3)"><button class="ghost" id="sheetCancel" style="flex:1">Cancel</button><button class="act" id="sheetOk" style="flex:2">Save</button></div>
 </div>
 <div id="featModal">
   <div class="cg-card">
     <button class="scanx" id="featClose" aria-label="Close" style="position:absolute;top:10px;right:10px">×</button>
-    <div class="brand" style="font-size:20px;margin-bottom:2px">Everything Holomint does</div>
+    <div class="brand" style="font-size:var(--t8);margin-bottom:var(--s1)">Everything Holomint does</div>
     <div class="cg-sub">Tap any feature and Holomint will take you to it and highlight it.</div>
     <div class="fm-list"></div>
   </div>
@@ -738,7 +757,7 @@ catch(e){document.documentElement.style.display="none";}</script>
 <div id="condModal">
   <div class="cg-card">
     <button class="scanx" id="condClose" aria-label="Close" style="position:absolute;top:10px;right:10px">×</button>
-    <div class="brand" style="font-size:20px;margin-bottom:2px">Card conditions</div>
+    <div class="brand" style="font-size:var(--t8);margin-bottom:var(--s1)">Card conditions</div>
     <div class="cg-sub">Market prices track Near Mint. Other grades price at a percentage of NM. The percentages below are typical dealer numbers; tap one to change it, and every single in the app follows. When live condition pricing is switched on, cards use real per-condition market prices instead, and the chip reads live; these percentages remain the offline fallback.</div>
     <div class="cg-list"></div>
   </div>
@@ -755,7 +774,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   <button class="scanx" id="lotClose" aria-label="Close lot scanner">×</button>
   <div class="lot-inner">
     <div class="lot-head">
-      <div class="row" style="gap:7px;align-items:center"><img src="leaf-splash.png" alt="" style="width:24px;height:24px;object-fit:contain;mix-blend-mode:screen"><div class="brand" style="font-size:22px">Lot scanner</div></div>
+      <div class="row" style="gap:var(--s3);align-items:center"><img src="leaf-splash.png" alt="" style="width:24px;height:24px;object-fit:contain;mix-blend-mode:screen"><div class="brand" style="font-size:var(--t9)">Lot scanner</div></div>
       <div class="lot-sub">Paste or upload a marketplace listing photo. Holomint reads the cards, prices each net of your fees, and totals the lot against the asking price.</div>
     </div>
 
@@ -770,7 +789,7 @@ catch(e){document.documentElement.style.display="none";}</script>
 
     <div id="lotAsk" class="lot-ask" style="display:none">
       <label style="margin:0 0 6px">Asking price (optional)</label>
-      <div class="row" style="gap:8px;align-items:center">
+      <div class="row" style="gap:var(--s4);align-items:center">
         <span style="color:var(--ink3)">$</span>
         <input type="number" id="lotAskVal" inputmode="decimal" placeholder="what they want for the lot" style="flex:1">
       </div>
@@ -795,7 +814,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   <div class="scanpanel">
     <div class="scanstatus" id="scanStatus">Reading…</div>
     <div class="scanhint" id="scanHint"></div>
-    <button class="act" id="scanRetake" style="max-width:260px;margin-top:18px">Scan again</button>
+    <button class="act" id="scanRetake" style="max-width:260px;margin-top:var(--s8)">Scan again</button>
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite">Done</div>
@@ -1344,11 +1363,11 @@ const Sheet=(function(){
 
 /* ---- Hints: tap-to-open explainers (hover tooltips do not exist on touch) ---- */
 const HINTS={
-  fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>13.25% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:10px'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
-  flip:["Flip margin","<p>For each restock, Holomint matches the product to its sealed listing in the catalog, takes the current market price, subtracts your channel fees, and compares the result against the listed retail.</p><p style='margin-top:8px'><b>Green</b> means it clears fees at today's market. <b>Dim</b> means it does not.</p><p style='margin-top:8px'>Market prices come from third-party data and refresh daily, so they can move before you sell. Pre-orders are the least reliable. If Holomint cannot match a product with confidence, it shows no margin at all rather than guessing.</p><p style='margin-top:8px'><b>Estimates only. Not financial advice.</b></p>"],
-  tax:["Tax summary","<p>Realized profit and loss by year, using the cost basis you entered and the net you actually received after fees.</p><p style='margin-top:8px'>Only sold items count. Holdings you still own are unrealized and do not appear here.</p><p style='margin-top:8px'>Lot accounting (FIFO or LIFO) is set in Pro settings. It decides which cost basis is used when you sell part of a stack.</p><p style='margin-top:8px'>This is a summary for your own records. It is not tax advice.</p>"],
-  alerts:["Drop alerts","<p>Your phone buzzes when a restock lands with real margin in it, <b>even when Holomint is closed</b>. No need to keep the app open.</p><p style='margin-top:8px'>Holomint matches the drop to its sealed listing, prices it against your fee channel, and only wakes you if it clears <b>both</b> of your floors: net profit and ROI.</p><p style='margin-top:8px'>Free restock bots ping you for everything. This one stays quiet unless there is money in it.</p><p style='margin-top:8px'>A hard daily cap applies no matter how low you set the floors, so a bad setting cannot spam you into muting the app.</p>"],
-  deal:["Deal log","<p>Every buy and trade you archive, with the date and what you paid or received.</p><p style='margin-top:8px'>Useful for reconstructing a deal months later, or exporting your full history to CSV.</p>"],
+  fees:["Net by channel","<p>Net is what actually lands in your pocket after the platform takes its cut.</p><div class='hrow'><span>eBay</span><span>13.6% + $0.40</span></div><div class='hrow'><span>TCGplayer</span><span>13.25% + $0.30</span></div><div class='hrow'><span>Whatnot</span><span>11% + $0.30</span></div><div class='hrow'><span>Cash</span><span>0%</span></div><p style='margin-top:var(--s5)'>Shipping, supplies, and sales tax are not included. Changing your channel recalculates every figure in the app against it.</p>"],
+  flip:["Flip margin","<p>For each restock, Holomint matches the product to its sealed listing in the catalog, takes the current market price, subtracts your channel fees, and compares the result against the listed retail.</p><p style='margin-top:var(--s4)'><b>Green</b> means it clears fees at today's market. <b>Dim</b> means it does not.</p><p style='margin-top:var(--s4)'>Market prices come from third-party data and refresh daily, so they can move before you sell. Pre-orders are the least reliable. If Holomint cannot match a product with confidence, it shows no margin at all rather than guessing.</p><p style='margin-top:var(--s4)'><b>Estimates only. Not financial advice.</b></p>"],
+  tax:["Tax summary","<p>Realized profit and loss by year, using the cost basis you entered and the net you actually received after fees.</p><p style='margin-top:var(--s4)'>Only sold items count. Holdings you still own are unrealized and do not appear here.</p><p style='margin-top:var(--s4)'>Lot accounting (FIFO or LIFO) is set in Pro settings. It decides which cost basis is used when you sell part of a stack.</p><p style='margin-top:var(--s4)'>This is a summary for your own records. It is not tax advice.</p>"],
+  alerts:["Drop alerts","<p>Your phone buzzes when a restock lands with real margin in it, <b>even when Holomint is closed</b>. No need to keep the app open.</p><p style='margin-top:var(--s4)'>Holomint matches the drop to its sealed listing, prices it against your fee channel, and only wakes you if it clears <b>both</b> of your floors: net profit and ROI.</p><p style='margin-top:var(--s4)'>Free restock bots ping you for everything. This one stays quiet unless there is money in it.</p><p style='margin-top:var(--s4)'>A hard daily cap applies no matter how low you set the floors, so a bad setting cannot spam you into muting the app.</p>"],
+  deal:["Deal log","<p>Every buy and trade you archive, with the date and what you paid or received.</p><p style='margin-top:var(--s4)'>Useful for reconstructing a deal months later, or exporting your full history to CSV.</p>"],
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hint]');if(!b)return;e.preventDefault();e.stopPropagation();const h=HINTS[b.dataset.hint];if(h)Sheet.info(h[0],h[1]);},true);
 document.addEventListener('click',e=>{const t=e.target.closest('[data-track]');if(!t)return;e.preventDefault();e.stopPropagation();LiveDrops.track(t.dataset.track,t.dataset.date);},true);
@@ -1434,9 +1453,9 @@ const Alerts=(function(){
           '<div class="tour-t">One quick thing</div>'+
           '<div class="tour-b">Drop alerts register this device with our server, so we need to know your age first. '+
           'Everything else in Holomint stays on your device and stays available either way.</div>'+
-          '<div style="margin:14px 0 4px;font-size:13px;color:var(--ink2)">What year were you born?</div>'+
+          '<div style="margin:14px 0 4px;font-size:var(--t4);color:var(--ink2)">What year were you born?</div>'+
           '<input id="ageYr" type="number" inputmode="numeric" placeholder="YYYY" min="1900" max="2100">'+
-          '<div class="tour-nav" style="margin-top:16px"><button class="ghost" id="ageNo">Cancel</button>'+
+          '<div class="tour-nav" style="margin-top:var(--s8)"><button class="ghost" id="ageNo">Cancel</button>'+
           '<button class="act" id="ageGo" style="flex:1">Continue</button></div></div>';
         document.body.appendChild(w);
       }
@@ -1524,11 +1543,11 @@ const Alerts=(function(){
       wireWatchSearch();
     }
     const F=(typeof Checkout!=='undefined'&&Checkout.get()&&Checkout.get().founder)||null;
-    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:8px">Founder pricing: '+F.left+' of '+F.total+' seats left at $'+Number(F.amount).toFixed(2)+'/month, locked for good.</div>':'';
+    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Founder pricing: '+F.left+' of '+F.total+' seats left at $'+Number(F.amount).toFixed(2)+'/month, locked for good.</div>':'';
     const msg={
       'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
-      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro is instant, with a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:10px">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:8px">Turn off alerts</button>'+fnote,
-      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free: 10 minutes late, 2 a day.</b> Pro: instant, your own ceiling.</div><button class="act" id="alOn" style="margin-top:10px">Enable drop alerts</button>'+fnote,
+      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro is instant, with a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:var(--s5)">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:var(--s4)">Turn off alerts</button>'+fnote,
+      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free: 10 minutes late, 2 a day.</b> Pro: instant, your own ceiling.</div><button class="act" id="alOn" style="margin-top:var(--s5)">Enable drop alerts</button>'+fnote,
       'blocked':'<div class="sub">Notifications are blocked for this site. Re-allow them in your browser settings, then come back.</div>',
       'unsupported':'<div class="sub">This browser cannot receive push notifications.</div>',
       'ios-install':'<div class="sub"><b style="color:var(--ink2)">Add Holomint to your Home Screen first.</b><br>On iPhone, alerts only work for installed apps.<br><br>1. Tap the Share button in Safari<br>2. Scroll and tap <b style="color:var(--ink2)">Add to Home Screen</b><br>3. Open Holomint from the new icon<br>4. Come back here and turn alerts on</div>',
@@ -1936,7 +1955,7 @@ const Checkout=(function(){
 
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
-const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:14px"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
+const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:var(--s5);padding-top:var(--s7)"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
 function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
   setTimeout(()=>{const b=document.getElementById('bkBtn'),r=document.getElementById('rsBtn');
   if(b)b.onclick=()=>{Sheet.close();backup();};
@@ -1984,7 +2003,7 @@ $('#proBtn').onclick=async()=>{
         Checkout.offerHtml(PR)},
       {type:'static',html:'<div class="sub" style="text-align:center;margin:2px 0 -2px">Already bought? Paste your key below.</div>'},
       {key:'key',label:'License key',placeholder:'HMP-XXXX-XXXX-XXXX'},
-      {type:'static',html:Premium.active()?'<button class="ghost" id="proClear" style="width:100%;margin-top:-4px">Remove Pro key</button>':''},
+      {type:'static',html:Premium.active()?'<button class="ghost" id="proClear" style="width:100%;margin-top:-var(--s2)">Remove Pro key</button>':''},
       {key:'cur',label:'Currency',type:'select',value:FX.code,options:Object.keys(CURRENCIES).map(c=>[c,c])},
       {key:'rate',label:'Rate per 1 USD',type:'number',value:FX.rate},
       {type:'static',html:DATA_ROW}
@@ -2098,7 +2117,7 @@ $('#feeFlat').oninput=e=>{FeeCalc.channels[channel].flat=parseFloat(e.target.val
 const soPrice=$('#sellOptPrice'),soList=$('#sellOptList');
 function renderSellOpt(){
   const p=parseFloat(soPrice.value)||0;
-  if(p<=0){soList.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);padding:2px 0">Enter a price, or tap Use pile.</div>';return;}
+  if(p<=0){soList.innerHTML='<div style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3);padding:var(--s1) 0">Enter a price, or tap Use pile.</div>';return;}
   const rows=Object.entries(FeeCalc.channels).map(([k,c])=>{const r=FeeCalc.net(p,k);return{label:c.label,net:r.net,fees:r.fees,keep:r.net/p*100};}).sort((a,b)=>b.net-a.net);
   soList.innerHTML=rows.map((r,i)=>`<div class="so${i===0?' best':''}"><div class="so-l"><span class="so-n">${r.label}</span>${i===0?'<span class="chip best">best</span>':''}</div><div class="so-r"><span class="so-net">${usd(r.net)}</span><span class="so-sub">${r.fees>0?'\u2212'+usd(r.fees)+' \u00b7 ':''}keep ${Math.round(r.keep)}%</span></div></div>`).join('');
 }
@@ -2245,8 +2264,8 @@ function wireSearch(inputId,resultsId,target){const inp=$('#'+inputId),res=$('#'
     if(inp.value.trim().length>=3){try{InstallOffer.noteUsefulSearch();}catch(e){}}
     res.setAttribute('role','listbox');
     res.innerHTML=r.map((i,ri)=>{const h=PriceEngine.getHistory(i.id),c=pctChange(h);
-      const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:10px">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
-      return `<div class="res" role="option" id="res-${ri}" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:10px;color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
+      const ch=c!=null?` <span class="${c>=0?'pos':'neg'}" style="font-size:var(--t1)">${c>=0?'+':''}${c.toFixed(0)}%</span>`:'';
+      return `<div class="res" role="option" id="res-${ri}" data-add="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class="chip jp">JP</span>':''}</span>${i.set?'<div style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3)">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}${ch}</span></div>`;}).join('');res.classList.add('show');
     res.querySelectorAll('.res').forEach(el=>el.onclick=()=>{addTo(target,el.dataset.add);inp.value='';res.classList.remove('show');});},30);};}
 /* The same dealer buys the same products over and over. Remember what actually gets
    added and offer it as one tap, so a show shift is not the same search fifty times. */
@@ -2551,11 +2570,11 @@ function renderHoldings(){
   const hidden=sorted.length-shown.length;
   $('#holdBody').innerHTML=shown.length?shown.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
     const chip=(h.grade)?`<span class="chip graded">${(h.grader||'').toUpperCase()} ${h.grade}</span>`:(h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>')));
-    return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
+    return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
     :(holdings.length?'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">No matches.</td></tr>':'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty. Buy something in the Trade Block.</td></tr>');
   if(hidden>0){
     $('#holdBody').insertAdjacentHTML('beforeend',
-      '<tr><td colspan="5" style="text-align:center;padding:12px"><button class="ghost" id="holdMore" style="padding:8px 16px;font-size:12px">Show all '+sorted.length+' holdings</button><div style="font-size:11px;color:var(--ink3);margin-top:5px;font-family:var(--mono)">'+hidden+' more not shown</div></td></tr>');
+      '<tr><td colspan="5" style="text-align:center;padding:var(--s6)"><button class="ghost" id="holdMore" style="padding:var(--s4) var(--s8);font-size:var(--t3)">Show all '+sorted.length+' holdings</button><div style="font-size:var(--t2);color:var(--ink3);margin-top:var(--s2);font-family:var(--mono)">'+hidden+' more not shown</div></td></tr>');
     const mb=$('#holdMore');if(mb)mb.onclick=()=>{holdShowAll=true;renderHoldings();};
   }
   // Handlers are delegated once at the table level (see below), so nothing is attached
@@ -2570,10 +2589,10 @@ function renderSold(){
   const soldView=soldShowAll?soldAll:soldAll.slice(0,SOLD_WINDOW);
   const soldHidden=soldAll.length-soldView.length;
   $('#soldBody').innerHTML=soldView.map(r=>{const cls=r.realized>=0?'pos':'neg';
-    return `<tr><td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);font-weight:400">\u00d7${r.qty} · ${r.channel} · ${r.date}</div></td><td>${usd(r.basis)}</td><td>${usd(r.net)}</td><td class="${cls}">${usd(r.realized)}</td><td><span class="toolbtn" data-unsell="${r.id}">\u00d7</span></td></tr>`;}).join('');
+    return `<tr><td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}<div style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3);font-weight:400">\u00d7${r.qty} · ${r.channel} · ${r.date}</div></td><td>${usd(r.basis)}</td><td>${usd(r.net)}</td><td class="${cls}">${usd(r.realized)}</td><td><span class="toolbtn" data-unsell="${r.id}">\u00d7</span></td></tr>`;}).join('');
   if(soldHidden>0){
     $('#soldBody').insertAdjacentHTML('beforeend',
-      '<tr><td colspan="6" style="text-align:center;padding:10px"><button class="ghost" id="soldMore" style="padding:7px 14px;font-size:12px">Show all '+soldAll.length+' sales</button></td></tr>');
+      '<tr><td colspan="6" style="text-align:center;padding:var(--s5)"><button class="ghost" id="soldMore" style="padding:var(--s3) var(--s7);font-size:var(--t3)">Show all '+soldAll.length+' sales</button></td></tr>');
     const sm=$('#soldMore');if(sm)sm.onclick=()=>{soldShowAll=true;renderSold();};
   }
   $('#soldBody').querySelectorAll('[data-unsell]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=soldLog.find(x=>x.id===b.dataset.unsell);if(!r)return;
@@ -2592,7 +2611,7 @@ function renderSold(){
       if(db)db.onclick=()=>{Sheet.close();done();toast('Record deleted');};
     },60);});
 }
-function lockHtml(text){return `<div class="lk" style="padding:8px 0 2px"><p>${text}</p><button class="ghost" data-pro-up style="padding:8px 13px">Unlock</button></div>`;}
+function lockHtml(text){return `<div class="lk" style="padding:var(--s4) 0 var(--s1)"><p>${text}</p><button class="ghost" data-pro-up style="padding:var(--s4) var(--s6)">Unlock</button></div>`;}
 function wireLocks(){$$('#port [data-pro-up]').forEach(b=>b.onclick=()=>$('#proBtn').click());}
 function renderDeals(){
   const body=$('#dealBody');
@@ -2601,7 +2620,7 @@ function renderDeals(){
   if(!dealLog.length){body.innerHTML='<div class="empty">No deals yet.<br><span class="es-h">Build a pile in the Trade Block and send it to the Desk to log one.</span></div>';return;}
   body.innerHTML='<table><thead><tr><th>Deal</th><th>Market</th><th>Paid</th></tr></thead><tbody>'+[...dealLog].reverse().slice(0,30).map(d=>{
     const names=d.items.map(i=>i.qty+'× '+i.name).join(', ');
-    return `<tr><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;color:var(--ink);font-size:13px">${names}<div style="font-size:10px;color:var(--ink3)">${d.kind} · ${d.date}</div></td><td>${usd(d.market)}</td><td>${usd(d.payout)}</td></tr>`;}).join('')+'</tbody></table>';
+    return `<tr><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;color:var(--ink);font-size:var(--t4)">${names}<div style="font-size:var(--t1);color:var(--ink3)">${d.kind} · ${d.date}</div></td><td>${usd(d.market)}</td><td>${usd(d.payout)}</td></tr>`;}).join('')+'</tbody></table>';
 }
 function renderTax(){
   const body=$('#taxBody');
@@ -2849,7 +2868,7 @@ function renderDrops(){
     const days=Math.round((new Date(d.date+'T00:00')-today)/86400000);
     const when=days<0?'passed':days===0?'today':days===1?'tomorrow':'in '+days+'d';
     const hot=days>=0&&days<=1;
-    return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:10px;color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:8px"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
+    return `<div class="brk"><span>${d.name}${d.where?' · '+d.where:''}<div style="font-size:var(--t1);color:${hot?'var(--gold)':'var(--ink3)'}">${d.date} · ${when}</div></span><span class="row" style="gap:var(--s4)"><span class="toolbtn" data-ics="${d.id}" title="Add to calendar">\ud83d\udcc5</span><span class="toolbtn" data-deldrop="${d.id}">\u00d7</span></span></div>`;
   }).join('');
   body.innerHTML='<div class="live-head">Live drops</div>'+LiveDrops.html()+'<div class="dl-note">Flip figures are estimates: market price from third-party data, net of channel fees, vs. listed retail. Market may move before you sell. Not financial advice.</div>'+'<div class="dl-founder" id="fBan"></div>'+'<div class="live-head">Tracked releases</div>'+manualHtml;
   paintFounder();
@@ -2935,7 +2954,7 @@ $('#addHolding').onclick=()=>{
     if(!inp)return;
     inp.oninput=()=>{const r=PriceEngine.search(inp.value,lang);
       if(!r.length){res.classList.remove('show');res.innerHTML='';return;}
-      res.innerHTML=r.map(i=>`<div class="res" data-pk="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`).join('');
+      res.innerHTML=r.map(i=>`<div class="res" data-pk="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:var(--t1);color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`).join('');
       res.classList.add('show');
       res.querySelectorAll('[data-pk]').forEach(el=>el.onclick=()=>{
         const it=PriceEngine.getItem(el.dataset.pk);if(!it)return;
@@ -3266,7 +3285,7 @@ if(typeof Sheet!=='undefined'&&!Sheet.confirm){
     var w=document.getElementById('cfmModal');
     if(!w){
       w=document.createElement('div');w.id='cfmModal';
-      w.innerHTML='<div class="cg-card" style="max-width:420px"><div class="brand" style="font-size:19px" id="cfmT"></div><div class="cfm-b" id="cfmB"></div><div class="row" style="gap:8px;margin-top:16px"><button class="ghost" id="cfmNo" style="flex:1">Cancel</button><button class="act" id="cfmYes" style="flex:1"></button></div></div>';
+      w.innerHTML='<div class="cg-card" style="max-width:420px"><div class="brand" style="font-size:var(--t7)" id="cfmT"></div><div class="cfm-b" id="cfmB"></div><div class="row" style="gap:var(--s4);margin-top:var(--s8)"><button class="ghost" id="cfmNo" style="flex:1">Cancel</button><button class="act" id="cfmYes" style="flex:1"></button></div></div>';
       document.body.appendChild(w);
       w.addEventListener('click',function(e){if(e.target.id==='cfmModal')w.classList.remove('show');});
     }
@@ -3371,16 +3390,16 @@ const Devices=(function(){
     var rows=(d.devices||[]).map(function(x){
       var me=x.device===DeviceId;
       var when=x.last?new Date(x.last).toLocaleDateString():'';
-      return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)">'
-        +'<span style="font-size:13px">'+(me?'<b>This device</b>':'Device '+esc(String(x.device).slice(0,6)))
-        +'<br><span style="font-size:11px;color:var(--ink3);font-family:var(--mono)">last used '+esc(when)+'</span></span>'
-        +(me?'<span style="font-size:11px;color:var(--ink3)">in use</span>'
-            :'<button class="ghost" data-rel="'+esc(x.device)+'" style="padding:6px 11px;font-size:12px">Release</button>')
+      return '<div class="row between" style="padding:var(--s4) 0;border-top:1px solid var(--line)">'
+        +'<span style="font-size:var(--t4)">'+(me?'<b>This device</b>':'Device '+esc(String(x.device).slice(0,6)))
+        +'<br><span style="font-size:var(--t2);color:var(--ink3);font-family:var(--mono)">last used '+esc(when)+'</span></span>'
+        +(me?'<span style="font-size:var(--t2);color:var(--ink3)">in use</span>'
+            :'<button class="ghost" data-rel="'+esc(x.device)+'" style="padding:var(--s3) var(--s5);font-size:var(--t3)">Release</button>')
         +'</div>';
     }).join('');
     Sheet.info('Manage devices',
       '<p>Your Pro key is using <b>'+(d.seats||0)+'</b> of <b>'+(d.cap||0)+'</b> device seats. Releasing a seat frees it immediately; that device drops to the free view until it takes a seat again.</p>'
-      +'<p style="font-size:11.5px;color:var(--ink3)">Seats you stop using are released automatically after 45 days.</p>'
+      +'<p style="font-size:var(--t2);color:var(--ink3)">Seats you stop using are released automatically after 45 days.</p>'
       +(rows||'<p>No devices recorded yet.</p>'));
   }
   document.addEventListener('click',async function(e){
@@ -3723,7 +3742,7 @@ const LotScanner=(function(){
   function renderResults(rows,ask){
     setPhase('results');
     var box=$('#lotResults');
-    if(!rows.length){box.innerHTML='<div class="empty" style="padding:30px 0">Could not read any card names. Try a sharper, straighter photo with the names visible.</div>'
+    if(!rows.length){box.innerHTML='<div class="empty" style="padding:var(--s11) 0">Could not read any card names. Try a sharper, straighter photo with the names visible.</div>'
       +'<div class="lot-actions"><button class="ghost" id="lotAgainEmpty" style="flex:1">Try another photo</button></div>';
       $('#lotAgainEmpty').onclick=reset;return;}
     var p=priceRows(rows);
@@ -4327,20 +4346,20 @@ function showQuickCheck(hits,q){
   const hist=PriceEngine.getHistory(it.id),chg=pctChange(hist);
   const own=ownedInfo(it);
   const price=PriceEngine.getPrice(it.id);
-  const chgHtml=chg!=null?`<span class="${chg>=0?'pos':'neg'}" style="font-family:var(--mono);font-size:13px">${chg>=0?'+':''}${chg.toFixed(1)}% 30d</span>`:'<span style="color:var(--ink3);font-family:var(--mono);font-size:12px">building history…</span>';
+  const chgHtml=chg!=null?`<span class="${chg>=0?'pos':'neg'}" style="font-family:var(--mono);font-size:var(--t4)">${chg>=0?'+':''}${chg.toFixed(1)}% 30d</span>`:'<span style="color:var(--ink3);font-family:var(--mono);font-size:var(--t3)">building history…</span>';
   const ownHtml=own.qty>0
-    ?`<div style="margin-top:10px;padding:10px;border-radius:9px;background:#10231c;border:1px solid var(--up);color:var(--up);font-size:13px">\u2713 In your collection \u00d7${own.qty}</div>`
-    :`<div style="margin-top:10px;padding:10px;border-radius:9px;background:var(--bg3);border:1px solid var(--line);color:var(--ink2);font-size:13px">Not in your collection</div>`;
+    ?`<div style="margin-top:var(--s5);padding:var(--s5);border-radius:var(--r-sm);background:#10231c;border:1px solid var(--up);color:var(--up);font-size:var(--t4)">\u2713 In your collection \u00d7${own.qty}</div>`
+    :`<div style="margin-top:var(--s5);padding:var(--s5);border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--line);color:var(--ink2);font-size:var(--t4)">Not in your collection</div>`;
   Sheet.open('Quick check',[
-    {type:'static',html:'<button class="ghost proglow" style="width:100%;margin-bottom:12px" onclick="PiP.show(__qcCard)">'+(PiP.supported()?'\u2197 Float this price (stays on top)':'\ud83d\udccc Pin this price')+'</button>'},
+    {type:'static',html:'<button class="ghost proglow" style="width:100%;margin-bottom:var(--s6)" onclick="PiP.show(__qcCard)">'+(PiP.supported()?'\u2197 Float this price (stays on top)':'\ud83d\udccc Pin this price')+'</button>'},
     {type:'static',html:
-      `<div class="row" style="gap:12px;align-items:flex-start">${thumbHtml(it,'thumb')}
+      `<div class="row" style="gap:var(--s6);align-items:flex-start">${thumbHtml(it,'thumb')}
         <div style="flex:1;min-width:0"><div style="font-weight:500">${it.name}${it.jp?' <span class="chip jp">JP</span>':''}</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${it.set||''}</div></div>
-        <div style="text-align:right"><div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gold)">${usd(price)}</div>${chgHtml}</div></div>`+
-      (hist.length>1?`<div style="margin-top:12px">${sparkline(hist,300,52)}</div>`:'')+
+        <div style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3)">${it.set||''}</div></div>
+        <div style="text-align:right"><div style="font-family:var(--mono);font-size:var(--t8);font-weight:600;color:var(--gold)">${usd(price)}</div>${chgHtml}</div></div>`+
+      (hist.length>1?`<div style="margin-top:var(--s6)">${sparkline(hist,300,52)}</div>`:'')+
       ownHtml+
-      (hits.length>1?`<div style="margin-top:12px"><label>Other matches</label>${hits.slice(1,5).map(h=>`<div class="res" data-qc="${h.id}"><span class="rmeta"><span class="rn">${h.name}</span></span><span class="rp">${usd(PriceEngine.getPrice(h.id))}</span></div>`).join('')}</div>`:'')}
+      (hits.length>1?`<div style="margin-top:var(--s6)"><label>Other matches</label>${hits.slice(1,5).map(h=>`<div class="res" data-qc="${h.id}"><span class="rmeta"><span class="rn">${h.name}</span></span><span class="rp">${usd(PriceEngine.getPrice(h.id))}</span></div>`).join('')}</div>`:'')}
   ],'Done',()=>{});
   setTimeout(()=>{
     document.querySelectorAll('[data-qc]').forEach(el=>el.onclick=()=>{const h=PriceEngine.getItem(el.dataset.qc);if(h){Sheet.close();showQuickCheck([h,...hits.filter(x=>x.id!==h.id)],q);}});
@@ -4349,7 +4368,7 @@ function showQuickCheck(hits,q){
 function showScanResults(hits,q){
   Sheet.open('Scanned'+(q?': '+q:''),[
     {type:'static',html:'<div class="results show" style="max-height:300px">'+hits.slice(0,8).map(i=>
-      `<div class="res" data-scan="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:10px;color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`
+      `<div class="res" data-scan="${i.id}">${thumbHtml(i,'thumb')}<span class="rmeta"><span class="rn">${i.name}${i.jp?' <span class=\"chip jp\">JP</span>':''}</span>${i.set?'<div style=\"font-family:var(--mono);font-size:var(--t1);color:var(--ink3)\">'+i.set+'</div>':''}</span><span class="rp">${priceTag(i.id)}</span></div>`
     ).join('')+'</div>'}
   ],'Close',()=>{});
   setTimeout(()=>{document.querySelectorAll('[data-scan]').forEach(el=>el.onclick=()=>{
@@ -4637,21 +4656,21 @@ const PiP=(function(){
       if(win){win.close();win=null;}
       win=await documentPictureInPicture.requestWindow({width:240,height:128});
       const d=win.document;
-      d.body.style.cssText='margin:0;font-family:system-ui,sans-serif;background:#0e1122;color:#ece7d8;display:flex;flex-direction:column;justify-content:center;padding:14px;gap:4px';
+      d.body.style.cssText='margin:0;font-family:system-ui,sans-serif;background:#0e1122;color:#ece7d8;display:flex;flex-direction:column;justify-content:center;padding:var(--s7);gap:var(--s2)';
       d.body.innerHTML=
-        '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
-        '<div style="font-family:monospace;font-size:11px;color:#5d6480">'+(it.set||'')+'</div>'+
-        '<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><div style="font-family:monospace;font-size:26px;font-weight:600;color:#d8a93f">'+price+'</div><div style="font-family:monospace;font-size:12px;color:'+chgCol+'">'+chgTxt+'</div></div>';
+        '<div style="font-size:var(--t4);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
+        '<div style="font-family:monospace;font-size:var(--t2);color:var(--ink4)">'+(it.set||'')+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:var(--s4);margin-top:var(--s2)"><div style="font-family:monospace;font-size:var(--t10);font-weight:600;color:var(--gold)">'+price+'</div><div style="font-family:monospace;font-size:var(--t3);color:'+chgCol+'">'+chgTxt+'</div></div>';
     }catch(e){pinnedChip(it,price,chgTxt,chgCol);}
   }
   function pinnedChip(it,price,chgTxt,chgCol){
     let chip=document.getElementById('pinChip');
     if(!chip){chip=document.createElement('div');chip.id='pinChip';document.body.appendChild(chip);
-      chip.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:#0e1122;border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;max-width:90vw';}
-    chip.innerHTML='<div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div><div style="font-family:var(--mono);font-size:11px;color:var(--ink3)">'+(it.set||'')+'</div></div>'+
-      '<div style="font-family:var(--mono);font-size:20px;font-weight:600;color:var(--gold)">'+price+'</div>'+
-      (chgTxt?'<div style="font-family:var(--mono);font-size:11px;color:'+chgCol+'">'+chgTxt+'</div>':'')+
-      '<span style="color:var(--ink3);cursor:pointer;font-size:18px;padding-left:4px" onclick="document.getElementById(\'pinChip\').remove()">\u00d7</span>';
+      chip.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:80;background:#0e1122;border:1px solid var(--gold-dim);border-radius:var(--r-md);padding:var(--s5) var(--s7);box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:var(--s5);max-width:90vw';}
+    chip.innerHTML='<div style="min-width:0"><div style="font-size:var(--t4);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div><div style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3)">'+(it.set||'')+'</div></div>'+
+      '<div style="font-family:var(--mono);font-size:var(--t8);font-weight:600;color:var(--gold)">'+price+'</div>'+
+      (chgTxt?'<div style="font-family:var(--mono);font-size:var(--t2);color:'+chgCol+'">'+chgTxt+'</div>':'')+
+      '<span style="color:var(--ink3);cursor:pointer;font-size:var(--t7);padding-left:var(--s2)" onclick="document.getElementById(\'pinChip\').remove()">\u00d7</span>';
   }
   return{show,supported};
 })();
