@@ -179,6 +179,47 @@ with sync_playwright() as pw:
         check(f"{sel} overscroll-behavior contained (got {v})",
               v in ("contain", "none") or v == "missing")
 
+    print("\n7. a closed overlay is inert, not merely off-screen")
+    # The sheet was parked with transform:translateY(105%) and nothing else, so
+    # it stayed rendered, hit-testable and focusable: Cancel and Save sat in the
+    # tab order and the accessibility tree while the app looked closed. Asserted
+    # by actually trying to focus them, because "can I focus it" is the thing
+    # that matters and a computed style is only evidence for it.
+    def focusable_count(sel):
+        return page.evaluate("""(sel)=>{const r=document.querySelector(sel);
+            if(!r)return -1;
+            let n=0;
+            r.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')
+             .forEach(el=>{ try{ el.focus(); if(document.activeElement===el) n++; }catch(e){} });
+            try{document.activeElement.blur();}catch(e){}
+            return n;}""", sel)
+
+    set_overlay(page, "#sheet", False)
+    page.wait_for_timeout(420)   # visibility is delayed by the slide duration
+    st = page.evaluate("""()=>{const e=document.querySelector('#sheet');
+        const cs=getComputedStyle(e);return{v:cs.visibility,pe:cs.pointerEvents};}""")
+    check(f"closed sheet is visibility:hidden (got {st['v']})", st["v"] == "hidden")
+    check(f"closed sheet ignores pointers (got {st['pe']})", st["pe"] == "none")
+    check("nothing inside a closed sheet can take focus", focusable_count("#sheet") == 0)
+
+    set_overlay(page, "#sheet", True)
+    page.wait_for_timeout(200)
+    st = page.evaluate("""()=>{const e=document.querySelector('#sheet');
+        const cs=getComputedStyle(e);return{v:cs.visibility,pe:cs.pointerEvents};}""")
+    check("an OPEN sheet is visible again", st["v"] == "visible")
+    check("an OPEN sheet takes pointers again", st["pe"] == "auto")
+    # The negative case: if this is 0 the test above proves nothing, because a
+    # sheet whose buttons are never focusable would pass it trivially.
+    check("...and its buttons CAN take focus (guard proven live)",
+          focusable_count("#sheet") > 0)
+    set_overlay(page, "#sheet", False)
+    page.wait_for_timeout(420)
+
+    tst = page.evaluate("""()=>{const e=document.querySelector('#toast');
+        const cs=getComputedStyle(e);return{v:cs.visibility,pe:cs.pointerEvents};}""")
+    check(f"hidden toast is visibility:hidden (got {tst['v']})", tst["v"] == "hidden")
+    check(f"hidden toast ignores pointers (got {tst['pe']})", tst["pe"] == "none")
+
     browser.close()
 
 httpd.shutdown()

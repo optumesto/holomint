@@ -110,7 +110,12 @@ catch(e){document.documentElement.style.display="none";}</script>
   body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t5);line-height:1.5;background-image:radial-gradient(circle at 50% -10%,rgba(200,162,255,.07),transparent 55%);min-height:100vh}
     .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
   #splash{position:fixed;inset:0;z-index:var(--z-splash);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s4);transition:opacity .5s ease,visibility .5s}
-  #splash.gone{opacity:0;visibility:hidden}
+  /* pointer-events flips immediately while opacity and visibility take the full
+   half second to fade. Without it the splash keeps swallowing taps for 500ms
+   after it looks gone -- long enough for a fast user to tap the search box and
+   have nothing happen, which reads as the app being broken on first launch.
+   (It is how an automated click on #search was intercepted during testing.) */
+#splash.gone{opacity:0;visibility:hidden;pointer-events:none}
   #splash img{width:150px;height:150px;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 8px 30px rgba(125,240,200,.22));animation:sfloat 2.4s ease-in-out infinite}
   @keyframes sfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
   #splash .sname{font-family:var(--serif);font-size:var(--t11);font-weight:600;line-height:1;color:#c8a2ff;background:var(--holo);background-size:240% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;transform:translateZ(0);animation:holo 7s linear infinite}
@@ -473,12 +478,12 @@ catch(e){document.documentElement.style.display="none";}</script>
   .dl-flip{margin-top:var(--s2);font-size:var(--t2);font-family:var(--mono);color:var(--ink2);line-height:1.35}
   .dl-flip.pos{color:var(--up)}
   .dl-flip .mk{color:var(--ink3)}
-  .toast{position:fixed;left:50%;bottom:calc(var(--navh) + 14px);transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:var(--t5);padding:var(--s6) var(--s9);border-radius:var(--r-md);opacity:0;transition:var(--dur-slow) var(--ease);z-index:var(--z-toast);box-shadow:0 8px 24px rgba(0,0,0,.4)}
-  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .toast{position:fixed;left:50%;bottom:calc(var(--navh) + 14px);transform:translateX(-50%) translateY(80px);background:var(--up);color:#06140d;font-weight:600;font-size:var(--t5);padding:var(--s6) var(--s9);border-radius:var(--r-md);opacity:0;visibility:hidden;pointer-events:none;transition:transform var(--dur-slow) var(--ease),opacity var(--dur-slow) var(--ease),visibility 0s linear var(--dur-slow);z-index:var(--z-toast);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto;transition:transform var(--dur-slow) var(--ease),opacity var(--dur-slow) var(--ease),visibility 0s}
   .sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:var(--dur-base) var(--ease);z-index:var(--z-sheetbg)}
   .sheetbg.show{opacity:1;pointer-events:auto}
-  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);transition:var(--dur-slow) cubic-bezier(.3,.9,.3,1);z-index:var(--z-sheet);max-height:82vh;overflow-y:auto}
-  .sheet.show{transform:translateY(0)}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--line);border-bottom:none;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:20px 18px calc(26px + env(safe-area-inset-bottom));transform:translateY(105%);visibility:hidden;pointer-events:none;transition:transform var(--dur-slow) cubic-bezier(.3,.9,.3,1),visibility 0s linear var(--dur-slow);z-index:var(--z-sheet);max-height:82vh;overflow-y:auto}
+  .sheet.show{transform:translateY(0);visibility:visible;pointer-events:auto;transition:transform var(--dur-slow) cubic-bezier(.3,.9,.3,1),visibility 0s}
   .sheet h3{font-family:var(--serif);font-size:var(--t7);font-weight:500;margin-bottom:var(--s7)}
   .sheet .field{margin-bottom:var(--s6)}
   .holo-line{height:2px;background:linear-gradient(90deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2);border-radius:var(--r-xs);width:44px;margin:0 auto 16px}
