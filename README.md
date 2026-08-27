@@ -33,6 +33,10 @@ Installable PWA (offline-capable). Free tier + Pro tier (license key).
 - `min-height` beats a smaller `height`, which is why checkboxes and `input[type=range]` carry explicit carve-outs. Without them the 44px rule turns a 17px checkbox into a 44px slab and a 6px slider track into a grey bar.
 - An expansion that reaches past its own row **silently steals its neighbour's taps** — invisible in a screenshot and in a diff. `.hint` (35px) and `.seg.sm button` (34px) are capped *below* 44 for exactly this reason; both caps were measured, not guessed. `test_tap_targets.py` pins them and says which neighbour does the capping.
 
+**Overlays** are driven by two observers with *separate lists* — `OVERLAYS` (focus-in, focus restore, `role=dialog`, Escape) and `OVER` (scroll lock, back-button history, focus containment). They do not match, and that is a live gap: `#cfmModal` is in `OVERLAYS` only, `#tourWrap` in `OVER` only. Worse, `#cfmModal` is built at runtime and both observers register by `querySelector` at load, so it is skipped by both regardless. Adding an overlay means adding it to *both* lists and checking it exists at registration time.
+
+Focus containment is `inert` on every other `<body>` child plus a Tab-wrap handler — both are needed, and each was verified by disabling it: without `inert` Tab reaches `#proBtn`/`#search` behind the modal; without the wrap it still escapes to `<body>`. Focus deliberately lands on the dialog **container**, not its first control — see `firstFocusable()`; the first descendant is the Pro sheet's licence-key field (mobile keyboard over the offer, plus autofill) or Cancel (stray Enter dismisses).
+
 **Grading dataset** (Slab Math): fees, business-day turnarounds, declared-value caps, and paused-tier flags for PSA, CGC, Beckett, TAG, SGC — sourced June 2026. Industry reprices often (PSA changed twice in 5 months); refresh quarterly. Beckett mid-tiers and CGC/SGC caps are the least-certain figures. TAG = no value upcharges (encoded as unlimited caps).
 
 ## Tiers

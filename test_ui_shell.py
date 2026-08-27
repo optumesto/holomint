@@ -220,6 +220,88 @@ with sync_playwright() as pw:
     check(f"hidden toast is visibility:hidden (got {tst['v']})", tst["v"] == "hidden")
     check(f"hidden toast ignores pointers (got {tst['pe']})", tst["pe"] == "none")
 
+    print("\n5. an open overlay keeps the keyboard inside it")
+    # Making the closed overlays inert (above) fixed only half the problem: a
+    # keyboard user could still Tab straight OUT of an open modal and into the
+    # page behind it, which they cannot see. Measured before the fix: one Tab
+    # off the sheet's button reached <body>, and the next eight walked through
+    # #proBtn, #search and the scan buttons.
+    def where(steps):
+        """Tab n times, reporting whether focus is still inside the sheet."""
+        out = []
+        for _ in range(steps):
+            page.keyboard.press("Tab")
+            out.append(page.evaluate("""()=>{const a=document.activeElement;
+                const s=document.querySelector('#sheet');
+                return {inside: !!(s && s.contains(a)),
+                        el: a.tagName + (a.id ? '#' + a.id : '')};}"""))
+        return out
+
+    opener = page.evaluate("""()=>{const b=document.querySelector('#scanBtn');
+        if(b){b.focus();return document.activeElement.id;}return null;}""")
+    page.evaluate("""()=>{Sheet.open('Focus test',
+        [{type:'static',html:'<div class="sub">trap</div>'}],'Close',function(){});}""")
+    page.wait_for_timeout(450)
+
+    # Job 1: opening moves focus into the dialog -- onto the CONTAINER, and that
+    # is the intended behaviour, not a near miss. firstFocusable() returns the
+    # element itself on purpose: the first descendant in the sheet's DOM order
+    # is the licence key input on the Pro sheet, which throws the mobile
+    # keyboard over the offer and invites autofill, and elsewhere it is Cancel,
+    # where a stray Enter dismisses the dialog. Pinned here so that a future
+    # trap does not "helpfully" walk to the first control again.
+    landed = page.evaluate("""()=>{const s=document.querySelector('#sheet');
+        const a=document.activeElement;
+        return {inside: !!(s && s.contains(a)), onContainer: a===s,
+                dialog: s.getAttribute('role'), modal: s.getAttribute('aria-modal'),
+                el: a.tagName + (a.id ? '#' + a.id : '')};}""")
+    check(f"opening the sheet moves focus into it (on {landed['el']})",
+          landed["inside"])
+    check(f"...onto the container by design, not the first control "
+          f"(on {landed['el']})", landed["onContainer"])
+    check(f"...and it announces as a modal dialog "
+          f"(role={landed['dialog']} aria-modal={landed['modal']})",
+          landed["dialog"] == "dialog" and landed["modal"] == "true")
+
+    # Job 2: Tab cannot leave. 12 presses is more than the sheet holds, so a
+    # leak shows up as a False rather than as a lucky wrap.
+    trail = where(12)
+    escaped = [t for t in trail if not t["inside"]]
+    check("12 Tabs cannot leave the open sheet"
+          + (f" (leaked to {', '.join(t['el'] for t in escaped[:4])})" if escaped else ""),
+          not escaped)
+
+    # The background really is unreachable, not merely skipped by luck.
+    bg = page.evaluate("""()=>{const b=document.querySelector('#scanBtn');
+        if(!b) return 'missing';
+        b.focus();
+        return document.activeElement===b ? 'took focus' : 'refused';}""")
+    check(f"a control behind the open sheet cannot take focus (got {bg})",
+          bg == "refused")
+
+    # Job 3: closing gives the caret back to whatever opened it, instead of
+    # dropping it on <body> so the next Tab restarts at the top of the page.
+    #
+    # Honest limit: this asserts the BEHAVIOUR, not our implementation of it.
+    # Deleting releaseFocus's restore leaves this check green, because Chromium
+    # also restores focus by itself when an element stops being inert. Our
+    # restore stays anyway -- that recovery is not specified, and relying on one
+    # engine's courtesy for keyboard access is how the safe-area rules ended up
+    # dead for months. So: a real guard against the behaviour regressing, not
+    # evidence that our code is what provides it.
+    set_overlay(page, "#sheet", False)
+    page.wait_for_timeout(450)
+    back = page.evaluate("()=>document.activeElement.id||document.activeElement.tagName")
+    check(f"closing restores focus to the opener (#{opener} -> {back})",
+          opener is not None and back == opener)
+
+    # And the negative case: with the sheet shut, the page behind must be
+    # reachable again. Without this, "cannot take focus" above would pass on a
+    # page where nothing is ever focusable.
+    again = page.evaluate("""()=>{const b=document.querySelector('#scanBtn');
+        b.focus();return document.activeElement===b;}""")
+    check("...and the background is focusable again once it closes", again)
+
     browser.close()
 
 httpd.shutdown()

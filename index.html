@@ -4631,11 +4631,89 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
     window.scrollTo(0,_lockY);
   }
 
+  /* ---- focus containment ----------------------------------------------
+     Making the closed overlays inert fixed only half of the keyboard problem.
+     While one was OPEN, Tab walked straight out of it and into the page behind:
+     measured, one Tab off the sheet's button reached <body> and the next eight
+     went through #proBtn, #search and the scan buttons -- a keyboard or screen
+     reader user driving a page they cannot see, with the modal still up.
+
+     `inert` on everything except the open overlay, rather than a keydown
+     handler that cycles Tab at the ends of a focusable list. Two reasons. The
+     list would have to be recomputed on every keypress, because Sheet.open
+     builds its rows at open time. And a Tab trap only fixes Tab: a screen
+     reader can still read the page behind the modal, because that content is
+     still in the accessibility tree. inert removes the subtree from the tab
+     order AND the accessibility tree in one move.
+
+     All seven overlays are direct children of <body>, so "everything except"
+     is one pass over body's children rather than a walk up the ancestor chain.
+     Guarded on support: where inert is missing this degrades to today's
+     behaviour rather than to a half-built trap. */
+  var _inertSupport=('inert' in HTMLElement.prototype);
+  var _inerted=[],_trapped=null;
+  var FOCUSABLE='button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])';
+  function clearInert(){
+    for(var i=0;i<_inerted.length;i++)_inerted[i].inert=false;
+    _inerted=[];
+  }
+  function trapFocus(el){
+    if(!_inertSupport||_trapped===el)return;
+    // A second overlay opening over the first re-points the trap at the new top
+    // one, which also inerts the overlay underneath it.
+    if(_trapped)clearInert();
+    _trapped=el;
+    var kids=document.body.children;
+    for(var i=0;i<kids.length;i++){
+      var c=kids[i];
+      // Skip anything already inert so releasing cannot switch it back on.
+      if(c===el||c.inert)continue;
+      c.inert=true;_inerted.push(c);
+    }
+    // Moving focus IN is deliberately not done here. The observer above already
+    // does it, and it focuses the dialog CONTAINER on purpose -- see the comment
+    // on firstFocusable(): focusing the first descendant lands on the licence
+    // key field in the Pro sheet, which throws the mobile keyboard over the
+    // offer and invites autofill, and it lands on Cancel everywhere else, where
+    // a stray Enter dismisses the dialog. An earlier version of this trap
+    // "helpfully" walked to the first control and undid both.
+  }
+  function releaseFocus(){
+    if(!_trapped)return;
+    clearInert();_trapped=null;
+    // Restoring the caret is likewise the other observer's job (lastFocus), so
+    // there is deliberately no focus() call here. Two mechanisms both putting
+    // focus back would race, and the loser wins by 20ms.
+  }
+  /* inert stops Tab REACHING the page behind, but it does not wrap: off the
+     last control in the dialog, focus still falls out of the document and lands
+     back on <body>. Measured -- the leak went from #proBtn/#search/#scanBtn down
+     to four consecutive BODYs, which is quieter but still not a trap. So wrap
+     the ends explicitly. The focusable list is recomputed per keypress on
+     purpose: Sheet.open builds its rows at open time, so a list cached at open
+     would be stale for exactly the dialog that needs it most. It is only ever
+     the dialog's own subtree, so this is a handful of nodes. */
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Tab'||!_trapped)return;
+    var all=_trapped.querySelectorAll(FOCUSABLE),f=[];
+    for(var i=0;i<all.length;i++){
+      // getClientRects, not offsetParent: the overlays are position:fixed, and
+      // offsetParent is null for fixed elements whether or not they are shown.
+      if(all[i].getClientRects().length&&!all[i].disabled)f.push(all[i]);
+    }
+    if(!f.length){e.preventDefault();_trapped.setAttribute('tabindex','-1');_trapped.focus();return;}
+    var first=f[0],last=f[f.length-1],a=document.activeElement;
+    if(e.shiftKey&&(a===first||!_trapped.contains(a))){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&(a===last||!_trapped.contains(a))){e.preventDefault();first.focus();}
+  });
+
   var depth=0;
   // watch for any overlay opening, and push one history entry per open overlay
   var mo=new MutationObserver(function(){
-    var open=topOpen()?1:0;
-    if(open)lockScroll();else unlockScroll();
+    var t=topOpen();
+    var open=t?1:0;
+    if(open){lockScroll();trapFocus(document.querySelector(t.sel));}
+    else{unlockScroll();releaseFocus();}
     if(open&&!depth){depth=1;try{history.pushState({hmOverlay:1},'');}catch(e){}}
     else if(!open&&depth){depth=0;}
   });
