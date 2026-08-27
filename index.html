@@ -11,7 +11,12 @@ try{if(self!==top){document.documentElement.style.display="none";
   try{top.location.replace(location.href);}catch(e){}}}
 catch(e){document.documentElement.style.display="none";}</script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://tcgplayer-cdn.tcgplayer.com data: blob:; font-src 'self'; connect-src 'self' https://holomint-feed.mmilliard2516.workers.dev https://api.holomint.app https://api.pokemontcg.io; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to anything
+     other than 0px. Without it the eight safe-area rules in the stylesheet were
+     dead code: the header sat under the notch and the bottom nav under the home
+     indicator on every modern iPhone, despite the code to prevent that being
+     present and correct. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Holomint: Pokemon restock alerts that do the math</title>
 <meta name="theme-color" content="#070916">
 <link rel="canonical" href="https://holomint.app/">
@@ -328,7 +333,12 @@ catch(e){document.documentElement.style.display="none";}</script>
   }
   /* Contain the rubber-band. Without this the browser's own overscroll fights the
      pull-to-refresh gesture and the whole page bounces like a web view. */
-  .sheet,.cg-card,.sc-card,#lotModal,#featModal,#condModal{overscroll-behavior:contain}
+  /* #scanModal, #scanChoose and #tourWrap were missing from this list, so a
+     scroll started inside them still chained out to the page. They are the
+     three that cover the whole viewport, which is exactly where the chain is
+     most obvious. */
+  .sheet,.cg-card,.sc-card,#lotModal,#featModal,#condModal,
+  #scanModal,#scanChoose,#tourWrap{overscroll-behavior:contain}
   /* a grab handle, because a rounded top edge already promises one */
   .sheet::before,.sc-card::before{content:'';display:block;width:40px;height:4px;border-radius:99px;
     background:var(--line);margin:-6px auto 14px}
@@ -4537,10 +4547,47 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
       if(e&&OVER[i].is(e))return OVER[i];}
     return null;
   }
+  /* ---- scroll lock ----------------------------------------------------
+     None of the seven overlays stopped the page scrolling behind them. On a
+     phone that is the loudest tell that something is a web page rather than an
+     app: open a sheet, flick it, and the whole app slides around underneath.
+
+     position:fixed on the body rather than overflow:hidden, because iOS Safari
+     ignores overflow:hidden on the body -- the page keeps scrolling and, worse,
+     silently jumps to the top when the modal closes. Fixing the body pins it,
+     but it also collapses the page to the viewport, so the scroll offset has to
+     be carried in `top` and put back by hand afterwards.
+
+     Driven from the observer below rather than from seven open/close sites:
+     that observer already knows when any overlay is up, so this cannot drift
+     out of sync with a new overlay somebody adds to OVER later. */
+  var _lockY=0,_locked=false;
+  function lockScroll(){
+    if(_locked)return;
+    _locked=true;
+    _lockY=window.scrollY||window.pageYOffset||0;
+    var b=document.body;
+    b.style.position='fixed';
+    b.style.top=(-_lockY)+'px';
+    b.style.left='0';
+    b.style.right='0';
+    b.style.width='100%';
+  }
+  function unlockScroll(){
+    if(!_locked)return;
+    _locked=false;
+    var b=document.body;
+    b.style.position='';b.style.top='';b.style.left='';b.style.right='';b.style.width='';
+    // Must come after the styles are cleared, or the page is still collapsed
+    // and the scroll position has nowhere to go.
+    window.scrollTo(0,_lockY);
+  }
+
   var depth=0;
   // watch for any overlay opening, and push one history entry per open overlay
   var mo=new MutationObserver(function(){
     var open=topOpen()?1:0;
+    if(open)lockScroll();else unlockScroll();
     if(open&&!depth){depth=1;try{history.pushState({hmOverlay:1},'');}catch(e){}}
     else if(!open&&depth){depth=0;}
   });
