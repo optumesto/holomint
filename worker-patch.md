@@ -1,7 +1,71 @@
 # holomint-feed — patch for the show
 
-Two changes. Both are the same idea the Worker already applies to licences,
-carried over to the two places it was missing.
+Three changes. **Do #0 first**; the other two are hardening, and #0 is the
+reason nobody has ever received a drop alert.
+
+---
+
+## 0. CRITICAL — the bot writes `product.name`, the Worker reads `product.type`
+
+**Every restock push has been silently skipped.** Not throttled, not delayed:
+skipped, at the first gate, since the field names diverged.
+
+Live evidence from `/api/drops` right now — the bot's payload:
+
+```json
+{"name": "Premium Collection", "retail": 49.99}
+```
+
+and the Worker's matcher:
+
+```js
+const kw = formKw(product && product.type);
+if (!kw) return null;          // -> ev.match never set
+```
+
+`product.type` is `undefined`. `formKw` stringifies it to `"undefined"`, matches
+none of its branches, returns null, and `matchTitle` bails. So `ev.match` is
+never set, and every restock dies here:
+
+```js
+if (ev.kind === 'restock') {
+  if (!ev.match) return plog(env, ev, sub, tier, 'skip', 'no-match');
+```
+
+All 20 restock events in the current 200-event feed carry `match=false`. Zero
+pushes, for the entire window the feed covers.
+
+**The values are already right.** `"Premium Collection"`, `"Booster Bundle
+(6pk)"`, `"Booster Box (36pk)"`, `"Elite Trainer Box"` each hit a `formKw`
+branch exactly. Only the field name is wrong.
+
+**Fix, in `matchTitle`:**
+
+```js
+  // The bot sends this as `name`; older payloads used `type`. Accept either.
+  // These two sides disagreeing on one field name cost every drop notification
+  // the product has ever tried to send: formKw(undefined) returns null,
+  // matchTitle bails, and fanout skips the event as 'no-match'. Nothing errors,
+  // nothing logs above debug, and the feed still looks busy.
+  const kw = formKw((product && (product.type || product.name)) || '');
+  if (!kw) return null;
+```
+
+Also worth doing on the bot side (`pokemon_monitor.py` -> `push_event`), so the
+payload is unambiguous rather than relying on the fallback:
+
+```python
+product={"type": name, "name": name, "retail": retail}
+```
+
+**Verify after deploying.** `/api/health` should show `restock` in
+`kindsMinAgo` going current, and a test ingest should come back
+`{"ok":true,"matched":true}` — `matched` is already in the ingest response and
+is the fastest confirmation there is.
+
+**Add `'naruto'` to `NONPKMN` while you are in there.** A Naruto booster box is
+in the feed now. It fails safe today only because it matches no Pokemon set
+token, which is luck rather than design.
 
 ---
 
