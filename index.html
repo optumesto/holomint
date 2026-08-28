@@ -1247,6 +1247,72 @@ function switchTab(name){
 }
 $$('.navb').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
 
+/* Swipe sideways to change tab.
+   An ADDITION to the nav buttons, never a replacement: a gesture with no
+   affordance cannot be the only way to reach a screen.
+
+   'scan' is excluded because it is not a panel -- it opens the scanner -- so
+   swiping through it would fire the camera mid-gesture.
+
+   Most of this is about NOT stealing a drag that belongs to something else.
+   The sheet has its own swipe-to-dismiss, a range input IS a horizontal drag,
+   and a table that scrolls sideways must keep its own gesture. Getting this
+   wrong does not look like a bug, it looks like the app fighting you. */
+(function bindTabSwipe(){
+  if(!('ontouchstart' in window))return;
+  const ORDER=['block','port','slab','settings'];
+  const OVERLAY_SEL=['#sheet','#scanModal','#lotModal','#featModal','#condModal',
+                     '#scanChoose','#cfmModal','#tourWrap'];
+  const MIN_X=60;      // shorter than this is a tap wobble, not a swipe
+  const RATIO=1.6;     // must be clearly horizontal, not a diagonal scroll
+  const MAX_MS=600;    // a slow drag is a scroll that happened to end sideways
+  let x0=0,y0=0,t0=0,armed=false;
+
+  function ownsHorizontal(el){
+    for(let n=el; n && n!==document.body; n=n.parentElement){
+      if(n.matches&&n.matches('input[type=range],.seg,[data-no-swipe]'))return true;
+      // A container that can actually scroll sideways right now. scrollWidth
+      // alone is not enough: almost everything reports a pixel or two.
+      const cs=getComputedStyle(n);
+      if(/(auto|scroll)/.test(cs.overflowX)&&n.scrollWidth-n.clientWidth>8)return true;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart',function(e){
+    armed=false;
+    if(e.touches.length!==1)return;                 // pinch/zoom is not a swipe
+    const t=e.target;
+    if(!t||!t.closest)return;
+    // Any open overlay owns the whole screen, so this asks whether one is UP,
+    // not whether the finger landed inside it. Testing the target was tried and
+    // is wrong: a swipe across the dimmed area above a bottom sheet lands on
+    // the backdrop, matches no overlay selector, and changed tabs behind the
+    // sheet -- which the user cannot even see happening.
+    if(OVERLAY_SEL.some(function(s){
+      const el=document.querySelector(s);
+      return el&&(el.classList.contains('show')||el.classList.contains('on'));
+    }))return;
+    if(ownsHorizontal(t))return;
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now(); armed=true;
+  },{passive:true});
+
+  document.addEventListener('touchend',function(e){
+    if(!armed)return;
+    armed=false;
+    const tch=e.changedTouches&&e.changedTouches[0];
+    if(!tch)return;
+    const dx=tch.clientX-x0, dy=tch.clientY-y0;
+    if(Date.now()-t0>MAX_MS)return;
+    if(Math.abs(dx)<MIN_X||Math.abs(dx)<Math.abs(dy)*RATIO)return;
+    const i=ORDER.indexOf(lastTab);
+    if(i<0)return;
+    const next=i+(dx<0?1:-1);                       // swipe left = move right
+    if(next<0||next>=ORDER.length)return;           // no wrap: the ends are ends
+    switchTab(ORDER[next]);
+  },{passive:true});
+})();
+
 /* collapsible cards */
 let collapsed=Store.load('collapsed',{});
 const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard']);
