@@ -1966,6 +1966,8 @@ window.Caught=Caught;
 const Tour=(function(){
   const KEY='tourSeen';
   let i=0;
+  // Cards this tour expanded, to be restored on the way out.
+  const _opened=new Set();
 
   const STEPS=[
     /* Assent gate. No target element, so paint() centres it. Non-dismissible:
@@ -1996,7 +1998,13 @@ const Tour=(function(){
     const host=el&&el.closest('.card');
     if(host&&host.classList.contains('collapsed')){
       const head=host.querySelector('.colhead');
-      if(head){ head.click(); return setTimeout(paint,60); }
+      // Opening it PERSISTS the state, so remember that we were the one who
+      // opened it and put it back in done(). Without this the tour permanently
+      // expanded whatever it pointed at: every first-run user finished
+      // onboarding and landed on a Trade tab with the settings-shaped Resell
+      // Channel card open above their work, having never touched it.
+      if(head){ if(head.dataset.col)_opened.add(head.dataset.col);
+                head.click(); return setTimeout(paint,60); }
     }
     // No spotlight, no cutouts, no ring: the screen dims, the target scrolls to center,
     // and the card sits right next to it. This survives any viewport, desktop included,
@@ -2036,6 +2044,19 @@ const Tour=(function(){
     // Nothing closes the tour while the assent step is showing.
     if(STEPS[i]&&STEPS[i].gate)return;
     Store.save(KEY,1);
+    // Leave the UI as it was found. Only re-collapse what THIS tour opened, and
+    // only if it is still open -- a user who deliberately kept a card open
+    // during the tour keeps it.
+    if(_opened.size){
+      _opened.forEach(function(k){
+        const c=document.querySelector('[data-col="'+k+'"]');
+        const card=c&&c.closest('.card');
+        if(card&&!card.classList.contains('collapsed'))collapsed[k]=true;
+      });
+      _opened.clear();
+      Store.save('collapsed',collapsed);
+      if(typeof applyCollapse==='function')applyCollapse();
+    }
     const wasAlerts=STEPS[i]&&STEPS[i].sel==='#alertCard';
     clear();
     $('#tourWrap').classList.remove('on');

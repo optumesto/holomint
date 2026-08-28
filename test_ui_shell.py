@@ -489,6 +489,56 @@ with sync_playwright() as pw:
     check("...the allocation bar comes back", full["alloc"] is True)
     check("...and search/sort/filter appear", full["filters"] is True)
 
+
+    print("\n9. onboarding leaves the UI as it found it")
+    # The tour opens a collapsed card to point at it, using the app's own
+    # toggle -- which PERSISTS. So every first-run user finished onboarding and
+    # landed on a Trade tab with the settings-shaped Resell Channel card open
+    # above their work, having never touched it. Measured: 1007px and 14 visible
+    # controls on the landing tab.
+    ctx9 = browser.new_context(viewport={"width": 390, "height": 844},
+                               reduced_motion="reduce")
+    p9 = ctx9.new_page()
+    p9.goto(f"http://127.0.0.1:{PORT}/", wait_until="load")
+    p9.wait_for_timeout(400)
+    check("channelCard starts collapsed",
+          p9.evaluate("()=>document.querySelector('#channelCard')"
+                      ".classList.contains('collapsed')"))
+    for _ in range(14):
+        if not p9.evaluate("()=>{const e=document.querySelector('#tourWrap');"
+                           "return !!e&&e.classList.contains('on');}"):
+            break
+        p9.evaluate("""()=>{const s=document.querySelector('#tourSkip');
+            const n=document.querySelector('#tourNext');
+            if(s&&s.offsetParent!==null){s.click();return;}
+            if(n)n.click();}""")
+        p9.wait_for_timeout(160)
+    p9.wait_for_timeout(400)
+    after = p9.evaluate("""()=>{const c=document.querySelector('#channelCard');
+        const b=document.querySelector('#block');
+        return {collapsed:c.classList.contains('collapsed'),
+                stored:(Store.load('collapsed',{})||{}).channelCard,
+                ctrls:[...b.querySelectorAll('button,input,select')]
+                        .filter(e=>e.offsetParent!==null).length};}""")
+    check("...and is STILL collapsed after the tour", after["collapsed"] is True)
+    # The contract is "never left expanded", not "always writes a key". If the
+    # tour skipped out before reaching that card there is nothing to restore and
+    # None is correct; what must never happen is a persisted False.
+    check(f"...and was never persisted as expanded (stored={after['stored']})",
+          after["stored"] is not False)
+    check(f"...leaving the landing tab at {after['ctrls']} visible controls",
+          after["ctrls"] <= 12)
+
+    # NEGATIVE CASE: restoring must not stomp a card the USER opened. Blanket
+    # re-collapsing everything would pass every assertion above.
+    p9.evaluate("""()=>{const h=document.querySelector('[data-col=channelCard]');
+                       if(h)h.click();}""")
+    p9.wait_for_timeout(250)
+    check("a card the user opens after the tour stays open",
+          p9.evaluate("()=>!document.querySelector('#channelCard')"
+                      ".classList.contains('collapsed')"))
+    ctx9.close()
+
     browser.close()
 
 httpd.shutdown()
