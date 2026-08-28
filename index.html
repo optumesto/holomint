@@ -735,6 +735,10 @@ catch(e){document.documentElement.style.display="none";}</script>
             <label class="ck-chk" style="margin-top:var(--s4)"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
           </div>
           <div class="field">
+            <label class="ck-chk"><input type="checkbox" id="alUsOnly"><span><b>US retailers only</b></span></label>
+            <div class="sub">Holomint also watches Canadian shops. Their prices are real but they are in CAD, they ship from Canada, and the flip margin is not calculated against US market comps. On by default; turn it off to hear about them too, clearly labelled.</div>
+          </div>
+          <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alQueue"><span><b>Queue alerts</b> (Pokemon Center waiting room and similar)</span></label>
             <div class="sub">At Pokemon Center the queue is usually the only window that matters, and you cannot tell what is dropping until you are in line. It is not always cards: site maintenance and JP releases raise the same waiting room. Getting in costs nothing, so this is on by default.</div>
           </div>
@@ -1620,14 +1624,14 @@ const Alerts=(function(){
   const inApp=()=>/FBAN|FBAV|Instagram|Line|Twitter|Snapchat|Discord|Pinterest/i.test(navigator.userAgent);
   const capable=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
 
-  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,queueAlerts:true,intelAlerts:false,watch:[],watchOnly:false,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
+  const prefs=()=>Object.assign({channel:'ebay',quietOn:true,queueAlerts:true,intelAlerts:false,usOnly:true,watch:[],watchOnly:false,minProfit:25,minRoi:20,quietStart:23,quietEnd:7,dailyCap:8},Store.load('alertPrefs',{}));
   const savePrefs=p=>Store.save('alertPrefs',p);
 
   function payload(sub){
     const p=prefs();
     return {subscription:sub.toJSON?sub.toJSON():sub,license:Premium.key()||'',device:DeviceId,
       prefs:{channel:p.channel,minProfit:+p.minProfit,minRoi:+p.minRoi,kinds:['restock'].concat(p.queueAlerts?['queue']:[]).concat(p.intelAlerts?['invite','preload']:[]),
-        watch:(p.watch||[]).map(x=>String(x.id)),watchOnly:!!p.watchOnly,
+        watch:(p.watch||[]).map(x=>String(x.id)),watchOnly:!!p.watchOnly,usOnly:p.usOnly!==false,
         quietStart:p.quietOn?+p.quietStart:0,quietEnd:p.quietOn?+p.quietEnd:0,dailyCap:+p.dailyCap,
         tzOffset:-new Date().getTimezoneOffset()}};
   }
@@ -1755,6 +1759,7 @@ const Alerts=(function(){
       $('#alQuiet').onchange=()=>{$('#alQuietRow').style.display=$('#alQuiet').checked?'':'none';};
       $('#alWatchOnly').checked=!!p.watchOnly;
       $('#alQueue').checked=!!p.queueAlerts;
+      $('#alUsOnly').checked=p.usOnly!==false;
       $('#alIntel').checked=!!p.intelAlerts;
       paintWatch(p.watch||[]);
       wireWatchSearch();
@@ -1810,7 +1815,7 @@ const Alerts=(function(){
   function wire(){
     const s=$('#alSave'),o=$('#alOff');
     if(s)s.onclick=()=>{savePrefs({channel:$('#alChannel').value||'ebay',quietOn:$('#alQuiet').checked,
-      queueAlerts:$('#alQueue').checked,intelAlerts:$('#alIntel').checked,watch:curWatch.slice(0,50),watchOnly:$('#alWatchOnly').checked,
+      queueAlerts:$('#alQueue').checked,usOnly:$('#alUsOnly').checked,intelAlerts:$('#alIntel').checked,watch:curWatch.slice(0,50),watchOnly:$('#alWatchOnly').checked,
       minProfit:+$('#alMinProfit').value||25,minRoi:+$('#alMinRoi').value||20,
       quietStart:+$('#alQs').value||0,quietEnd:+$('#alQe').value||0,dailyCap:Math.min(20,Math.max(1,+$('#alCap').value||8))});push();};
     if(o)o.onclick=disable;

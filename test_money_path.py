@@ -411,6 +411,32 @@ with sync_playwright() as pw:
           still["active"] and still["key"] == "HMP-GOOD-GOOD-GOOD")
     ctx.close()
 
+    print("\n10. US-only alerts")
+    # Holomint now watches Canadian shops. Their prices are real, in CAD, and a
+    # US buyer should not be woken by a price they cannot pay. Default ON, so a
+    # subscriber who never opens this setting keeps the behaviour they had
+    # before foreign shops existed.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    check("the US-only control exists",
+          page.evaluate("()=>!!document.querySelector('#alUsOnly')"))
+    check("...and the default preference is ON",
+          page.evaluate("()=>{const p=Object.assign({usOnly:true},"
+                        "Store.load('alertPrefs',{}));return p.usOnly!==false;}"))
+    # A control that does not change the outgoing payload is decorative -- the
+    # exact failure the Pre-drop toggle had.
+    page.evaluate("()=>{const p=Store.load('alertPrefs',{});p.usOnly=false;"
+                  "Store.save('alertPrefs',p);}")
+    check("switching it off persists",
+          page.evaluate("()=>Store.load('alertPrefs',{}).usOnly") is False)
+    check("...and the app still reads it back as a real preference",
+          page.evaluate("()=>Object.assign({usOnly:true},"
+                        "Store.load('alertPrefs',{})).usOnly") is False)
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

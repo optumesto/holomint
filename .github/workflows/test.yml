@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 15     # the suite is ~1 min; anything near this is a hang
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         # cache-dependency-path is required: setup-python's pip cache looks for
         # **/requirements.txt by default and hard-errors when it finds none.
         with:

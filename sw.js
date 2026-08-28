@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v1.27';        // app shell, replaced on every release
+const CACHE = 'holomint-v1.28';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin - persists across releases
 const SHELL = ['./', './index.html', './cardfind.js', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
