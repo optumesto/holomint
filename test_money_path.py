@@ -84,6 +84,13 @@ def boot(page, pricing_mode):
         page.route(PRICING, lambda r: r.fulfill(
             status=200, content_type="application/json",
             body=json.dumps({"configured": False})))     # genuinely not selling yet
+    elif pricing_mode == "polar_down":
+        # The Worker is up and answering; POLAR is not. Distinct from "offline":
+        # here the fetch succeeds, so the client's own catch never fires and only
+        # the Worker's `unreachable` flag can carry the difference.
+        page.route(PRICING, lambda r: r.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps({"configured": False, "unreachable": True})))
     page.route("**://api.pokemontcg.io/**", lambda r: r.abort())
     page.add_init_script(shots.FREEZE_JS)
     page.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="commit")
@@ -221,6 +228,27 @@ with sync_playwright() as pw:
         .replace(/\\s+/g,' ').toLowerCase()""")
     check("an unconfigured shop still says subscriptions are not open",
           "not open yet" in unc)
+    ctx.close()
+
+    print("\n6b. the Worker up but Polar down is also not 'we are not selling'")
+    # Section 5 covers the Worker being unreachable, which the client's own catch
+    # handles. This is the other half and the client cannot detect it alone: the
+    # fetch SUCCEEDS, so only the Worker saying `unreachable` distinguishes a
+    # Polar outage or a rotated API key from a shop that is deliberately shut.
+    # See worker-patch.md -- /api/pricing currently returns a bare
+    # {configured:false} for both, which is what makes this reachable at all.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "polar_down")
+    open_pro(page)
+    pd = page.evaluate("""()=>{const s=document.querySelector('#sheet');
+        return {text:(s.textContent||'').replace(/\\s+/g,' ').toLowerCase(),
+                retry:!!s.querySelector('#ckRetry')};}""")
+    check("a Worker-reported outage does not claim subscriptions are closed",
+          "not open yet" not in pd["text"])
+    check("...and it offers a retry", pd["retry"])
     ctx.close()
 
     print("\n7. every paywall gate reaches the Pro sheet")
