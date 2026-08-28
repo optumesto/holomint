@@ -271,6 +271,8 @@ catch(e){document.documentElement.style.display="none";}</script>
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg);margin-top:-9px}
   input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--gold);cursor:pointer;border:3px solid var(--bg)}
   .bigrate{font-family:var(--mono);font-size:var(--t12);font-weight:600;color:var(--gold);text-align:center;margin:2px 0 12px}
+  /* The same value, sized for a header line instead of a hero block. */
+  .rateval{font-family:var(--mono);font-size:var(--t8);font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .anchor{display:flex;justify-content:space-between;align-items:baseline;padding:var(--s5) 0;border-bottom:1px solid var(--line)}
   /* The trade card ends on four stacked .anchor rows. Without this the last one draws a
      divider under itself and .card's own bottom border draws again 16px lower, so two
@@ -588,12 +590,26 @@ catch(e){document.documentElement.style.display="none";}</script>
       </div>
     </div>
     <div class="card" id="rateCard">
-      <label>Rate</label>
-      <div class="bigrate" id="rateLabel">75%</div>
+      <!-- The rate is set once and then lived with, but this card was 418px --
+           larger than the pile it serves. Collapsed by default, with the value
+           IN the header: a collapsed card still has to say what it is set to,
+           or you have to open it just to read it. #rateLabel moved here rather
+           than duplicated, so there is nothing to keep in sync. -->
+      <div class="row between colhead" data-col="rateCard">
+        <label style="margin:0">Rate</label>
+        <div class="row" style="gap:var(--s5);align-items:baseline">
+          <span class="rateval" id="rateLabel">75%</span><span class="chev">&#9662;</span>
+        </div>
+      </div>
+      <!-- Only the INPUTS collapse. The anchor rows below are the answers --
+           market total, payout, net, profit -- and hiding those behind a
+           disclosure would hide the entire point of the screen. -->
+      <div class="colbody">
       <input type="range" id="rate" min="40" max="100" step="1" value="75">
       <div class="row between" style="margin-top:var(--s7)"><label style="margin:0">Store-credit bump</label>
         <div class="row" style="gap:var(--s4)"><input class="num" id="creditBump" type="number" value="10" style="width:62px;padding:var(--s4) var(--s5)"><span style="font-family:var(--mono);font-size:var(--t3);color:var(--ink3)">%</span><button class="swbtn" id="creditTog">Off</button></div>
       </div>
+      </div><!-- /.colbody -->
       <div style="margin-top:var(--s6)">
         <div class="anchor"><span class="al">Market total</span><span class="av" id="aMarket">$0</span></div>
         <div class="anchor hero"><span class="al" id="payLabel">Cash payout</span><span class="av" id="aPayout">$0</span></div>
@@ -719,8 +735,14 @@ catch(e){document.documentElement.style.display="none";}</script>
       </div>
     </div>
 
-    <div class="card">
-      <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t5)">How Holomint works</span><button class="ghost" id="setTour" style="padding:var(--s4) var(--s7)">Replay tour</button></div>
+    <div class="card" id="helpCard">
+      <!-- 835px of explainer, read once and then never again, sat expanded on a
+           2.5-screen settings page. Collapsed by default. The Replay tour button
+           moved into the body: a header that both toggles and contains a button
+           makes the button ambiguous to tap. -->
+      <div class="row between colhead" data-col="helpCard"><label style="margin:0">How Holomint works</label><span class="chev">&#9662;</span></div>
+      <div class="colbody">
+      <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t2);color:var(--ink3)">Guided walkthrough</span><button class="ghost" id="setTour" style="padding:var(--s4) var(--s7)">Replay tour</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Manage devices</span><button class="ghost" data-open-dev style="padding:var(--s4) var(--s7)">View</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:var(--s4) var(--s7)">Open</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Card condition guide</span><button class="ghost" data-open-cond style="padding:var(--s4) var(--s7)">View</button></div>
@@ -735,6 +757,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Report a problem</span><button class="ghost" id="bugBtn" style="padding:var(--s4) var(--s7)">Report</button></div>
       <div style="font-size:var(--t2);color:var(--ink3);line-height:1.55;padding:0 0 var(--s4)">Opens an email with your version filled in. Review it before sending; delete anything you would rather not share.</div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Contact</span><a class="ghost" href="mailto:mmmilliard@optumeventures.com" style="padding:var(--s4) var(--s7)">Email</a></div>
+      </div><!-- /.colbody -->
     </div>
     <div class="card" style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3);line-height:1.7">
       <b style="color:var(--ink2)">Estimates only. Not financial advice.</b> Prices, margins, and profit figures are estimates derived from third-party data and may be inaccurate, incomplete, or out of date. You are solely responsible for your own buying and selling decisions.<br><br>
@@ -1342,7 +1365,11 @@ $$('.navb').forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
 
 /* collapsible cards */
 let collapsed=Store.load('collapsed',{});
-const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard']);
+// Collapsed on first run. Everything here is a setting or a what-if, not the
+// task: the Trade tab was showing 7 cards and 19 controls at once, all
+// expanded, on a pile with nothing in it yet. rateCard alone was 418px.
+const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard',
+                                 'rateCard','sellOptCard','helpCard']);
 const colState=k=>(k in collapsed)?collapsed[k]:DEFAULT_COLLAPSED.has(k);
 function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',colState(k));});}
 $$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!colState(k);Store.save('collapsed',collapsed);applyCollapse();});

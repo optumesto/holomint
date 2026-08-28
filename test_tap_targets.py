@@ -261,6 +261,14 @@ with sync_playwright() as pw:
     # the track's, so asserting on that number would be asserting on nothing.
     # What matters behaviourally is that the whole row grabs, not just a 6px
     # ribbon; the 6px LOOK is what shots.py covers.
+    # rateCard is collapsed on first run (it is a setting, and it was the biggest
+    # card on the page), so the slider has to be revealed before it can be
+    # measured. What is under test is the control's size and grab area, not
+    # whether it happens to be disclosed by default.
+    page.evaluate("""()=>{const h=document.querySelector('[data-col=rateCard]');
+        const c=document.querySelector('#rateCard');
+        if(h&&c&&c.classList.contains('collapsed'))h.click();}""")
+    page.wait_for_timeout(350)
     rng = page.evaluate("""()=>{const el=document.getElementById('rate');
         if(!el) return null;
         el.scrollIntoView({block:'center'});
@@ -307,6 +315,13 @@ with sync_playwright() as pw:
     # Prove the ownership probe can fail. Without this, a probe that silently
     # returned nothing would look identical to a clean app.
     print("\nProving the steal check fires:")
+    # Expand everything first. Cards that are settings or what-ifs collapse by
+    # default now, so several fields a .hint sits above are hidden -- and a
+    # mutation with nothing to overlap "passes" by proving nothing, which is
+    # exactly the failure this control exists to rule out.
+    page.evaluate("""()=>{document.querySelectorAll('.card.collapsed .colhead')
+        .forEach(h=>h.click());}""")
+    page.wait_for_timeout(400)
     page.add_style_tag(content="input,select{z-index:auto !important}"
                                ".hint::after{inset:-22px !important;z-index:9 !important}")
     page.wait_for_timeout(200)

@@ -149,6 +149,13 @@ with sync_playwright() as pw:
 
     # The range slider IS a horizontal drag. Stealing it would make the deal
     # calculator unusable, which is the screen this app is for.
+    # Reveal the slider first: rateCard collapses by default now, and a hidden
+    # control cannot demonstrate that its drag is left alone. The point of the
+    # check is that a VISIBLE slider owns its own horizontal gesture.
+    page.evaluate("""()=>{const h=document.querySelector('[data-col=rateCard]');
+        const c=document.querySelector('#rateCard');
+        if(h&&c&&c.classList.contains('collapsed'))h.click();}""")
+    page.wait_for_timeout(350)
     rng = page.evaluate("""()=>{const e=document.getElementById('rate');
         if(!e) return null; e.scrollIntoView({block:'center'});
         const r=e.getBoundingClientRect();
