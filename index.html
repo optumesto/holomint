@@ -493,7 +493,13 @@ catch(e){document.documentElement.style.display="none";}</script>
   .lot-row .nm span{font-size:var(--t2);color:var(--ink3);font-family:var(--mono)}
   .lot-row .pr{font-size:var(--t5);font-weight:600;color:var(--ink);white-space:nowrap}
   .lot-row.miss .nm b{color:var(--ink3)}
-  .lot-row .fixbtn{font-size:var(--t2);padding:var(--s2) var(--s4);border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg3);color:var(--ink2);cursor:pointer}
+  .lot-row .fixbtn{font-size:var(--t2);padding:var(--s2) var(--s4);border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg3);color:var(--ink2);cursor:pointer;min-height:34px}
+  /* The remove control is DESTRUCTIVE and sits next to Fix. At 24x22 a thumb
+     aimed at one hits the other, and the two do opposite things: Fix corrects a
+     misread card, this deletes the row from the total you quote a seller. Give
+     it a real target and enough separation to aim at. */
+  .lot-row .fixbtn[data-drop]{min-width:34px;padding:var(--s2);color:var(--ink3);margin-left:var(--s2)}
+  .lot-row .fixbtn[data-drop]:active{color:var(--down);border-color:var(--down)}
   .lot-tot{margin-top:var(--s8);padding:var(--s8);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg2)}
   .lot-tot .tr{display:flex;justify-content:space-between;padding:var(--s2) 0;font-size:var(--t5)}
   .lot-tot .tr.big{font-size:var(--t6);font-weight:600;border-top:1px solid var(--line);margin-top:var(--s3);padding-top:var(--s6)}
@@ -4081,12 +4087,12 @@ const LotScanner=(function(){
     var p=priceRows(rows);
     var chLabel=(FeeCalc.channels[p.chan]&&FeeCalc.channels[p.chan].label)||p.chan;
     var rowsHtml=rows.map(function(r,i){
-      if(!r.found)return '<div class="lot-row miss" data-i="'+i+'"><div class="nm"><b>'+esc(r.line)+'</b><span>no catalog match</span></div><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
+      if(!r.found)return '<div class="lot-row miss" data-i="'+i+'"><div class="nm"><b>'+esc(r.line)+'</b><span>no catalog match</span></div><button class="fixbtn" data-fix="'+i+'">Fix</button><button class="fixbtn" data-drop="'+i+'" aria-label="Remove this row" title="Not a card / wrong">&times;</button></div>';
       var sub=(r.number?esc(r.number)+' · ':'')+(r.set?esc(r.set)+' · ':'')+'from "'+esc(r.line)+'"';
       var lv=(r.id&&r.c&&r.c!=='nm')?CondLive.get(r.id,r.c):null;
       var shown=lv!=null?lv:r.price*(condMult[r.c||'nm']||1);
       var csel='<select class="pcond lcond" data-li="'+i+'">'+['nm','lp','mp','hp','dg'].map(function(c){return '<option value="'+c+'" '+(((r.c||'nm')===c)?'selected':'')+'>'+COND_LABEL[c]+'</option>';}).join('')+'</select>';
-      return '<div class="lot-row" data-i="'+i+'"><div class="nm"><b>'+esc(r.name)+'</b><span>'+sub+'</span></div>'+csel+'<span class="pr">'+usd(shown)+(lv!=null?' <span class="chip live">live</span>':'')+'</span><button class="fixbtn" data-fix="'+i+'">Fix</button></div>';
+      return '<div class="lot-row" data-i="'+i+'"><div class="nm"><b>'+esc(r.name)+'</b><span>'+sub+'</span></div>'+csel+'<span class="pr">'+usd(shown)+(lv!=null?' <span class="chip live">live</span>':'')+'</span><button class="fixbtn" data-fix="'+i+'">Fix</button><button class="fixbtn" data-drop="'+i+'" aria-label="Remove this row" title="Not a card / wrong">&times;</button></div>';
     }).join('');
     var askN=+ask||0;
     var profit=p.net-askN;
@@ -4110,6 +4116,20 @@ const LotScanner=(function(){
     $('#lotToDesk').onclick=function(){sendToTrade(rows);};
     Array.prototype.forEach.call(document.querySelectorAll('#lotResults [data-fix]'),function(b){
       b.onclick=function(){fixRow(+b.dataset.fix);};
+    });
+    // Remove a row the detector got wrong. Without this a false positive stays
+    // in the market total -- and that total is the number you say out loud to a
+    // seller across a table. Fix could correct a MISREAD card; nothing could
+    // delete a thing that was never a card at all.
+    Array.prototype.forEach.call(document.querySelectorAll('#lotResults [data-drop]'),function(b){
+      b.onclick=function(){
+        var i=+b.dataset.drop;
+        if(!lastRows[i])return;
+        lastRows.splice(i,1);
+        var av=$('#lotAskVal');
+        renderResults(lastRows,av?av.value:'');
+        toast('Removed. Total updated.');
+      };
     });
     Array.prototype.forEach.call(document.querySelectorAll('#lotResults .lcond'),function(sel){
       sel.onchange=function(){var r=lastRows[+sel.dataset.li];if(r){r.c=sel.value;if(r.id&&sel.value!=='nm')CondLive.want(r.id);renderResults(lastRows,$('#lotAskVal').value);}};
@@ -4174,7 +4194,14 @@ const LotScanner=(function(){
   function open(){$('#lotModal').classList.add('show');reset();}
   function close(){$('#lotModal').classList.remove('show');if(worker){/* keep worker warm for the session */}}
 
-  return {open:open,close:close,handleFile:handleFile,_run:run,redraw:function(){if(lastRows.length)renderResults(lastRows,$('#lotAskVal').value);}};
+  return {open:open,close:close,handleFile:handleFile,_run:run,
+          redraw:function(){if(lastRows.length)renderResults(lastRows,$('#lotAskVal').value);},
+          // Test seam. The results table is the one screen where a wrong number
+          // gets said out loud to a seller, and it is otherwise unreachable from
+          // a suite without a real photo and a loaded hash DB. This drives the
+          // REAL renderer with known rows.
+          _render:function(rows,ask){lastRows=rows.slice();renderResults(lastRows,ask||'');},
+          _rows:function(){return lastRows.slice();}};
 })();
 
 /* ---- CARD SCANNER (free OCR via Tesseract.js, lazy-loaded) ---- */

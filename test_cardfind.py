@@ -281,6 +281,76 @@ check("...and still falls back to the grid layouts", "LOT_LAYOUTS" in _html)
 _sw = open(os.path.join(_root, "sw.js")).read()
 check("the service worker precaches cardfind.js", "cardfind.js" in _sw)
 
+# ---------------------------------------------------------------------------
+print("\n5. a wrong row can be removed from the total")
+# The results table is the one screen whose number gets said out loud to a
+# seller across a table. Fix could correct a MISREAD card; nothing could delete
+# a thing that was never a card, so a false positive stayed in the market total.
+import http.server, threading, functools, socketserver
+_PORT2 = PORT + 7
+_h = functools.partial(http.server.SimpleHTTPRequestHandler,
+                       directory=os.path.dirname(os.path.abspath(__file__)))
+class _Q(socketserver.TCPServer): allow_reuse_address = True
+_srv = _Q(("127.0.0.1", _PORT2), _h)
+threading.Thread(target=_srv.serve_forever, daemon=True).start()
+try:
+    with sync_playwright() as _pw:
+        _b = _pw.chromium.launch()
+        _pg = _b.new_page(viewport={"width": 390, "height": 844})
+        _pg.goto(f"http://127.0.0.1:{_PORT2}/", wait_until="load")
+        for _ in range(14):
+            if not _pg.evaluate("()=>{const e=document.querySelector('#tourWrap');"
+                                "return !!e&&e.classList.contains('on');}"):
+                break
+            _pg.evaluate("""()=>{const s=document.querySelector('#tourSkip');
+                const n=document.querySelector('#tourNext');
+                if(s&&s.offsetParent!==null){s.click();return;}
+                if(n)n.click();}""")
+            _pg.wait_for_timeout(150)
+        _pg.evaluate("()=>LotScanner.open()")
+        _pg.wait_for_timeout(300)
+        _pg.evaluate("""()=>LotScanner._render([
+            {found:true,name:'Charizard ex',price:100,c:'nm',id:'a',line:'charizard ex'},
+            {found:true,name:'Pikachu V',price:20,c:'nm',id:'b',line:'pikachu v'},
+            {found:false,line:'blurry edge of the table'}],'')""")
+        _pg.wait_for_timeout(300)
+
+        def _st():
+            return _pg.evaluate("""()=>{const b=document.querySelector('#lotResults');
+              const tot=[...b.querySelectorAll('.lot-tot .tr')]
+                          .map(x=>x.innerText.replace(/\s+/g,' ')).join(' | ');
+              return {rows:b.querySelectorAll('.lot-row').length,
+                      drops:b.querySelectorAll('[data-drop]').length, tot:tot};}""")
+
+        a = _st()
+        check(f"every row gets a remove control ({a['drops']} of {a['rows']})",
+              a["drops"] == a["rows"] == 3)
+        check(f"the starting total is $120 ({a['tot'][:44]})", "$120" in a["tot"])
+
+        # A remove control smaller than a thumb is a remove control that gets
+        # mis-tapped on the row above it.
+        box = _pg.evaluate("""()=>{const e=document.querySelector('[data-drop]');
+            const r=e.getBoundingClientRect();
+            return {w:Math.round(r.width),h:Math.round(r.height)};}""")
+        check(f"...and is tappable ({box['w']}x{box['h']})",
+              box["h"] >= 30 and box["w"] >= 30)
+
+        _pg.evaluate("()=>document.querySelector('[data-drop=\"1\"]').click()")
+        _pg.wait_for_timeout(300)
+        c = _st()
+        check(f"removing the $20 row drops the total to $100 ({c['tot'][:40]})",
+              "$100" in c["tot"] and "$120" not in c["tot"])
+        check("...and the matched count corrects with it", "1 of 2" in c["tot"])
+        check("...and the underlying rows actually shrank",
+              _pg.evaluate("()=>LotScanner._rows().length") == 2)
+
+        # NEGATIVE CASE: removing must not empty the table wholesale.
+        check("the remaining rows survive",
+              _pg.evaluate("()=>document.querySelectorAll('#lotResults .lot-row').length") == 2)
+        _b.close()
+finally:
+    _srv.shutdown()
+
 httpd.shutdown()
 print("\nPASS" if passed else "\nFAIL")
 sys.exit(0 if passed else 1)
