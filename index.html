@@ -242,7 +242,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   .scanbtn:active{transform:scale(.97)}
   #scanModal{position:fixed;inset:0;background:#000;z-index:var(--z-scan);display:none;flex-direction:column}
   #scanModal.show{display:flex}
-  .scanpanel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--s10);text-align:center}
+  .scanpanel{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--s10);text-align:center;overflow-y:auto}
   #cropWrap{position:absolute;inset:0;background:#000;z-index:2}
   #cropCanvas{position:absolute;display:block}
   #cropBox{position:absolute;border:0;border-radius:var(--r-sm);box-shadow:0 0 0 100vmax rgba(0,0,0,.55);touch-action:none;z-index:3}
@@ -496,6 +496,28 @@ catch(e){document.documentElement.style.display="none";}</script>
   #showBar .sb-n{display:block;font-family:var(--mono);font-size:var(--t8);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
   #showBar .sb-l{display:block;font-family:var(--mono);font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:var(--s2)}
   @media (max-width:400px){#showBar .sb-grid{grid-template-columns:repeat(2,1fr);gap:var(--s5)}}
+  /* Once the rescue search is open the panel is taller than a phone screen.
+     justify-content:center then pushes the status off the top and the results
+     off the bottom, and they render on top of each other. Anchor to the top and
+     let the PANEL scroll -- one scroll region, not a list nested in a centred
+     box that cannot move. */
+  #scanModal.fb .scanpanel{justify-content:flex-start;padding-top:var(--s8)}
+  #scanModal.fb #scanFallback{order:1}
+  #scanModal.fb #scanRetake{order:2;margin-top:var(--s7)!important}
+  /* #scanStatus and #scanHint are position:absolute, so they sit OUTSIDE the
+     flex flow and `order` does nothing to them -- they are pinned near the
+     bottom of the modal. That is why the results list has to cap itself rather
+     than rely on the panel: an uncapped list grows straight under the status
+     line and the two render on top of each other. */
+  #scanModal.fb #scanFbRes{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #scanFbRes .fbrow{display:flex;align-items:center;gap:var(--s5);width:100%;
+    padding:var(--s5) var(--s5);background:var(--bg2);border:1px solid var(--line);
+    border-radius:var(--r-sm);margin-bottom:var(--s3);cursor:pointer;text-align:left;
+    color:var(--ink);min-height:var(--tap)}
+  #scanFbRes .fbrow:active{border-color:var(--acc)}
+  #scanFbRes .fbn{flex:1;min-width:0;font-size:var(--t4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #scanFbRes .fbs{font-family:var(--mono);font-size:var(--t1);color:var(--ink3);display:block}
+  #scanFbRes .fbp{font-family:var(--mono);font-size:var(--t5);color:var(--gold);font-variant-numeric:tabular-nums}
   .lot-row{display:flex;align-items:center;gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line)}
   .lot-row:last-child{border-bottom:none}
   .lot-row .nm{flex:1;min-width:0}
@@ -966,6 +988,14 @@ catch(e){document.documentElement.style.display="none";}</script>
     <div class="scanstatus" id="scanStatus">Reading…</div>
     <div class="scanhint" id="scanHint"></div>
     <button class="act" id="scanRetake" style="max-width:260px;margin-top:var(--s8)">Scan again</button>
+    <!-- Rescue path. A failed scan used to end here with "Scan again", which
+         means retry the thing that just failed, or leave and find + Manual.
+         Every competitor review complains about exactly this dead end. -->
+    <div id="scanFallback" class="hide" style="width:100%;max-width:340px;margin-top:var(--s8)">
+      <div id="scanFbHead" style="font-size:var(--t3);color:var(--ink2);margin-bottom:var(--s4)">Type the name instead &mdash; we kept what we could read.</div>
+      <input id="scanFbInput" type="text" placeholder="Card name or number" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;padding:var(--s5) var(--s6);font-size:var(--t5)">
+      <div id="scanFbRes" style="margin-top:var(--s4)"></div>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite">Done</div>
@@ -1541,7 +1571,8 @@ const Sheet=(function(){
     const fa=fields.find(f=>f.autofocus&&f.type!=='static'&&f.type!=='select');
     if(fa){const el=$('#sf-'+fa.key);if(el)setTimeout(()=>el.focus(),250);}
   }
-  function close(){$('#sheetbg').classList.remove('show');$('#sheet').classList.remove('show');okFn=null;}
+  function close(){
+    try{fbClear();}catch(e){}$('#sheetbg').classList.remove('show');$('#sheet').classList.remove('show');okFn=null;}
   $('#sheetCancel').onclick=close;$('#sheetbg').onclick=close;
   $('#sheetOk').onclick=()=>{if(okFn)okFn();};
   function info(title,html){
@@ -4793,16 +4824,81 @@ const Scanner=(function(){
 
     if(!hits.length){for(const nm of names){const r=PriceEngine.fuzzy(nm,lang,8);if(r.length){hits=r;used=nm;break;}}}
     if(!hits.length){
-      $('#scanStatus').textContent='No match. Try again, or use + Manual';
+      // DO NOT dead-end here. "Scan again" means "retry the thing that just
+      // failed", and + Manual is on another screen. Every review complaint in
+      // this category is some version of this moment: the scan misses, and the
+      // app has nothing else to offer. Hand over a search, PREFILLED with
+      // whatever the OCR did manage to read, so the job is correcting a typo
+      // rather than typing a card name from scratch on a phone.
+      $('#scanStatus').textContent='No match on that photo.';
       $('#scanHint').textContent='Read: "'+readLabel+'" · '+_shot+' → '+cw+'×'+ch;
       $('#scanHint').style.display='';
+      openFallback(readLabel);
       return;
     }
     close();
     if(lastQuick)showQuickCheck(hits,used);else showScanResults(hits,used);
     if(_shot)toast('cap '+_shot+' → '+cw+'×'+ch);
   }
-  return{open,close,setMode,toggleTorch,tapFocus,capture};
+  /* ---- the rescue search ------------------------------------------------
+     Deliberately reuses the exact accept path a SUCCESSFUL scan takes --
+     close() then showQuickCheck/showScanResults -- so a rescued card behaves
+     identically downstream. A second, parallel "add to pile" implementation
+     here is how the two drift apart and only one of them gets the fix. */
+  function fbClear(){
+    const w=$('#scanFallback'); if(!w)return;
+    w.classList.add('hide');
+    const m=$('#scanModal'); if(m)m.classList.remove('fb');
+    const i=$('#scanFbInput'); if(i)i.value='';
+    const r=$('#scanFbRes'); if(r)r.innerHTML='';
+  }
+  function fbRender(q){
+    const box=$('#scanFbRes'); if(!box)return;
+    const term=(q||'').trim();
+    if(term.length<2){box.innerHTML='';return;}
+    let hits=[];
+    try{ hits=PriceEngine.search(term,lang)||[]; }catch(e){ hits=[]; }
+    // Fuzzy is the whole point of a rescue: OCR errors are near-misses.
+    if(!hits.length){ try{ hits=PriceEngine.fuzzy(term,lang,8)||[]; }catch(e){} }
+    if(!hits.length){
+      box.innerHTML='<div class="empty" style="padding:var(--s7) 0">No card by that name.</div>';
+      return;
+    }
+    box.innerHTML=hits.slice(0,12).map(function(it,i){
+      var pr=0; try{ pr=PriceEngine.getPrice(it.id)||0; }catch(e){}
+      return '<button class="fbrow" data-fb="'+i+'">'
+        +'<span class="fbn">'+esc(it.name)+(it.number?' '+esc(it.number):'')
+        +'<span class="fbs">'+esc(it.set||'')+'</span></span>'
+        +'<span class="fbp">'+usd(pr)+'</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-fb]'),function(b){
+      b.onclick=function(){
+        var it=hits[+b.dataset.fb]; if(!it)return;
+        fbClear();
+        close();
+        if(lastQuick)showQuickCheck([it],term); else showScanResults([it],term);
+      };
+    });
+  }
+  function openFallback(seed){
+    const w=$('#scanFallback'); if(!w)return;
+    w.classList.remove('hide');
+    const m=$('#scanModal'); if(m)m.classList.add('fb');
+    const i=$('#scanFbInput');
+    if(i){
+      // Seed with what the OCR read. If it read nothing, leave it empty rather
+      // than pre-filling junk the user then has to delete.
+      var s0=(seed||'').replace(/[^\w\s'\-\/]+/g,' ').replace(/\s{2,}/g,' ').trim();
+      i.value=(s0&&s0.length>=2&&!/^(unknown|none)$/i.test(s0))?s0:'';
+      i.oninput=function(){fbRender(i.value);};
+      fbRender(i.value);
+      // Do NOT autofocus: on a phone that throws the keyboard over the result
+      // list the moment the scan fails, hiding the thing we just offered.
+    }
+  }
+
+  return{open,close,setMode,toggleTorch,tapFocus,capture,
+         _fallback:openFallback,_fbClear:fbClear};
 })();
 function ownedInfo(it){
   // match by catalog id first, else by normalized name

@@ -351,6 +351,105 @@ try:
 finally:
     _srv.shutdown()
 
+# ---------------------------------------------------------------------------
+print("\n6. a failed scan offers a way out")
+# The dead end this fixes: a scan that finds nothing used to offer "Scan again"
+# -- retry the thing that just failed -- and a pointer to + Manual on another
+# screen. Every review complaint in this category is some version of that
+# moment. Ludex: cards come back "unable to find". Collectr: "falls back to
+# manual lookup faster than competitors".
+_PORT3 = PORT + 11
+_h3 = functools.partial(http.server.SimpleHTTPRequestHandler,
+                        directory=os.path.dirname(os.path.abspath(__file__)))
+class _Q3(socketserver.TCPServer): allow_reuse_address = True
+_srv3 = _Q3(("127.0.0.1", _PORT3), _h3)
+threading.Thread(target=_srv3.serve_forever, daemon=True).start()
+try:
+    with sync_playwright() as _pw3:
+        _b3 = _pw3.chromium.launch()
+        _p3 = _b3.new_page(viewport={"width": 390, "height": 844})
+        _errs3 = []
+        _p3.on("pageerror", lambda e: _errs3.append(str(e)))
+        _p3.goto(f"http://127.0.0.1:{_PORT3}/", wait_until="load")
+        for _ in range(14):
+            if not _p3.evaluate("()=>{const e=document.querySelector('#tourWrap');"
+                                "return !!e&&e.classList.contains('on');}"):
+                break
+            _p3.evaluate("""()=>{const s=document.querySelector('#tourSkip');
+                const n=document.querySelector('#tourNext');
+                if(s&&s.offsetParent!==null){s.click();return;}
+                if(n)n.click();}""")
+            _p3.wait_for_timeout(150)
+
+        # the exact state a user is in when a scan comes back with no match
+        _p3.evaluate("""()=>{document.querySelector('#scanModal').classList.add('show');
+            document.querySelector('.scanpanel').style.display='';
+            document.querySelector('#scanStatus').textContent='No match on that photo.';}""")
+        _p3.wait_for_timeout(200)
+        _vis = lambda s: _p3.evaluate(
+            "(x)=>{const e=document.querySelector(x);if(!e)return 0;"
+            "const r=e.getBoundingClientRect();return Math.round(r.height);}", s)
+        check("the rescue search is hidden until a scan actually fails",
+              _vis("#scanFallback") == 0)
+
+        # OCR-style typo: this is the realistic input, not a clean name.
+        _p3.evaluate("()=>Scanner._fallback('Charizrd ex')")
+        _p3.wait_for_timeout(500)
+        check(f"...and appears when one does ({_vis('#scanFallback')}px)",
+              _vis("#scanFallback") > 0)
+        seeded = _p3.evaluate("()=>document.querySelector('#scanFbInput').value")
+        check(f"...seeded with what the OCR read ({seeded!r}), so the job is "
+              "correcting a typo not retyping", seeded == "Charizrd ex")
+        n = _p3.evaluate("()=>document.querySelectorAll('#scanFbRes .fbrow').length")
+        check(f"a misread name still finds the card via fuzzy match ({n} hits)",
+              n >= 1)
+        first = _p3.evaluate("()=>document.querySelector('#scanFbRes .fbrow')"
+                             ".innerText.replace(/\s+/g,' ')")
+        check(f"...and the right one is first ({first[:34]})",
+              "charizard" in first.lower())
+        rowh = _p3.evaluate("()=>Math.round(document.querySelector('#scanFbRes .fbrow')"
+                            ".getBoundingClientRect().height)")
+        check(f"result rows are thumb-sized ({rowh}px)", rowh >= 44)
+
+        # #scanStatus and #scanHint are position:absolute, so they sit outside
+        # the flex flow and an uncapped list grows straight underneath them.
+        _p3.evaluate("()=>Scanner._fallback('charizard')")   # long list, worst case
+        _p3.wait_for_timeout(500)
+        ov = _p3.evaluate("""()=>{
+            const bx=s=>{const e=document.querySelector(s);const r=e.getBoundingClientRect();
+              return {s,t:r.top,b:r.bottom,h:r.height};};
+            const ps=['#scanFallback','#scanRetake','#scanStatus'].map(bx);
+            const bad=[];
+            for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+              const a=ps[i],c=ps[j];
+              if(a.h>0&&c.h>0&&a.t<c.b&&c.t<a.b)bad.push(a.s+'/'+c.s);}
+            return {bad, n:document.querySelectorAll('#scanFbRes .fbrow').length,
+                    bottom:Math.round(Math.max(...ps.map(x=>x.b)))};}""")
+        check(f"a long result list ({ov['n']}) does not collide with the "
+              f"pinned status line ({ov['bad'] or 'no overlaps'})", not ov["bad"])
+        check(f"...and everything stays on screen (lowest edge {ov['bottom']}px "
+              "of 844)", ov["bottom"] <= 844)
+
+        # Picking a result must land exactly where a SUCCESSFUL scan lands. A
+        # second, parallel accept path here is how the two drift apart.
+        _p3.evaluate("()=>Scanner._fallback('Charizrd ex')")
+        _p3.wait_for_timeout(400)
+        _p3.evaluate("()=>document.querySelector('#scanFbRes .fbrow').click()")
+        _p3.wait_for_timeout(800)
+        landed = _p3.evaluate("""()=>({
+            scannerClosed:!document.querySelector('#scanModal').classList.contains('show'),
+            resultShown:!!document.querySelector('#sheet.show, .sheetbg.show'),
+            cleared:document.querySelector('#scanFbInput').value==='' &&
+                    document.querySelector('#scanFallback').classList.contains('hide')})""")
+        check("picking a result closes the scanner", landed["scannerClosed"])
+        check("...and opens the same result sheet a successful scan opens",
+              landed["resultShown"])
+        check("...and the rescue search is cleared behind it", landed["cleared"])
+        check(f"no page errors throughout ({_errs3[:1] or 'none'})", not _errs3)
+        _b3.close()
+finally:
+    _srv3.shutdown()
+
 httpd.shutdown()
 print("\nPASS" if passed else "\nFAIL")
 sys.exit(0 if passed else 1)
