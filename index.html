@@ -561,11 +561,15 @@ catch(e){document.documentElement.style.display="none";}</script>
 
   <!-- ============ TRADE BLOCK ============ -->
   <section class="panel on" id="block" data-tour-block>
-    <div class="seg sm" id="langSeg" style="margin-bottom:var(--s4)"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">日本語 JP</button></div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
-      <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off"><div class="results" id="results"></div>
+      <input id="search" placeholder="Search sealed, graded, or singles…" autocomplete="off">
+      <!-- The language filter lives WITH the search it filters. It used to be
+           the first strip on the page, above the pile: 28px of chrome in front
+           of the task, on a control most people never touch. -->
+      <div class="seg sm" id="langSeg" style="margin-top:var(--s4)"><button data-lang="all">All</button><button data-lang="en">English</button><button data-lang="jp">Japanese</button></div>
+      <div class="results" id="results"></div>
       <div id="quickAdd" class="qa-row" style="display:none"></div>
       <div class="row" style="justify-content:flex-end;margin-top:var(--s4);gap:var(--s4);flex-wrap:wrap"><button class="scanbtn" id="scanBtn">▣ Scan</button><button class="scanbtn" id="scanLot" style="display:none" hidden>▦ Lot</button><button class="scanbtn" id="quickBtn">⚡ Check</button><button class="ghost" id="manualBtn" style="padding:var(--s3) var(--s6)">+ Manual</button></div>
       <div id="pile" style="margin-top:var(--s2)"></div>
@@ -579,8 +583,13 @@ catch(e){document.documentElement.style.display="none";}</script>
     </div>
     <div class="card hide" id="balanceCard"><label>Balance</label><div class="balance"><div class="bv" id="balVal">$0</div><div class="bl" id="balText">Add to both sides.</div></div></div>
     <div class="card" id="channelCard">
-      <label>Resell channel</label><div class="channels" id="channels"></div>
-      <div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
+      <div class="row between colhead" data-col="channelCard"><label style="margin:0">Resell channel</label><span class="chev">&#9662;</span></div>
+      <div class="channels" id="channels"></div>
+      <!-- Only the fee EDITOR collapses. The chips stay: picking a channel is a
+           frequent move while comparing, editing that channel's percentage is a
+           once-a-year one, and they were given equal room. -->
+      <div class="colbody"><div class="feeEdit"><div><label id="feePctLabel">eBay fee %</label><input class="num" id="feePct" type="number" step="0.1"></div><div><label>Flat $ / order</label><input class="num" id="feeFlat" type="number" step="0.05"></div></div>
+      </div>
     </div>
     <div class="card" id="sellOptCard">
       <div class="row between colhead" data-col="sellOptCard"><label style="margin:0">Net by channel<button class="hint" data-hint="fees" aria-label="What is this?">i</button></label><span class="chev">▾</span></div>
@@ -1369,7 +1378,7 @@ let collapsed=Store.load('collapsed',{});
 // task: the Trade tab was showing 7 cards and 19 controls at once, all
 // expanded, on a pile with nothing in it yet. rateCard alone was 418px.
 const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard',
-                                 'rateCard','sellOptCard','helpCard']);
+                                 'rateCard','sellOptCard','helpCard','channelCard']);
 const colState=k=>(k in collapsed)?collapsed[k]:DEFAULT_COLLAPSED.has(k);
 function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',colState(k));});}
 $$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!colState(k);Store.save('collapsed',collapsed);applyCollapse();});
