@@ -935,6 +935,11 @@ catch(e){document.documentElement.style.display="none";}</script>
       <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
   </div>
 </div>
+<!-- Lot/batch card detection. Kept a separate file, not inlined: it is the
+     only part of the app with its own measured accuracy suite, and the suite
+     loads this exact file. -->
+<script src="cardfind.js"></script>
+
 
 <script>
 /* ===== SPINE ===== */
@@ -3876,13 +3881,42 @@ const LotScanner=(function(){
     return {cols:cols,rows:rows,inset:inset,hits:hits,n:hits.length,mean:mean};
   }
 
+  // Real detection, when the photo is not a neat grid. LOT_LAYOUTS assumes
+  // cards sit in even rows and columns, which a Facebook Marketplace photo of a
+  // tilted binder page is not. CardFind finds card-shaped quads anywhere and
+  // rectifies each one, so a scattered or angled lot has a chance at all.
+  //
+  // Returns the same shape scoreLayout does so the caller can compare them on
+  // equal terms, and null when the detector is unavailable or finds nothing --
+  // never a throw, because a failed detection must fall back to the grid rather
+  // than take the whole scan down.
+  function scoreDetect(cv){
+    if(typeof CardFind==='undefined'||!CardFind||!CardFind.detect)return null;
+    var found;
+    try{found=CardFind.detect(cv);}catch(e){return null;}
+    if(!found||!found.length)return null;
+    var hits=[],seen={};
+    for(var i=0;i<found.length;i++){
+      var c=null;
+      try{c=CardFind.crop(cv,found[i].quad,220,308,false);}catch(e){c=null;}
+      if(!c)continue;
+      var b=CardHash.best(c);
+      if(b&&b.dist<=LOT_OK&&!seen[b.id]){seen[b.id]=1;hits.push(b);}
+    }
+    var mean=hits.length?hits.reduce(function(a,h){return a+h.dist;},0)/hits.length:999;
+    return {detector:true,found:found.length,hits:hits,n:hits.length,mean:mean};
+  }
+
   async function runHash(img,ask){
     var cv=prep(img);
     var okDb=false;try{okDb=await CardHash.ready();}catch(e){okDb=false;}
     if(!okDb)return null;
     var st=$('#lotStatus');if(st)st.textContent='Reading cards\u2026';
 
-    var best=null;
+    var best=scoreDetect(cv);
+    if(st&&best)st.textContent='Found '+best.found+' card shape(s)\u2026';
+    await new Promise(function(res){setTimeout(res,0);});
+
     for(var i=0;i<LOT_LAYOUTS.length;i++){
       var L=LOT_LAYOUTS[i];
       var r=scoreLayout(cv,L[0],L[1],0);

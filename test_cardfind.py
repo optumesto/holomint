@@ -20,6 +20,7 @@ A per-fixture floor also means a regression shows up as the specific case that
 broke, rather than one aggregate number drifting.
 """
 import os
+import re
 import sys
 import json
 import time
@@ -261,6 +262,24 @@ with sync_playwright() as pw:
           0.30 < half < 0.36 and half < IOU_HIT)
 
     browser.close()
+
+# ---------------------------------------------------------------------------
+print("\n4. the app actually loads this file")
+# Everything above runs against a synthetic fixture page with cardfind.js
+# injected by add_script_tag. That proves the ALGORITHM works and says nothing
+# about whether the product uses it -- and for a while it did not: index.html
+# never referenced cardfind.js, so every assertion above was green while the lot
+# scanner still used only the grid splitter. A suite that cannot tell "correct"
+# from "disconnected" is the expensive kind of green.
+_root = os.path.dirname(os.path.abspath(__file__))
+_html = open(os.path.join(_root, "index.html")).read()
+check("index.html loads cardfind.js",
+      bool(re.search(r'<script[^>]+src=["\']\.?/?cardfind\.js', _html)))
+check("the lot scan path calls the detector",
+      "scoreDetect(" in _html and "CardFind.detect" in _html)
+check("...and still falls back to the grid layouts", "LOT_LAYOUTS" in _html)
+_sw = open(os.path.join(_root, "sw.js")).read()
+check("the service worker precaches cardfind.js", "cardfind.js" in _sw)
 
 httpd.shutdown()
 print("\nPASS" if passed else "\nFAIL")

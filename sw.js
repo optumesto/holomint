@@ -1,6 +1,6 @@
-const CACHE = 'holomint-v1.25';        // app shell, replaced on every release
+const CACHE = 'holomint-v1.26';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin - persists across releases
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
+const SHELL = ['./', './index.html', './cardfind.js', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
