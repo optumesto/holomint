@@ -132,6 +132,18 @@ with sync_playwright() as pw:
           body_state(page)["position"] != "fixed")
 
     print("\n3. opening a sheet locks the page where it stands")
+    # Guarantee the page CAN scroll before asserting that it did. On a fresh
+    # load the shell is almost exactly viewport height, so whether scrollTo(300)
+    # moved anything depended on whether async catalog content had landed -- a
+    # 1-in-5 failure that reads "scroll lock is broken" when it only means "the
+    # page was short this time". The lock is under test, not the content height.
+    page.evaluate("""()=>{let s=document.getElementById('__scrollpad');
+        if(!s){s=document.createElement('div');s.id='__scrollpad';
+        s.style.height='1200px';s.style.pointerEvents='none';
+        document.body.appendChild(s);}}""")
+    page.wait_for_timeout(60)
+    check("the page is scrollable at all (precondition, not the assertion)",
+          page.evaluate("document.documentElement.scrollHeight > window.innerHeight"))
     page.evaluate("window.scrollTo(0,300)")
     page.wait_for_timeout(150)
     before = page.evaluate("Math.round(window.scrollY)")
@@ -395,6 +407,87 @@ with sync_playwright() as pw:
         # Cancelling must not run the destructive callback.
         check("...and back does NOT fire the destructive action",
               not state["fired"])
+
+
+    print("\n7. the portfolio does not shout before it has anything to say")
+    # Section 6 leaves a sheet up; its backdrop swallows every click. Close
+    # whatever is open and assert it actually closed, rather than trusting a
+    # sleep -- an intercepted click times out 30s later saying "not visible",
+    # which is a lie about the element and hides the real cause.
+    page.evaluate("""()=>{document.querySelectorAll('.sheetbg.show,.show')
+        .forEach(e=>e.classList.remove('show'));
+        if(typeof Sheet!=='undefined'&&Sheet.close)try{Sheet.close();}catch(e){}}""")
+    page.wait_for_timeout(300)
+    check("no overlay backdrop is left intercepting clicks",
+          page.evaluate("()=>!document.querySelector('.sheetbg.show')"))
+    page.evaluate("switchTab('port')")
+    page.wait_for_timeout(500)
+    st = page.evaluate("""()=>{const q=s=>document.querySelector(s),
+        vis=e=>!!(e&&e.offsetParent!==null);
+        const tb=q('#holdBody'),card=tb?tb.closest('.card'):null;
+        const cr=card&&card.getBoundingClientRect(),tr=tb&&tb.getBoundingClientRect();
+        return {stats:vis(q('#portStats')),alloc:vis(q('#portTotals')),
+                filters:vis(q('#holdFilters')),
+                chrome:(cr&&tr)?Math.round(tr.top-cr.top):null,
+                ctrls:[...(card?card.querySelectorAll('button,input,select'):[])]
+                       .filter(vis).length};}""")
+    # An empty portfolio used to open on four $0 cards and an allocation bar
+    # painting Raw at 100% -- the percentage divides by a ||1 guard, so zero
+    # holdings rendered as a full-width bar. 192px of chrome and 10 controls
+    # before the first row, on the screen a booth install lands on.
+    check("empty: the $0 stat cards are not shown", st["stats"] is False)
+    check("empty: the 0% allocation bar is not shown", st["alloc"] is False)
+    check("empty: search/sort/filter are not shown", st["filters"] is False)
+    check(f"empty: at most 2 controls above the table (got {st['ctrls']})",
+          st["ctrls"] <= 2)
+    check(f"empty: chrome above the table <= 120px (got {st['chrome']})",
+          st["chrome"] is not None and st["chrome"] <= 120)
+
+    # A disclosure that discloses nothing looks identical to a broken one.
+    page.click("#holdOverflow")
+    page.wait_for_timeout(250)
+    check("tapping the overflow reveals Import/Export/Price graded",
+          page.evaluate("()=>{const e=document.querySelector('#holdTools');"
+                        "return !!(e&&e.offsetParent!==null);}"))
+    check("...and it reports that state to a screen reader",
+          page.get_attribute("#holdOverflow", "aria-expanded") == "true")
+
+    # The cascade bug underneath all of this: .hide sits near the top of the
+    # sheet, so any later rule setting display on the same element won at equal
+    # specificity. .stats{display:grid} did exactly that.
+    disp = page.evaluate("""()=>{const d=document.createElement('div');
+        d.className='stats hide';document.body.appendChild(d);
+        const r=getComputedStyle(d).display;d.remove();return r;}""")
+    check(f"the .hide utility beats a later display rule (got {disp})",
+          disp == "none")
+
+    print("\n8. ...but it does show up once there is something to show")
+    # NEGATIVE CASE. Hiding the summary unconditionally would pass every
+    # assertion above while breaking the feature.
+    page.evaluate("""()=>{const a=[];for(let i=0;i<12;i++)a.push({id:'h'+i,
+        name:'Surging Sparks ETB '+i,type:i%3===0?'graded':'sealed',
+        costBasis:49.99,currentValue:62.5,qty:1,acquired:'2026-01-01'});
+        localStorage.setItem('holomint:holdings',JSON.stringify(a));}""")
+    page.reload(wait_until="load")
+    # Same click-through the top of this file uses; there is no shared helper.
+    for _ in range(14):
+        if not page.evaluate("()=>{const e=document.querySelector('#tourWrap');"
+                             "return !!e&&e.classList.contains('on');}"):
+            break
+        page.evaluate("""()=>{const s=document.querySelector('#tourSkip');
+            const n=document.querySelector('#tourNext');
+            if(s&&s.offsetParent!==null){s.click();return;}
+            if(n)n.click();}""")
+        page.wait_for_timeout(160)
+    page.evaluate("switchTab('port')")
+    page.wait_for_timeout(800)
+    full = page.evaluate("""()=>{const q=s=>document.querySelector(s),
+        vis=e=>!!(e&&e.offsetParent!==null);
+        return {stats:vis(q('#portStats')),alloc:vis(q('#portTotals')),
+                filters:vis(q('#holdFilters'))};}""")
+    check("with 12 holdings the stat cards come back", full["stats"] is True)
+    check("...the allocation bar comes back", full["alloc"] is True)
+    check("...and search/sort/filter appear", full["filters"] is True)
 
     browser.close()
 

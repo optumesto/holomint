@@ -172,7 +172,13 @@ catch(e){document.documentElement.style.display="none";}</script>
      separation moved into SPACING -- s10 between cards against s8 inside
      them, so related things sit closer than unrelated ones. */
   .row{display:flex;align-items:center;gap:var(--s5)}.between{justify-content:space-between}
-  .hide{display:none}
+  /* !important because this is a utility override, and without it the cascade
+     silently loses: .hide sits at the top of the sheet, so any later rule that
+     also sets display on the same element wins on source order at equal
+     specificity. .stats{display:grid} did exactly that -- portStats stayed
+     visible while portTotals, which has no display rule of its own, hid
+     correctly. Same class, same toggle, two different outcomes. */
+  .hide{display:none!important}
   /* Fields grow rather than faking it: ::after does not render on replaced
      elements, so an input's hit area IS its box. 44px also just types better. */
   input,select{font-family:var(--sans);font-size:var(--t5);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s5) var(--s6);width:100%;min-height:var(--tap);outline:none;transition:var(--dur-fast) var(--ease)}
@@ -651,10 +657,19 @@ catch(e){document.documentElement.style.display="none";}</script>
     </div>
     <div class="card">
       <div class="row between" style="margin-bottom:var(--s2)"><label style="margin:0">Holdings</label>
-        <div class="row" style="gap:var(--s3)"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button><button class="ghost" id="addHolding" style="padding:var(--s4) var(--s5)">+ Add</button></div>
+        <div class="row" style="gap:var(--s3)"><button class="ghost" id="addHolding" style="padding:var(--s4) var(--s5)">Add</button><button class="ghost" id="holdOverflow" aria-expanded="false" aria-controls="holdTools" aria-label="More holdings actions" title="Import, export, price graded" style="padding:var(--s4) var(--s5);letter-spacing:.12em;min-width:var(--tap)">&#8943;</button></div>
       </div>
-      <div class="row" style="gap:var(--s3);margin-bottom:var(--s3)"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><select id="holdSort" style="width:auto;flex:none;padding:var(--s3) var(--s3);font-size:var(--t2);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
-      <div class="seg sm" id="holdTypeSeg" style="margin-bottom:var(--s5)"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
+      <!-- Import/Export/Price graded are rare, one-time actions. They used to sit
+           in the header shouting at the same volume as Add, wrapping onto two
+           lines each on a 390px phone. Behind the overflow they cost one tap and
+           stop competing with the data. -->
+      <div class="row hide" id="holdTools" style="gap:var(--s3);margin-bottom:var(--s3);flex-wrap:wrap"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button></div>
+      <!-- Search, sort and the type filter only earn their space once there is
+           enough to search. renderHoldings unhides them past HOLD_FILTER_MIN. -->
+      <div id="holdFilters" class="hide">
+        <div class="row" style="gap:var(--s3);margin-bottom:var(--s3)"><input id="holdSearch" placeholder="Search name or location…" autocomplete="off" style="flex:1;padding:var(--s4) var(--s5);font-size:var(--t5)"><select id="holdSort" style="width:auto;flex:none;padding:var(--s3) var(--s3);font-size:var(--t2);background:var(--bg3);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);font-family:var(--sans)"><option value="roi">ROI</option><option value="value">Value</option><option value="cost">Cost</option><option value="name">Name</option><option value="recent">Recent</option></select></div>
+        <div class="seg sm" id="holdTypeSeg" style="margin-bottom:var(--s5)"><button data-ht="all">All</button><button data-ht="sealed">Sealed</button><button data-ht="graded">Graded</button><button data-ht="single">Singles</button></div>
+      </div>
       <table><thead><tr><th>Item</th><th>Cost</th><th>Now</th><th>ROI</th><th></th></tr></thead><tbody id="holdBody"></tbody></table>
     </div>
     <div class="card hide" id="soldCard">
@@ -2770,6 +2785,24 @@ function renderPortfolio(){
   const gain=val-cost;
   const realized=soldLog.reduce((s,r)=>s+r.realized,0);
   renderTicker();
+
+  // Nothing owned and nothing sold: four $0 cards and a full-width allocation
+  // bar reading "Sealed 0% Graded 0%" is not a summary, it is 300px of noise --
+  // and the bar was actively misleading, because an empty portfolio divides by
+  // the ||1 guard and paints Raw at 100%. Someone installing this at a card
+  // show sees this screen first, so it shows the one thing to do instead.
+  const _empty = holdings.length===0 && soldLog.length===0;
+  const _ps=$('#portStats'), _pt=$('#portTotals');
+  if(_ps)_ps.classList.toggle('hide',_empty);
+  if(_pt)_pt.classList.toggle('hide',_empty);
+  if(_empty){
+    // Still clear the stale markup, so a portfolio emptied back to zero cannot
+    // leave last session's numbers hidden-but-present in the DOM.
+    if(_ps)_ps.innerHTML='';
+    renderSold();renderDeals();renderTax();renderDrops();renderHoldings();
+    return;
+  }
+
   $('#portStats').innerHTML=[['Cost basis',usd(cost),''],['Market value',usd(val),''],['Unrealized',usd(gain),gain>=0?'pos':'neg'],['Realized P&L',usd(realized),realized>=0?'pos':'neg']].map(s=>`<div class="stat"><div class="sl">${s[0]}</div><div class="sv ${s[2]}">${s[1]}</div></div>`).join('');
   const sealedV=holdings.filter(h=>h.type==='sealed').reduce((s,h)=>s+h.currentValue*h.qty,0);
   const gradedV=holdings.filter(h=>h.type==='graded').reduce((s,h)=>s+h.currentValue*h.qty,0);
@@ -2781,8 +2814,18 @@ function renderPortfolio(){
   renderHoldings();
 }
 const HOLD_WINDOW=150;
+// Search, sort and a four-way type filter over three items is chrome pretending
+// to be power. Below this count the eye is faster than any of them.
+const HOLD_FILTER_MIN=8;
 let holdShowAll=false;
 function renderHoldings(){
+  const _hf=$('#holdFilters');
+  if(_hf){
+    // Never hide a filter the user is actively using, or their own typing would
+    // make the box vanish mid-search and silently keep filtering the list.
+    const _inUse = holdQuery!=='' || holdTypeF!=='all';
+    _hf.classList.toggle('hide', holdings.length<HOLD_FILTER_MIN && !_inUse);
+  }
   let view=holdings.filter(h=>{
     if(holdTypeF!=='all'&&h.type!==holdTypeF)return false;
     if(holdQuery){const q=holdQuery.toLowerCase();if(!((h.name||'').toLowerCase().includes(q)||(h.location||'').toLowerCase().includes(q)))return false;}
@@ -3250,6 +3293,12 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
 };
 /* ---- HOLDINGS CONTROLS (search / sort / type filter) ---- */
 function wireHoldControls(){
+  const _ov=$('#holdOverflow');
+  if(_ov)_ov.onclick=()=>{
+    const t=$('#holdTools');if(!t)return;
+    const open=t.classList.toggle('hide')===false;
+    _ov.setAttribute('aria-expanded',open?'true':'false');
+  };
   const s=$('#holdSearch');if(s)s.oninput=e=>{holdQuery=e.target.value;renderHoldings();};
   const so=$('#holdSort');if(so)so.onchange=e=>{holdSort=e.target.value;renderHoldings();};
   $$('#holdTypeSeg button').forEach(b=>b.onclick=()=>{holdTypeF=b.dataset.ht;syncHoldTypeSeg();renderHoldings();});
