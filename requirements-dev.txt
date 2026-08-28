@@ -1,7 +1,18 @@
 # Dev/test only. Nothing here ships to holomint.app -- the site is static and
-# has no Python runtime. This exists so test_loader.py is reproducible in CI
-# and on a fresh machine.
+# has no Python runtime. This exists so the suites are reproducible in CI and on
+# a fresh machine.
 #
 # After installing, fetch the browser binary too (it is not a pip package):
 #     python3 -m playwright install --with-deps chromium
 playwright==1.58.0
+
+# Image fixtures for the lot/batch scanner suites. lotfixtures.py synthesises
+# the degraded phone-photo cases that test_cardfind.py and test_scan_accuracy.py
+# measure against, and shots.py uses both for the visual regression harness.
+#
+# These were missing, and the gap was invisible locally: both are installed on
+# the dev box, so the suites passed here and failed on the first clean CI
+# checkout with ModuleNotFoundError. A test dependency that is only satisfied by
+# accident of the developer's machine is not pinned at all.
+Pillow==12.1.1
+numpy==2.4.2

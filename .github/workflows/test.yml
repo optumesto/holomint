@@ -9,6 +9,9 @@ on:
     paths:
       - 'index.html'
       - 'sw.js'
+      - 'test_requirements.py'
+      - 'requirements-dev.txt'
+      - '.github/workflows/test.yml'
       - 'test_loader.py'
       - 'test_install_offer.py'
       - 'test_ui_shell.py'
@@ -40,6 +43,12 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements-dev.txt
+      # FIRST, and before pip: stdlib-only, so a dependency this workflow
+      # needs but requirements-dev.txt does not pin fails in seconds instead
+      # of after the ~1 minute chromium download. Pillow and numpy were both
+      # missing and every suite still passed locally.
+      - run: python3 test_requirements.py
+
       - run: pip install -r requirements-dev.txt
       # --with-deps pulls the system libs headless chromium needs on a bare runner.
       - run: python3 -m playwright install --with-deps chromium
