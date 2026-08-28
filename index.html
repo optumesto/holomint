@@ -97,7 +97,10 @@ catch(e){document.documentElement.style.display="none";}</script>
   .ck-price span{font-size:var(--t6);color:var(--ink3);font-family:var(--sans);font-weight:400}
   .ck-terms{font-size:var(--t3);line-height:1.6;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s5) var(--s6);margin-bottom:var(--s6)}
   .ck-terms b{color:var(--ink)}
-  .ck-chk{display:flex;gap:var(--s4);align-items:flex-start;font-size:var(--t3);line-height:1.5;color:var(--ink2);margin-bottom:var(--s5);cursor:pointer}
+  /* min-height because these two rows ARE the checkout gate: an untickable box is
+   an unsubscribable app. The label is the tap target (the checkbox itself stays
+   17px), and a single-line row measured only 36px on a phone. */
+.ck-chk{display:flex;gap:var(--s4);align-items:flex-start;font-size:var(--t3);line-height:1.5;color:var(--ink2);margin-bottom:var(--s5);cursor:pointer;min-height:var(--tap);padding:var(--s2) 0}
   .ck-chk input{margin-top:var(--s1);flex:none;width:17px;height:17px;accent-color:var(--gold)}
   .ck-chk b{color:var(--ink)}
   .hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg3);color:var(--ink3);font-family:var(--sans);font-size:var(--t2);font-weight:600;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
@@ -1913,7 +1916,14 @@ const Checkout=(function(){
     try{
       const r=await fetch(FEED_API+'/api/pricing',{cache:'no-store'});
       P=await r.json();
-    }catch(e){P={configured:false};}
+    }catch(e){
+      // Keep WHY it failed. Collapsing an unreachable server into
+      // {configured:false} made a network error render as "Subscriptions are
+      // not open yet" -- a buyer on bad venue wifi is told the product is not
+      // for sale, so they never retry. Same pixels, opposite meaning, and the
+      // only signal that it happened is a sale that silently does not occur.
+      P={configured:false,unreachable:true};
+    }
     PAt=Date.now();
     return P;
   }
@@ -1935,6 +1945,11 @@ const Checkout=(function(){
   function offerHtml(p){
     const o=offer(p);
     if(!o){
+      if(p&&p.unreachable)
+        return '<div class="feat" style="color:var(--ink3)">'
+          +'<b>Could not reach the store.</b> This is usually the network, not you '
+          +'&mdash; Pro is still on sale.</div>'
+          +'<button class="act" id="ckRetry" style="width:100%">Try again</button>';
       return '<div class="feat" style="color:var(--ink3)">Subscriptions are not open yet.</div>';
     }
     const m=money(o), per=p.interval==='year'?'year':'month';
@@ -1953,7 +1968,14 @@ const Checkout=(function(){
   }
   function wire(p){
     const o=offer(p);
-    if(!o)return;
+    if(!o){
+      // Reopening the Pro sheet re-runs refresh(), which is the retry. Doing it
+      // this way rather than re-rendering in place keeps one code path for
+      // "show the current offer" instead of two that can disagree on price.
+      const r=$('#ckRetry');
+      if(r)r.onclick=function(){const b=$('#proBtn');if(b)b.click();};
+      return;
+    }
     const a=$('#ckRenew'),b=$('#ckTos'),g=$('#ckGo');
     if(!a||!b||!g)return;
     const sync=()=>{
@@ -4700,6 +4722,14 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
       var c=kids[i];
       // Skip anything already inert so releasing cannot switch it back on.
       if(c===el||c.inert)continue;
+      // #toast is deliberately exempt. It is an ARIA live region, and inert
+      // removes a subtree from the accessibility tree, so inerting it silences
+      // every message raised WHILE an overlay is open -- which is most of them.
+      // The one that matters: "Tick both boxes to continue" in the checkout
+      // sheet. Visually fine, and completely silent to a screen reader, so the
+      // Subscribe button just appears to do nothing. It announces and cannot be
+      // tabbed to anyway, so leaving it live costs nothing.
+      if(c.id==='toast')continue;
       c.inert=true;_inerted.push(c);
     }
     // Moving focus IN is deliberately not done here. The observer above already

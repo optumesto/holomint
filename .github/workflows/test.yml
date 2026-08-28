@@ -12,6 +12,10 @@ on:
       - 'test_loader.py'
       - 'test_install_offer.py'
       - 'test_ui_shell.py'
+      - 'test_money_path.py'
+      - 'test_cardfind.py'
+      - 'lotfixtures.py'
+      - 'cardfind.js'
       - 'test_tap_targets.py'
       - 'shots.py'            # test_tap_targets imports its tour dismissal
       - 'requirements-dev.txt'
@@ -43,3 +47,5 @@ jobs:
       - run: python3 test_install_offer.py
       - run: python3 test_ui_shell.py
       - run: python3 test_tap_targets.py
+      - run: python3 test_money_path.py
+      - run: python3 test_cardfind.py
