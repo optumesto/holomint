@@ -14,6 +14,7 @@ on:
       - 'test_ui_shell.py'
       - 'test_money_path.py'
       - 'test_cardfind.py'
+      - 'test_scan_accuracy.py'
       - 'lotfixtures.py'
       - 'cardfind.js'
       - 'test_tap_targets.py'
@@ -49,3 +50,6 @@ jobs:
       - run: python3 test_tap_targets.py
       - run: python3 test_money_path.py
       - run: python3 test_cardfind.py
+      # Scanner accuracy needs ~60 CDN card images; it SKIPS loudly without them
+      # rather than passing on nothing, so it is safe to run unconditionally.
+      - run: python3 test_scan_accuracy.py
