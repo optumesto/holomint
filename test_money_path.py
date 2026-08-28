@@ -701,6 +701,78 @@ with sync_playwright() as pw:
           "nothing in your portfolio" in empty)
     ctx.close()
 
+    print("\n15. out of print is a decision, not a chip")
+    # Sealed research is unanimous on the variable: ETBs beat booster boxes on
+    # percentage return because ETBs are never reprinted, and out-of-print boxes
+    # have run 100-300% over 3-5 years. The Pokemon Company publishes no
+    # print-run data, so reprint status is the whole game.
+    #
+    # Holomint carried it all along -- 1,592 sealed products, 923 out of print --
+    # and used it for exactly one thing: a small chip beside the name.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    page.evaluate("""()=>{const a=[
+        {id:'o1',name:'Evolving Skies Booster Box',type:'sealed',qty:1,
+         costBasis:140,currentValue:600,status:'oop'},
+        {id:'i1',name:'Surging Sparks ETB',type:'sealed',qty:3,
+         costBasis:42,currentValue:63.5,status:'in-print'},
+        {id:'o2',name:'Cheap oop single',type:'single',qty:5,
+         costBasis:0.2,currentValue:1.20,status:'oop'},
+        {id:'i2',name:'Cheap in-print single',type:'single',qty:20,
+         costBasis:0.1,currentValue:1.20,status:'in-print'}];
+        localStorage.setItem('holomint:holdings',JSON.stringify(a));
+        localStorage.setItem('holomint:pricerPrefs',
+          JSON.stringify({room:15,bulkUnder:3,oopRoom:10}));}""")
+    page.reload(wait_until="load")
+    page.wait_for_timeout(700)
+
+    rows = page.evaluate("()=>ShowPricer.rows()")
+    by = {r["name"]: r for r in rows}
+    check("out-of-print holdings are recognised",
+          by["Evolving Skies Booster Box"]["oop"] is True
+          and by["Surging Sparks ETB"]["oop"] is False)
+
+    # THE WHOLE FEATURE IN ONE COMPARISON. Two singles at exactly $1.20 that
+    # differ only by print status must not price the same, because they are not
+    # the same asset: one can be restocked and one never can.
+    _oop, _ip = by["Cheap oop single"], by["Cheap in-print single"]
+    check(f"identical market price, different ask "
+          f"(oop ${_oop['ask']} vs in-print ${_ip['ask']})",
+          _oop["ask"] > _ip["ask"])
+    check("...and an out-of-print card never lands in the dollar box",
+          _oop["bulk"] is False and _ip["bulk"] is True)
+
+    tot = page.evaluate("()=>ShowPricer.totals(ShowPricer.rows())")
+    check(f"the totals report out-of-print exposure "
+          f"({tot['oop']} cards, ${tot['oopValue']})",
+          tot["oop"] == 6 and tot["oopValue"] > 600)
+
+    txt = page.evaluate("()=>ShowPricer.text()")
+    check("the printed list warns not to discount them",
+          "OUT OF PRINT" in txt and "do not discount" in txt)
+    check("...and says nothing extra about in-print rows",
+          txt.count("OUT OF PRINT") == 2)
+
+    # NEGATIVE CASE: with the extra set to zero, print status must stop moving
+    # the ask -- otherwise the number is hardcoded rather than driven by the
+    # setting, and the control is decoration.
+    page.evaluate("""()=>Store.save('pricerPrefs',{room:15,bulkUnder:3,oopRoom:0})""")
+    flat = {r["name"]: r for r in page.evaluate("()=>ShowPricer.rows()")}
+    check("0% extra means print status no longer changes the ask",
+          abs(flat["Cheap oop single"]["ask"]
+              - flat["Cheap in-print single"]["ask"]) < 0.001)
+    check("...but it still keeps them out of the bulk box",
+          flat["Cheap oop single"]["bulk"] is False)
+
+    # printStatus must survive a holding that never stored one (CSV imports).
+    unknown = page.evaluate("()=>printStatus({name:'Nothing By This Name At All'})")
+    check(f"an unknown item falls back safely ({unknown})",
+          unknown in ("in-print", "oop", "raw"))
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

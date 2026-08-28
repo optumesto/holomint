@@ -450,6 +450,81 @@ try:
 finally:
     _srv3.shutdown()
 
+# ---------------------------------------------------------------------------
+print("\n7. the OCR engine can actually load its language data")
+# This suite tested the DETECTOR (pure canvas maths) and the hash matcher, and
+# never once started the OCR worker -- so a 404 on the language file sat there
+# invisibly while every test passed. Mason found it on an iPhone; it was broken
+# on every platform.
+#
+# Root cause, worth naming: eng.traineddata had been uploaded through the GitHub
+# web UI, which created a DIRECTORY of that name containing a file of the same
+# name. tesseract.js builds the request as `${langPath}/${lang}.traineddata`
+# (plus `.gz` unless gzip:false), so it asked for /eng.traineddata and got a 404,
+# then sat on "Loading scanner…" forever with no error surfaced to the user.
+_PORT4 = PORT + 13
+_h4 = functools.partial(http.server.SimpleHTTPRequestHandler,
+                        directory=os.path.dirname(os.path.abspath(__file__)))
+class _Q4(socketserver.TCPServer): allow_reuse_address = True
+_srv4 = _Q4(("127.0.0.1", _PORT4), _h4)
+threading.Thread(target=_srv4.serve_forever, daemon=True).start()
+try:
+    # The file must be a FILE at the root, not nested in a directory.
+    _root = os.path.dirname(os.path.abspath(__file__))
+    _lang = os.path.join(_root, "eng.traineddata")
+    check("eng.traineddata is a file, not a directory", os.path.isfile(_lang))
+    check(f"...and is a plausible size ({os.path.getsize(_lang)//1048576}MB)",
+          os.path.getsize(_lang) > 1_000_000)
+
+    # gzip:false must be set, or tesseract appends .gz and 404s again.
+    _html = open(os.path.join(_root, "index.html")).read()
+    _workers = _html.count("createWorker(")
+    check(f"every createWorker call sets gzip:false ({_workers} call(s))",
+          _workers > 0 and _html.count("gzip:false") >= _workers)
+
+    with sync_playwright() as _pw4:
+        _b4 = _pw4.chromium.launch()
+        _p4 = _b4.new_page(viewport={"width": 390, "height": 844})
+        _seen = []
+        _p4.on("response", lambda r: _seen.append((r.status, r.url.split("/")[-1]))
+               if "traineddata" in r.url else None)
+        _p4.goto(f"http://127.0.0.1:{_PORT4}/", wait_until="load")
+        _p4.wait_for_timeout(600)
+
+        # Drive the REAL worker with the app's own paths and read real text.
+        _out = _p4.evaluate("""async ()=>{
+            const c=document.createElement('canvas');c.width=520;c.height=130;
+            const x=c.getContext('2d');
+            x.fillStyle='#fff';x.fillRect(0,0,520,130);
+            x.fillStyle='#000';x.font='bold 44px sans-serif';
+            x.fillText('Charizard ex',20,60);x.fillText('Surging Sparks',20,112);
+            try{
+              if(!window.Tesseract){
+                await new Promise((res,rej)=>{const s=document.createElement('script');
+                  s.src='./tesseract.min.js';s.onload=res;
+                  s.onerror=()=>rej(new Error('script load failed'));
+                  document.head.appendChild(s);});
+              }
+              const w=await Tesseract.createWorker('eng',1,{
+                workerPath:'./tesseract-worker.min.js',
+                corePath:'./tesseract-core-lstm.wasm.js',
+                langPath:'.', gzip:false});
+              const r=await w.recognize(c);
+              await w.terminate();
+              return {ok:true,text:(r.data.text||'').trim().replace(/\s+/g,' ')};
+            }catch(e){return {ok:false,err:String(e).slice(0,140)};}
+        }""")
+        check(f"the OCR worker starts at all ({_out.get('err','')[:52]})",
+              _out.get("ok") is True)
+        check(f"...and reads the text back ({_out.get('text','')[:40]!r})",
+              "charizard" in (_out.get("text") or "").lower())
+        _bad = [(s, u) for s, u in _seen if s >= 400]
+        check(f"the language file is served, not 404'd ({_seen[:2] or 'none seen'})",
+              not _bad)
+        _b4.close()
+finally:
+    _srv4.shutdown()
+
 httpd.shutdown()
 print("\nPASS" if passed else "\nFAIL")
 sys.exit(0 if passed else 1)

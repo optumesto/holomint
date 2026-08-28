@@ -3481,9 +3481,38 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
    FLOOR is your walk-away and ASK is floor + room. The floor is the number that
    matters and it is shown, not hidden, because the whole point is knowing when
    to say no with a queue behind the person haggling.                        */
+/* Print status as a DECISION, not a chip.
+   Sealed research is unanimous on the variable that matters: ETBs beat booster
+   boxes on percentage return because ETBs are never reprinted, and out-of-print
+   boxes have run 100-300% over 3-5 years. The Pokemon Company publishes no
+   print-run data, so reprint status is the whole game and it is hard to get.
+
+   Holomint has carried it all along -- 1,592 sealed products, 923 out of print
+   -- and used it for exactly one thing: a small `oop` chip beside the name. It
+   touched nothing that decides anything.
+
+   An out-of-print item is not the same asset as an in-print one. It cannot be
+   restocked, so pricing it at market with the same negotiation room as a
+   currently-printing box is the one mistake this data can prevent. */
+function printStatus(h){
+  // Trade-Block holdings carry it. CSV imports and manual entries often do not,
+  // so fall back to resolving from the catalog by name -- same normalisation
+  // used everywhere else, because "Charizard ex" and "charizard-ex" are one
+  // product and a lookup that disagrees is worse than no lookup.
+  if(h && h.status==='oop') return 'oop';
+  const nm=(h&&h.name||'').toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'');
+  if(!nm) return h&&h.status||'in-print';
+  try{
+    const hit=(PriceEngine.search(h.name,'all')||[]).find(function(it){
+      return (it.name||'').toLowerCase().replace(/[\s/_.\-'\u2019,]+/g,'')===nm;});
+    if(hit&&hit.status) return hit.status;
+  }catch(e){}
+  return (h&&h.status)||'in-print';
+}
+
 const ShowPricer=(function(){
   const KEY='pricerPrefs';
-  const D={room:15,bulkUnder:3};
+  const D={room:15,bulkUnder:3,oopRoom:10};
   const prefs=()=>Object.assign({},D,Store.load(KEY,{}));
   const save=p=>Store.save(KEY,p);
 
@@ -3502,6 +3531,10 @@ const ShowPricer=(function(){
     const p=prefs();
     return (holdings||[]).map(function(h){
       const mkt=+h.currentValue||0;
+      const oop=printStatus(h)==='oop';
+      // An out-of-print item cannot be restocked. Standard room prices it as
+      // though it could be, which is the one error this data exists to prevent.
+      const room=p.room+(oop?(p.oopRoom||0):0);
       const floor=mkt;                              // walk-away = market
       // NEVER below the floor. friendly() rounds DOWN, which on a sub-dollar
       // card eats the whole margin and then some: $0.40 market + 15% room
@@ -3509,19 +3542,22 @@ const ShowPricer=(function(){
       // A price list that asks less than you would accept is worse than no
       // price list. Clamping means a cheap card simply shows no room, which is
       // honest -- those belong in the bulk box anyway.
-      const ask=Math.max(floor,friendly(mkt*(1+p.room/100)));
+      const ask=Math.max(floor,friendly(mkt*(1+room/100)));
       return {id:h.id,name:h.name||'Unnamed',qty:+h.qty||1,type:h.type||'sealed',
-              market:mkt,floor:floor,ask:ask,
-              bulk:mkt>0&&mkt<p.bulkUnder,priced:mkt>0};
+              market:mkt,floor:floor,ask:ask,oop:oop,
+              // An out-of-print card never belongs in the dollar box, however
+              // cheap it looks today -- that is the whole point of the flag.
+              bulk:mkt>0&&mkt<p.bulkUnder&&!oop,priced:mkt>0};
     }).sort(function(a,b){return b.ask-a.ask;});
   }
 
   function totals(rs){
-    const t={n:0,cards:0,market:0,ask:0,bulk:0,unpriced:0};
+    const t={n:0,cards:0,market:0,ask:0,bulk:0,unpriced:0,oop:0,oopValue:0};
     rs.forEach(function(r){
       t.n++; t.cards+=r.qty; t.market+=r.market*r.qty; t.ask+=r.ask*r.qty;
       if(r.bulk)t.bulk+=r.qty;
       if(!r.priced)t.unpriced+=r.qty;
+      if(r.oop){t.oop+=r.qty;t.oopValue+=r.market*r.qty;}
     });
     return t;
   }
@@ -3531,7 +3567,8 @@ const ShowPricer=(function(){
     const lines=['Holomint price list  '+new Date().toISOString().slice(0,10),''];
     rs.forEach(function(r){
       if(!r.priced)return;
-      lines.push([r.qty+'x',r.name,'ask '+usd(r.ask),'floor '+usd(r.floor)].join('\t'));
+      lines.push([r.qty+'x',r.name,'ask '+usd(r.ask),'floor '+usd(r.floor),
+                  r.oop?'OUT OF PRINT - do not discount':''].join('\t').replace(/\t$/,''));
     });
     lines.push('');
     lines.push('Items '+t.n+'  Cards '+t.cards+'  Market '+usd(t.market)+'  Ask '+usd(t.ask));
@@ -3562,6 +3599,10 @@ const ShowPricer=(function(){
         '<div class="row between" style="gap:var(--s5);align-items:flex-end">'
         +'<div class="field" style="flex:1;margin:0"><label>Negotiation room</label>'
         +'<div class="row" style="gap:var(--s4)"><input class="num" id="pcRoom" type="number" min="0" max="60" value="'+p.room+'" style="width:70px"><span style="font-family:var(--mono);color:var(--ink3)">%</span></div></div>'
+        +'<div class="field" style="flex:1;margin:0"><label>Out-of-print extra</label>'
+        +'<div class="row" style="gap:var(--s4)"><input class="num" id="pcOop" type="number" min="0" max="60" value="'+(p.oopRoom||0)+'" style="width:70px"><span style="font-family:var(--mono);color:var(--ink3)">%</span></div></div>'
+        +'</div>'
+        +'<div class="row between" style="gap:var(--s5);align-items:flex-end;margin-top:var(--s5)">'
         +'<div class="field" style="flex:1;margin:0"><label>Bulk box under</label>'
         +'<div class="row" style="gap:var(--s4)"><span style="font-family:var(--mono);color:var(--ink3)">$</span><input class="num" id="pcBulk" type="number" min="0" max="20" step="0.5" value="'+p.bulkUnder+'" style="width:70px"></div></div>'
         +'</div>'
@@ -3571,6 +3612,7 @@ const ShowPricer=(function(){
         +'<div class="tr"><span>Items · cards</span><span>'+t.n+' · '+t.cards+'</span></div>'
         +'<div class="tr"><span>Market total</span><span>'+usd(t.market)+'</span></div>'
         +'<div class="tr big"><span>Asking total</span><span>'+usd(t.ask)+'</span></div>'
+        +(t.oop?'<div class="tr"><span>Out of print &mdash; cannot be restocked</span><span>'+t.oop+' card(s) &middot; '+usd(t.oopValue)+'</span></div>':'')
         +(t.bulk?'<div class="tr"><span>Suggest a bulk box</span><span>'+t.bulk+' card(s)</span></div>':'')
         +(t.unpriced?'<div class="tr"><span style="color:var(--down)">No market price</span><span style="color:var(--down)">'+t.unpriced+' card(s)</span></div>':'')
         +'</div>'},
@@ -3587,12 +3629,14 @@ const ShowPricer=(function(){
     const re=function(){
       const room=Math.max(0,Math.min(60,+($('#pcRoom')||{}).value||0));
       const bulk=Math.max(0,Math.min(20,+($('#pcBulk')||{}).value||0));
-      save({room:room,bulkUnder:bulk});
+      const oopRoom=Math.max(0,Math.min(60,+($('#pcOop')||{}).value||0));
+      save({room:room,bulkUnder:bulk,oopRoom:oopRoom});
       open();
     };
-    const r1=$('#pcRoom'),b1=$('#pcBulk');
+    const r1=$('#pcRoom'),b1=$('#pcBulk'),o1=$('#pcOop');
     if(r1)r1.onchange=re;
     if(b1)b1.onchange=re;
+    if(o1)o1.onchange=re;
     const cp=$('#pcCopy');
     if(cp)cp.onclick=function(){
       const txt=text();
@@ -4127,6 +4171,12 @@ const LotScanner=(function(){
         workerPath:'./tesseract-worker.min.js',
         corePath:simdOK()?'./tesseract-core-simd-lstm.wasm.js':'./tesseract-core-lstm.wasm.js',
         langPath:'.',
+        // gzip:false is NOT optional. tesseract.js builds the request as
+        // `${langPath}/${lang}.traineddata` and appends `.gz` when gzip is
+        // truthy (its default). We ship the file uncompressed, so leaving this
+        // out asks for eng.traineddata.gz, which 404s, and the worker sits on
+        // "Loading scanner…" forever with no error surfaced.
+        gzip:false,
         logger:function(m){var el=$('#lotStatus');if(el&&m.status){
           if(m.status.indexOf('load')>=0)el.textContent='Loading scanner '+(m.progress?Math.round(m.progress*100)+'%':'');
           else if(m.status==='recognizing text')el.textContent='Reading the photo '+(m.progress?Math.round(m.progress*100)+'%':'');}}
@@ -4587,6 +4637,12 @@ const Scanner=(function(){
         workerPath:'./tesseract-worker.min.js',
         corePath:simd?'./tesseract-core-simd-lstm.wasm.js':'./tesseract-core-lstm.wasm.js',
         langPath:'.',
+        // gzip:false is NOT optional. tesseract.js builds the request as
+        // `${langPath}/${lang}.traineddata` and appends `.gz` when gzip is
+        // truthy (its default). We ship the file uncompressed, so leaving this
+        // out asks for eng.traineddata.gz, which 404s, and the worker sits on
+        // "Loading scanner…" forever with no error surfaced.
+        gzip:false,
         logger:m=>{
           if(m.status&&$('#scanStatus')){
             if(m.status==='downloading'||m.status==='loading tesseract core'||m.status.indexOf('loading')>=0)
