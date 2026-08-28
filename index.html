@@ -314,7 +314,10 @@ catch(e){document.documentElement.style.display="none";}</script>
   .verdict{text-align:center;padding:var(--s5) 0 var(--s2)}.verdict .vv{font-family:var(--serif);font-size:var(--t9);font-weight:600}.verdict .ve{font-family:var(--mono);font-size:var(--t5);margin-top:var(--s2)}
   .brk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:var(--t3);padding:var(--s4) 0;border-bottom:1px solid var(--line);color:var(--ink2)}.brk:last-child{border-bottom:none}.brk b{color:var(--ink);font-weight:500}
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s5);margin-bottom:var(--s7)}
-  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s6) var(--s7)}.stat .sl{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:var(--s2)}.stat .sv{font-family:var(--mono);font-size:var(--t8);font-weight:600}
+  /* All 7 stat tiles live on the Slab tab, and they were the last bordered
+     surfaces in the app: bg2 on a bg2 card, separated by a 1px line. A nested
+     surface reads by TONE here, like everywhere else after the surface pass. */
+  .stat{background:var(--bg3);border:none;border-radius:var(--r-md);padding:var(--s6) var(--s7)}.stat .sl{font-family:var(--mono);font-size:var(--t1);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:var(--s2)}.stat .sv{font-family:var(--mono);font-size:var(--t9);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.015em}
   .weight{display:flex;height:14px;border-radius:var(--r-sm);overflow:hidden;margin:4px 0 10px;background:var(--bg3)}.weight i{display:block;height:100%}
   .wleg{display:flex;gap:var(--s8);font-family:var(--mono);font-size:var(--t2);color:var(--ink2)}.wleg span{display:flex;align-items:center;gap:var(--s3)}.dot{width:9px;height:9px;border-radius:var(--r-xs);display:inline-block}
   .empty{text-align:center;color:var(--ink3);font-size:var(--t4);padding:var(--s8) 0;font-style:italic}
@@ -799,7 +802,13 @@ catch(e){document.documentElement.style.display="none";}</script>
         <div class="stat"><div class="sl">Raw 🔒</div><div class="sv" id="tRaw">-</div></div>
       </div>
     </div>
-    <div class="card">
+        <div class="card" id="gradeValsCard">
+      <!-- The comparison values are inputs, and they ship with working
+           defaults, so this behaves like rateCard: fold the entry away and the
+           answer below it rises above the fold. This is also the block a graded
+           price API would eventually fill in on its own. -->
+      <div class="row between colhead" data-col="gradeValsCard"><label style="margin:0">Comparison values</label><span class="chev">&#9662;</span></div>
+      <div class="colbody">
       <div style="font-size:var(--t3);color:var(--ink3);line-height:1.5;margin-bottom:var(--s5)">Enter the graded values you are pricing against. These are starting placeholders, not live quotes. Automatic graded pricing is not switched on yet.</div>
       <table style="margin-top:0">
         <thead><tr><th>Grade</th><th>Value</th><th>Pop</th><th>vs raw</th></tr></thead>
@@ -813,6 +822,7 @@ catch(e){document.documentElement.style.display="none";}</script>
     <div class="card hide" id="salesCard">
       <div class="row between colhead" data-col="salesCard"><label style="margin:0">Recent sales</label><span class="chev">▾</span></div>
       <div class="colbody" id="salesBody"></div>
+    </div><!-- /.colbody -->
     </div>
     <div class="card">
       <div class="verdict"><div class="vv" id="gVerdict">-</div><div class="ve" id="gEdge"></div></div>
@@ -1378,7 +1388,8 @@ let collapsed=Store.load('collapsed',{});
 // task: the Trade tab was showing 7 cards and 19 controls at once, all
 // expanded, on a pile with nothing in it yet. rateCard alone was 418px.
 const DEFAULT_COLLAPSED=new Set(['dealCard','taxCard','dropsCard',
-                                 'rateCard','sellOptCard','helpCard','channelCard']);
+                                 'rateCard','sellOptCard','helpCard','channelCard',
+                                 'gradeValsCard']);
 const colState=k=>(k in collapsed)?collapsed[k]:DEFAULT_COLLAPSED.has(k);
 function applyCollapse(){$$('.colhead').forEach(h=>{const k=h.dataset.col;h.closest('.card').classList.toggle('collapsed',colState(k));});}
 $$('.colhead').forEach(h=>h.onclick=e=>{if(e.target.closest('.toolbtn'))return;const k=h.dataset.col;collapsed[k]=!colState(k);Store.save('collapsed',collapsed);applyCollapse();});
