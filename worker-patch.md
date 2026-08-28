@@ -7,8 +7,22 @@ reason nobody has ever received a drop alert.
 
 ## 0. CRITICAL — the bot writes `product.name`, the Worker reads `product.type`
 
-**Every restock push has been silently skipped.** Not throttled, not delayed:
+**Every RESTOCK push has been silently skipped.** Not throttled, not delayed:
 skipped, at the first gate, since the field names diverged.
+
+> **Scope, corrected 2026-08-27.** An earlier version of this document — and the
+> commit message on 52c0b19 — said no drop notification had ever fired. That is
+> too broad, and Mason confirmed he does receive notifications, just not many.
+>
+> `queue` events push fine and always have: that branch needs no catalog match,
+> so it fires whether or not `matchTitle` resolves anything. 115 of them are in
+> the current feed. What a subscriber has been getting is *"Pokemon Center
+> waiting room is up. Not confirmed as a card drop."*
+>
+> The `restock` branch is the one that dies here, and it is the one worth paying
+> for: the named product, the retail-to-market spread, the flip margin net of
+> the seller's channel fees, and a link that buys it. Sporadic vague queue pings
+> are not the pitch; that alert is.
 
 Live evidence from `/api/drops` right now — the bot's payload:
 
