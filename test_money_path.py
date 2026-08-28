@@ -437,6 +437,131 @@ with sync_playwright() as pw:
                         "Store.load('alertPrefs',{})).usOnly") is False)
     ctx.close()
 
+    print("\n11. show mode")
+    # A day behind a table is one day with a cash position, not a series of
+    # unrelated deals. No new storage: every Send to Desk already writes a deal
+    # record with a date, so this is a view over today's and the day rolls over
+    # on its own -- nothing to start, forget to start, or forget to end.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    page.evaluate("()=>switchTab('block')")
+    page.wait_for_timeout(300)
+    vis = lambda: page.evaluate(
+        "()=>{const e=document.querySelector('#showBar');"
+        "return !!(e&&e.offsetParent!==null);}")
+    check("off by default", vis() is False)
+    page.evaluate("()=>ShowMode.set(true)")
+    page.wait_for_timeout(250)
+    check("...visible once switched on", vis() is True)
+    check("...and says so when the day is empty",
+          "no deals" in page.evaluate(
+              "()=>document.querySelector('#sbDate').textContent"))
+
+    # Drive the REAL logger, the same call Send to Desk makes.
+    page.evaluate("""()=>{
+        logDeal('buy',[{name:'Charizard ex',qty:1}],200,120);
+        logDeal('buy',[{name:'Pikachu V',qty:2}],80,50);
+        logDeal('trade',[{name:'Prismatic ETB',qty:1}],60,40);}""")
+    page.wait_for_timeout(250)
+    t = page.evaluate("()=>ShowMode.totals()")
+    check(f"cash out sums the payouts (${t['out']})", t["out"] == 210)
+    check(f"market in sums the market values (${t['mkt']})", t["mkt"] == 340)
+    check(f"spread is the gap, not profit (${t['spread']})", t["spread"] == 130)
+    check(f"three deals counted ({t['n']})", t["n"] == 3)
+    check("the bar shows the same numbers, not its own maths",
+          page.evaluate("()=>document.querySelector('#sbOut').textContent") == "$210"
+          and page.evaluate("()=>document.querySelector('#sbSpread').textContent") == "$130")
+
+    # NEGATIVE CASE: a day total that quietly includes other days is worse than
+    # no total -- it is the number the vendor works from.
+    page.evaluate("""()=>{dealLog.push({id:'old',date:'2020-01-01',kind:'buy',
+        items:[{name:'x',qty:1}],market:9999,payout:9999});
+        saveDeals();ShowMode.refresh();}""")
+    page.wait_for_timeout(200)
+    t2 = page.evaluate("()=>ShowMode.totals()")
+    check(f"an older deal does NOT leak into today ({t2['n']} deals, ${t2['out']})",
+          t2["n"] == 3 and t2["out"] == 210)
+
+    # A vendor reloading mid-show must not lose the number they are working from.
+    page.reload(wait_until="load")
+    page.wait_for_timeout(500)
+    page.evaluate("()=>switchTab('block')")
+    page.wait_for_timeout(300)
+    check("survives a reload mid-show",
+          vis() and page.evaluate(
+              "()=>document.querySelector('#sbOut').textContent") == "$210")
+    ctx.close()
+
+    print("\n12. CSV import at dealer scale")
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+
+    # parseFloat('$1,299.00') is NaN, and the old code fed that to `||0`. A
+    # dealer importing a marketplace export got their whole inventory at a $0
+    # cost basis with the infinite ROI that implies, and no sign anything broke.
+    money = page.evaluate("""(cs)=>cs.map(c=>parseMoney(c))""",
+                          ["49.99", "$49.99", "$1,299.00", "1,299", "49.99 USD",
+                           "(12.34)", "US$ 8.00", "", "n/a", "0"])
+    check(f"money parses as written ({money[:4]})",
+          money[0] == 49.99 and money[1] == 49.99
+          and money[2] == 1299 and money[3] == 1299)
+    check("...trailing currency words and accounting negatives too",
+          money[4] == 49.99 and money[5] == -12.34 and money[6] == 8)
+    check("...blank and non-numeric are NULL, not zero",
+          money[7] is None and money[8] is None)
+    check("...but a real zero stays zero", money[9] == 0)
+
+    # An unquoted thousands separator splits one field into two, shifting every
+    # later column: the basis imports as $1 and the date lands in Location.
+    cols = page.evaluate("""()=>{
+        const head='Kind,Name,Type,Status,Qty,Basis,Value_or_Net,Date,Location';
+        const bad=head+'\\nholding,Charizard,sealed,,1,$1,299.00,$1,500.00,2026-01-01,Box 1';
+        const ok =head+'\\nholding,Charizard,sealed,,1,"$1,299.00","$1,500.00",2026-01-01,Box 1';
+        return {h:parseCSV(bad)[0].length, bad:parseCSV(bad)[1].length,
+                ok:parseCSV(ok)[1].length};}""")
+    check(f"an unquoted comma really does misalign ({cols['bad']} cols vs "
+          f"{cols['h']} header)", cols["bad"] > cols["h"])
+    check("...while a quoted one does not", cols["ok"] == cols["h"])
+
+    # End to end on a realistically messy file.
+    import random as _rnd, os as _os, tempfile as _tf
+    _rnd.seed(11)
+    _rows = ["Kind,Name,Type,Status,Qty,Basis,Value_or_Net,Date,Location"]
+    _bad = 0
+    for _i in range(120):
+        _c = _rnd.choice("abcde")
+        if _c == "c":
+            _b = f"$1,{_rnd.randint(100,999)}.00"; _bad += 1
+        elif _c == "a": _b = f"${_rnd.randint(5,300)}.99"
+        elif _c == "b": _b = f"{_rnd.randint(5,300)}.00"
+        elif _c == "d": _b = "n/a"
+        else: _b = ""
+        _rows.append(f'holding,"Card, no {_i} ""alt""",sealed,,1,{_b},'
+                     f'${_rnd.randint(5,400)}.50,2026-01-15,Box {_i%5}')
+    _rows.append("sold,Skip me,,,1,10,20,2026-01-01,")
+    _fp = _os.path.join(_tf.gettempdir(), "holomint_dealer_test.csv")
+    open(_fp, "w", encoding="utf-8").write("\ufeff" + "\n".join(_rows))
+    page.set_input_files("input[type=file][accept*='csv']", _fp)
+    page.wait_for_timeout(1800)
+    res = page.evaluate("""()=>({n:holdings.length,
+        one:holdings.filter(h=>h.costBasis===1).length,
+        toast:(document.querySelector('#toast')||{}).textContent})""")
+    check(f"{res['n']} of 120 imported, {_bad} misaligned rows skipped",
+          res["n"] == 120 - _bad)
+    check("NO holding carries the tell-tale $1 basis", res["one"] == 0)
+    check("the sold row is not imported as a holding", res["n"] < 121)
+    # A report that says only what succeeded hides the problem.
+    check(f"the result reports what did NOT come through ({res['toast'][:56]})",
+          "skipped" in (res["toast"] or "") or "unreadable" in (res["toast"] or ""))
+    _os.remove(_fp)
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

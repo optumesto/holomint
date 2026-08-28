@@ -486,6 +486,16 @@ catch(e){document.documentElement.style.display="none";}</script>
   @keyframes spin{to{transform:rotate(360deg)}}
   .lot-progress .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
   .lot-progress .msg{font-size:var(--t4);color:var(--ink3);font-family:var(--mono)}
+  /* Show mode: read at arm's length, across a table, in bad convention-hall
+     light. Bigger than anything else on the screen on purpose. */
+  #showBar{background:var(--bg2);border:1px solid var(--acc);border-radius:var(--r-md);padding:var(--s6) var(--s7);margin-bottom:var(--s8)}
+  #showBar .sb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s5)}
+  #showBar .sb-t{font-family:var(--mono);font-size:var(--t2);letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+  #showBar .sb-d{font-family:var(--mono);font-size:var(--t1);color:var(--ink3)}
+  #showBar .sb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4)}
+  #showBar .sb-n{display:block;font-family:var(--mono);font-size:var(--t8);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+  #showBar .sb-l{display:block;font-family:var(--mono);font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:var(--s2)}
+  @media (max-width:400px){#showBar .sb-grid{grid-template-columns:repeat(2,1fr);gap:var(--s5)}}
   .lot-row{display:flex;align-items:center;gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line)}
   .lot-row:last-child{border-bottom:none}
   .lot-row .nm{flex:1;min-width:0}
@@ -576,6 +586,17 @@ catch(e){document.documentElement.style.display="none";}</script>
 
   <!-- ============ TRADE BLOCK ============ -->
   <section class="panel on" id="block" data-tour-block>
+    <!-- Show mode. Hidden unless switched on, because it is only meaningful for
+         the few days a year somebody is standing behind a table. -->
+    <div id="showBar" class="hide" role="status" aria-live="polite">
+      <div class="sb-head"><span class="sb-t">Show day</span><span class="sb-d" id="sbDate"></span></div>
+      <div class="sb-grid">
+        <div><span class="sb-n" id="sbOut">$0</span><span class="sb-l">Cash out</span></div>
+        <div><span class="sb-n" id="sbMkt">$0</span><span class="sb-l">Market in</span></div>
+        <div><span class="sb-n" id="sbSpread">$0</span><span class="sb-l">Spread</span></div>
+        <div><span class="sb-n" id="sbDeals">0</span><span class="sb-l">Deals</span></div>
+      </div>
+    </div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
       <div class="sidehead"><span class="st" id="theirLabel">The pile</span><span class="sv2" id="pileTotal">$0</span></div>
@@ -739,6 +760,10 @@ catch(e){document.documentElement.style.display="none";}</script>
             <div id="alWatchChips" class="wl-chips"></div>
             <div class="sub">Watched products alert you on every restock, whether or not they clear your floors.</div>
             <label class="ck-chk" style="margin-top:var(--s4)"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
+          </div>
+          <div class="field">
+            <label class="ck-chk"><input type="checkbox" id="showModeChk"><span><b>Show mode</b> (running totals for a day behind a table)</span></label>
+            <div class="sub">Puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
           </div>
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alUsOnly"><span><b>US retailers only</b></span></label>
@@ -1766,6 +1791,7 @@ const Alerts=(function(){
       $('#alWatchOnly').checked=!!p.watchOnly;
       $('#alQueue').checked=!!p.queueAlerts;
       $('#alUsOnly').checked=p.usOnly!==false;
+      {const c=$('#showModeChk');if(c)c.checked=ShowMode.on();}
       $('#alIntel').checked=!!p.intelAlerts;
       paintWatch(p.watch||[]);
       wireWatchSearch();
@@ -2626,7 +2652,52 @@ function saveDeals(){Store.save('deals',dealLog);}
 function logDeal(kind,items,market,payout){
   dealLog.push({id:'d'+Math.random().toString(36).slice(2,8),date:new Date().toISOString().slice(0,10),kind,items,market:Math.round(market),payout:Math.round(payout)});
   saveDeals();
+  if(typeof ShowMode!=='undefined')ShowMode.refresh();
 }
+
+/* ---- Show mode -----------------------------------------------------------
+   A day behind a table is not a series of unrelated deals, it is one day with a
+   cash position. The Trade Block already answers "is THIS pile worth it"; on a
+   show floor the question that actually bites is "how much cash have I got
+   left, and am I up".
+
+   No new storage. Every Send to Desk already writes a deal record with a date,
+   so this is a view over today's, and the day rolls over on its own -- there is
+   no session to start, forget to start, or forget to end.
+
+   Deliberately NOT gated behind Pro. It reads the deal log, which is Pro, but
+   the totals are derived and this is the one screen a vendor would show another
+   vendor. That is worth more as a demo than as a lock.                       */
+const ShowMode=(function(){
+  const KEY='showMode';
+  const on=()=>!!Store.load(KEY,0);
+  function today(){return new Date().toISOString().slice(0,10);}
+  function totals(){
+    const d=today();
+    const rows=(dealLog||[]).filter(x=>x&&x.date===d);
+    // `payout` is what left the till, `market` what came in at market value.
+    // The gap is the day's spread -- it is NOT profit, nothing is sold yet, and
+    // the label says so.
+    const out=rows.reduce((a,x)=>a+(+x.payout||0),0);
+    const mkt=rows.reduce((a,x)=>a+(+x.market||0),0);
+    return {n:rows.length,out:out,mkt:mkt,spread:mkt-out,date:d};
+  }
+  function refresh(){
+    const bar=$('#showBar');if(!bar)return;
+    bar.classList.toggle('hide',!on());
+    if(!on())return;
+    const t=totals();
+    $('#sbOut').textContent=usd(t.out);
+    $('#sbMkt').textContent=usd(t.mkt);
+    const sp=$('#sbSpread');
+    sp.textContent=usd(t.spread);
+    sp.style.color=t.spread>=0?'var(--up)':'var(--down)';
+    $('#sbDeals').textContent=String(t.n);
+    $('#sbDate').textContent=t.n?('today · '+t.date):'no deals yet today';
+  }
+  function set(v){Store.save(KEY,v?1:0);refresh();}
+  return {on:on,set:set,refresh:refresh,totals:totals};
+})();
 
 $('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
   if(mode==='cash'){
@@ -3279,6 +3350,26 @@ $('#exportCsv').onclick=()=>{
   a.href=url;a.download='holomint.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Exported');};
 
 /* CSV import (Pro): accepts Holomint exports or any CSV with name/qty/basis/value columns */
+
+/* Money as the rest of the world writes it. parseFloat('$1,299.00') is NaN, and
+   the old code sent that straight into `||0` -- so a dealer importing a
+   marketplace export got their entire inventory at a $0 cost basis, with the
+   infinite ROI that implies, and no indication anything had gone wrong. Silent
+   zeroing of the number every other figure is computed from.
+   Returns null for "genuinely not a number" so the caller can COUNT those
+   instead of pretending they were zero. */
+function parseMoney(v){
+  if(v==null)return null;
+  var t=String(v).trim();
+  if(!t)return null;
+  var neg=/^\(.*\)$/.test(t);              // (12.34) is accounting for -12.34
+  t=t.replace(/[()]/g,'');
+  t=t.replace(/[^0-9.\-]/g,'');            // strip $ , spaces, USD, NBSP
+  if(!t||!/[0-9]/.test(t))return null;
+  var n=parseFloat(t);
+  if(!isFinite(n))return null;
+  return neg?-n:n;
+}
 function parseCSV(text){
   const rows=[];let row=[],cur='',inQ=false;
   for(let i=0;i<text.length;i++){const ch=text[i];
@@ -3303,22 +3394,42 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
         qty:col(['qty','quantity']),basis:col(['basis','costbasis','cost','paid']),
         value:col(['value_or_net','value','currentvalue','now']),date:col(['date','acquired']),location:col(['location'])};
       if(ci.name<0){toast('No name column found');return;}
-      let added=0;
+      let added=0,unreadable=0,malformed=0;
       for(const r of rows.slice(1)){
+        // A row with MORE fields than the header is misaligned, not generous.
+        // The usual cause is an unquoted thousands separator: "$1,299.00" splits
+        // into "$1" and "299.00", which shifts every later column -- so the cost
+        // basis imports as $1 and the date lands in Location. Nothing about the
+        // result looks wrong afterwards, which is why it must be caught here.
+        // Skipped and COUNTED rather than guessed at: a repair that gets it
+        // wrong is the same bug wearing a fix.
+        if(r.length>head.length){malformed++;continue;}
         if(ci.kind>=0&&r[ci.kind]&&r[ci.kind]!=='holding')continue;   // skip sold/deal rows
         const name=(r[ci.name]||'').trim();if(!name)continue;
         const type=(ci.type>=0&&/grad/i.test(r[ci.type]||''))?'graded':'sealed';
         const status=ci.status>=0&&r[ci.status]?r[ci.status]:(type==='graded'?'graded':'in-print');
+        var rawB=ci.basis>=0?r[ci.basis]:'', rawV=ci.value>=0?r[ci.value]:'';
+        var basis=parseMoney(rawB), value=parseMoney(rawV);
+        // Count what could not be read rather than importing a silent zero.
+        if(ci.basis>=0&&String(rawB).trim()&&basis===null)unreadable++;
+        if(ci.value>=0&&String(rawV).trim()&&value===null)unreadable++;
+        var q=parseMoney(ci.qty>=0?r[ci.qty]:1);
         holdings.push(makeHolding({type,name,
-          qty:Math.max(1,Math.round(parseFloat(ci.qty>=0?r[ci.qty]:1)||1)),
-          costBasis:parseFloat(ci.basis>=0?r[ci.basis]:0)||0,
-          currentValue:parseFloat(ci.value>=0?r[ci.value]:0)||0,
+          qty:Math.max(1,Math.round(q==null?1:q)),
+          costBasis:basis==null?0:basis,
+          currentValue:value==null?0:value,
           acquired:(ci.date>=0&&r[ci.date])?r[ci.date]:new Date().toISOString().slice(0,10),
           status,location:ci.location>=0?(r[ci.location]||'').trim():''}));
         added++;
       }
       if(!added){toast('No holdings found in file');return;}
-      saveHoldings();renderPortfolio();toast(added+' holdings imported');
+      saveHoldings();renderPortfolio();
+      // Say what did NOT come through. "412 imported" while 38 prices silently
+      // became zero is the report that hides the problem.
+      toast(added+' holdings imported'
+            +(unreadable?' \u00b7 '+unreadable+' price(s) unreadable, set to $0':'')
+            +(malformed?' \u00b7 '+malformed+' row(s) skipped: too many columns'
+                        +' (unquoted comma in a number?)':''));
     }catch(e){toast('Could not read that CSV');}
   };
   rd.readAsText(file);
@@ -4738,6 +4849,11 @@ $('#scanBtn').onclick=()=>Scanner.open(false);
 $('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
 // Lot scanner wiring
+{const c=$('#showModeChk');if(c)c.onchange=function(){ShowMode.set(c.checked);
+   toast(c.checked?'Show mode on. Totals are at the top of Trade.':'Show mode off.');};}
+// Paint once at startup: the bar reads today's deals, and a reload mid-show
+// must not blank the number the vendor is working from.
+ShowMode.refresh();
 var _lotOpen=function(){LotScanner.open();};
 var _sl=$('#scanLot');if(_sl)_sl.onclick=_lotOpen;
 $('#lotClose').onclick=function(){LotScanner.close();};
