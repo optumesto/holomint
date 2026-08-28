@@ -10,6 +10,8 @@ on:
       - 'index.html'
       - 'sw.js'
       - 'test_requirements.py'
+      - 'test_assets.py'
+      - 'eng.traineddata'
       - 'requirements-dev.txt'
       - '.github/workflows/test.yml'
       - 'test_loader.py'
@@ -49,6 +51,10 @@ jobs:
       # of after the ~1 minute chromium download. Pillow and numpy were both
       # missing and every suite still passed locally.
       - run: python3 test_requirements.py
+
+      # Reachability, not presence. eng.traineddata was on disk the whole time
+      # it was 404ing in production.
+      - run: python3 test_assets.py
 
       - run: pip install -r requirements-dev.txt
       # --with-deps pulls the system libs headless chromium needs on a bare runner.
