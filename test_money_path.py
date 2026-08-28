@@ -291,6 +291,61 @@ with sync_playwright() as pw:
         page.wait_for_timeout(400)
     ctx.close()
 
+    print("\n8. a key pasted on bad wifi survives and activates itself")
+    # The card-show failure this is written for: someone pays at your table on
+    # venue wifi, pastes the key, and the licence authority is unreachable. The
+    # message was already honest ("could not verify, try again") but the key was
+    # dropped -- and by then it is back in an email, on a phone, in a crowd.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    page.route("**/api/license*", lambda r: r.abort())     # authority unreachable
+    boot(page, "good")
+    res = page.evaluate("()=>Premium.validate('HMP-TEST-TEST-TEST')")
+    check(f"an unreachable authority is 'unknown', never 'invalid' (got {res!r})",
+          res == "unknown")
+    check("...and Pro is NOT granted on an unverified key",
+          page.evaluate("()=>!Premium.active()"))
+    held = page.evaluate("""()=>{try{const l=JSON.parse(
+        localStorage.getItem('holomint:license')||localStorage.getItem('license'));
+        return l?{key:l.key,pending:!!l.pending,valid:!!l.valid}:null;}catch(e){return null;}}""")
+    check(f"...but the key is held for retry (got {held})",
+          held and held["pending"] and not held["valid"])
+
+    # Now signal returns and the authority says yes.
+    page.unroute("**/api/license*")
+    page.route("**/api/license*", lambda r: r.fulfill(
+        status=200, content_type="application/json", body=json.dumps({"valid": True})))
+    page.evaluate("()=>window.dispatchEvent(new Event('online'))")
+    page.wait_for_timeout(600)
+    check("reconnecting activates Pro without the buyer touching anything",
+          page.evaluate("()=>Premium.active()"))
+    ctx.close()
+
+    print("\n9. holding a key cannot be abused")
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    page.route("**/api/license*", lambda r: r.fulfill(
+        status=200, content_type="application/json", body=json.dumps({"valid": True})))
+    boot(page, "good")
+    page.evaluate("()=>Premium.validate('HMP-GOOD-GOOD-GOOD')")
+    page.wait_for_timeout(300)
+    check("a real subscriber is active", page.evaluate("()=>Premium.active()"))
+    # A typo pasted while offline must not cost an existing subscriber their Pro.
+    page.unroute("**/api/license*")
+    page.route("**/api/license*", lambda r: r.abort())
+    page.evaluate("()=>Premium.validate('HMP-TYPO-TYPO-TYPO')")
+    page.wait_for_timeout(300)
+    still = page.evaluate("""()=>{const k=Premium.key();
+        return {active:Premium.active(), key:k};}""")
+    check(f"...and a typo pasted while offline does not clobber it "
+          f"(active={still['active']} key={still['key']})",
+          still["active"] and still["key"] == "HMP-GOOD-GOOD-GOOD")
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

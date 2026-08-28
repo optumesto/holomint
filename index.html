@@ -1086,11 +1086,27 @@ const Premium=(function(){
     if(!key)return false;
     try{
       const r=await fetch(API+'/api/license',{cache:'no-store',headers:{'X-License':key}});
-      if(r.status===503)return 'unknown';   // authority unreachable: not the key's fault
+      if(r.status===503){stash(key);return 'unknown';}  // authority unreachable: not the key's fault
       const d=await r.json();
       if(d&&d.valid){lic={key,valid:true,at:Date.now(),strikes:0};Store.save('license',lic);return true;}
       return false;
-    }catch(e){return 'unknown';}   // cannot reach the server: cannot say
+    }catch(e){stash(key);return 'unknown';}   // cannot reach the server: cannot say
+  }
+
+  /* Hold an unverified key so it can be retried without the buyer finding it
+     again. This is the card-show case: someone pays at a table on venue wifi,
+     pastes the key, and the authority is unreachable. Previously the key was
+     simply dropped -- the message was honest ("try again in a minute") but by
+     then the key is back in an email, on a phone, in a crowd. Now it is kept and
+     retried on reconnect, so Pro usually just switches itself on.
+
+     Never overwrites a WORKING licence: pasting a typo while offline must not
+     cost an existing subscriber their Pro. And pending is not active(), because
+     valid stays false -- an unverified key grants nothing. */
+  function stash(key){
+    if(lic&&lic.valid)return;
+    lic={key:key,valid:false,pending:true,at:Date.now(),strikes:0};
+    Store.save('license',lic);
   }
 
   // Re-check a cached licence on boot. This is how a cancelled subscription stops working.
@@ -1098,6 +1114,15 @@ const Premium=(function(){
   // Only an explicit valid:false from the server clears it.
   async function recheck(){
     if(!lic||!lic.key)return;
+    // A key that has never been verified is retried, not rechecked: recheck only
+    // maintains or clears an existing licence and can never promote one, so
+    // without this a stashed key would sit unverified forever.
+    if(lic.pending){
+      const ok=await validate(lic.key);
+      if(ok===true){try{renderProBtn();renderPortfolio();LiveDrops.refresh();
+        Alerts.resync();toast('Pro activated');}catch(e){}}
+      return;
+    }
     try{
       const r=await fetch(API+'/api/license',{cache:'no-store',headers:{'X-License':lic.key}});
       if(r.status===503)return;                       // authority unreachable: keep Pro
@@ -2077,7 +2102,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.24';
+const APP_VERSION='1.25';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -4623,6 +4648,10 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
     toast('Back online.');
     if(typeof LiveDrops!=='undefined')LiveDrops.refresh();
     if(typeof PriceEngine!=='undefined'&&PriceEngine.refresh)PriceEngine.refresh();
+    // Finish activating a key that was pasted while the authority was
+    // unreachable. Signal coming back is the natural moment, and it means a
+    // buyer at a show does not have to think about it again.
+    if(typeof Premium!=='undefined'&&Premium.recheck)Premium.recheck();
   });
   window.addEventListener('offline',function(){if(typeof netStatus==='function')netStatus();});
 })();
