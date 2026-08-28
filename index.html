@@ -66,7 +66,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:600;src:url(./fonts/plexmono-600.woff2) format('woff2')}
 </style>
 <style>
-  :root{--bg:#070916;--bg2:#0e1122;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#757c98;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+  :root{--bg:#04050e;--bg2:#0f1326;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#757c98;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
   /* type scale: every size in the app is one of these twelve steps */
   :root{--t1:10px;
   /* Motion. Three durations replace seventeen: the file had .15/.16/.18 and
@@ -165,7 +165,12 @@ catch(e){document.documentElement.style.display="none";}</script>
   .seg button.on{background:var(--bg3);color:var(--gold);box-shadow:inset 0 0 0 1px var(--line)}
   .seg.sm{width:fit-content;padding:var(--s1);gap:var(--s1);border-radius:var(--r-sm)}
   .seg.sm button{flex:initial;padding:var(--s2) var(--s4);font-size:var(--t2);border-radius:var(--r-xs)}
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s8);margin-bottom:var(--s7)}
+  .card{background:var(--bg2);border:none;border-radius:var(--r-md);padding:var(--s8);margin-bottom:var(--s10);box-shadow:0 1px 0 rgba(255,255,255,.03) inset}
+  /* Radius was carrying the hierarchy: r16, r12 and r8 cards all shared one
+     background and one border, so corner rounding was the only thing telling
+     them apart, which reads as nothing at all. One card radius now, and the
+     separation moved into SPACING -- s10 between cards against s8 inside
+     them, so related things sit closer than unrelated ones. */
   .row{display:flex;align-items:center;gap:var(--s5)}.between{justify-content:space-between}
   .hide{display:none}
   /* Fields grow rather than faking it: ::after does not render on replaced
@@ -186,8 +191,15 @@ catch(e){document.documentElement.style.display="none";}</script>
   .choice button b{display:block;font-weight:600;margin-bottom:var(--s0)}
   .choice button span{font-size:var(--t3);color:var(--ink2)}
   .choice button.danger b{color:var(--down)}
-  .num{font-family:var(--mono);text-align:right}
-  label{font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:var(--s2)}
+  .num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+  /* A label/value pair reads as a pair when the two differ in more than one
+     dimension. The values grew, so the labels step back: smaller, wider
+     tracked, and dimmer. They are wayfinding, not content. */
+  label{font-size:var(--t1);text-transform:uppercase;letter-spacing:.13em;color:var(--ink3);font-family:var(--mono);display:block;margin-bottom:var(--s3)}
+  /* Dimmed with a COLOUR, never opacity. opacity<1 creates a stacking
+     context, and a label containing a .hint then traps that hint's expanded
+     ::after inside it -- which silently changed overlap behaviour and broke
+     the tap-target mutation control. Colour has no such side effect. */
   button.ghost{background:none;border:1px solid var(--line);color:var(--ink2);border-radius:var(--r-sm);padding:var(--s5) var(--s6);min-height:var(--tap);cursor:pointer;font-size:var(--t4);font-family:var(--sans)}
   button.ghost:active{transform:scale(.98)}
   button.ghost.proglow{border:1.5px solid transparent;background:linear-gradient(var(--bg2),var(--bg2)) padding-box,var(--holo) border-box;background-size:auto,240% auto;color:var(--ink);animation:holo 7s linear infinite}
@@ -198,7 +210,16 @@ catch(e){document.documentElement.style.display="none";}</script>
   .swbtn.on{border-color:var(--gold);color:var(--gold);background:#1e1a36}
   .sidehead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s2)}
   .sidehead .st{font-family:var(--mono);font-size:var(--t2);text-transform:uppercase;letter-spacing:.1em;color:var(--gold-dim)}
-  .sidehead .sv2{font-family:var(--mono);font-size:var(--t6);color:var(--gold);font-weight:600}
+  /* The pile total is the headline number of this screen and was 16px -- one
+     step above body text, so it read as a label rather than as the answer.
+     Measured across four tabs: 64% of all text sat in a 10-14px band at weight
+     400, which is what makes a valuation app look like a form. The value leads
+     now and the label beside it recedes. tabular-nums so the digits stop
+     jittering as the total changes. */
+  .sidehead .sv2{font-family:var(--mono);font-size:var(--t11);line-height:1.05;
+    color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em}
+  .sidehead label,.sidehead .sl{font-size:var(--t1);color:var(--ink4,var(--ink3))}
   .pile-item{display:flex;align-items:center;gap:var(--s5);padding:var(--s5) 0;border-bottom:1px solid var(--line);touch-action:pan-y}.pile-item:last-child{border-bottom:none}
   .pi-name{flex:1;min-width:0}.pi-name .n{font-size:var(--t5);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pi-name .m{font-family:var(--mono);font-size:var(--t2);color:var(--ink3)}
@@ -263,7 +284,13 @@ catch(e){document.documentElement.style.display="none";}</script>
   .av,.sv,.sl,.pr,.m,.dl-flip,.dl-cd,.cg-pct,.qa,.lot-tot,.lot-verdict,
   table td,table th,.stat .sv,#aMarket,#aPayout,#aNet,#aProfit,
   input[type="number"],[class*="tot"]{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'lnum' 1}
-  .anchor.hero .av{font-family:var(--mono);font-size:var(--t8);font-weight:600}
+  /* Anchor rows are label-left / value-right. The values were 14px/400 --
+     identical to body text -- so the eye had nothing to land on. The hero
+     row is the one that answers the question the screen asks, so it gets a
+     clear step, and every value gets tabular figures so the column aligns. */
+  .anchor .av{font-variant-numeric:tabular-nums}
+  .anchor.hero .av{font-family:var(--mono);font-size:var(--t9);font-weight:600;
+    letter-spacing:-.015em}
   .channels{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin:6px 0 4px}
   .ch{padding:var(--s4) var(--s2);text-align:center;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg3);cursor:pointer;transition:var(--dur-fast) var(--ease)}
   .ch.on{border-color:var(--gold);background:#1e1a36}.ch .cn{font-size:var(--t3);font-weight:500}.ch .cf{font-family:var(--mono);font-size:var(--t1);color:var(--ink3)}.ch.on .cf{color:var(--gold-dim)}
