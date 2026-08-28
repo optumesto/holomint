@@ -27,7 +27,7 @@ catch(e){document.documentElement.style.display="none";}</script>
  "operatingSystem":"Web browser, iOS, Android, Windows, macOS",
  "description":"A Pokemon TCG app for dealers and flippers. Holomint sends restock and queue alerts and prices every drop net of eBay, TCGplayer and Whatnot fees, alongside a portfolio, trade calculator, grading calculator and card scanner.",
  "image":"https://holomint.app/og.png","softwareVersion":"1.24",
- "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier with delayed alerts. Holomint Pro adds instant alerts."},
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"USD","description":"Free tier delays alerts by 10 minutes. Holomint Pro sends them as soon as Holomint sees the drop, with the flip margin already worked out."},
  "publisher":{"@id":"https://holomint.app/#org"}},
 {"@type":"Organization","@id":"https://holomint.app/#org","name":"Holomint",
  "legalName":"Optume Ventures LLC","url":"https://holomint.app/",
@@ -37,18 +37,18 @@ catch(e){document.documentElement.style.display="none";}</script>
  "url":"https://holomint.app/","publisher":{"@id":"https://holomint.app/#org"}}
 ]}
 </script>
-<meta name="description" content="Pokemon restock drops with the flip margin computed net of your fees. Free feed, instant Pro alerts even with the app closed.">
+<meta name="description" content="Pokemon restock drops with the flip margin computed net of your fees, before you buy. English and Japanese. Free feed; Pro drops the 10-minute delay, even with the app closed.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Holomint">
 <meta property="og:title" content="Holomint: restock alerts that do the math">
-<meta property="og:description" content="Every Pokemon restock, priced net of your fees the moment it lands. Free feed. Instant alerts on Pro.">
+<meta property="og:description" content="Every Pokemon restock, priced net of your fees before you buy. English and Japanese. Free feed; Pro drops the 10-minute delay.">
 <meta property="og:url" content="https://holomint.app/">
 <meta property="og:image" content="https://holomint.app/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Holomint: restock alerts that do the math">
-<meta name="twitter:description" content="Every Pokemon restock, priced net of your fees the moment it lands. Free feed. Instant alerts on Pro.">
+<meta name="twitter:description" content="Every Pokemon restock, priced net of your fees before you buy. English and Japanese. Free feed; Pro drops the 10-minute delay.">
 <meta name="twitter:image" content="https://holomint.app/og.png">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1834,9 +1834,9 @@ const Alerts=(function(){
     const _LIST=(_CK&&_CK.amount)||0;
     const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Early-bird pricing: '+F.left+' of '+F.total+' left at $'+Number(F.amount).toFixed(2)+'/month, locked for as long as you stay subscribed. After that it is $'+Number(_LIST).toFixed(2)+'/month.</div>':'';
     const msg={
-      'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
-      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro is instant, with a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:var(--s5)">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:var(--s4)">Turn off alerts</button>'+fnote,
-      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free: 10 minutes late, 2 a day.</b> Pro: instant, your own ceiling.</div><button class="act" id="alOn" style="margin-top:var(--s5)">Enable drop alerts</button>'+fnote,
+      'on-pro':'<div class="sub" style="color:var(--up)">On, with no delay. Your phone buzzes when Holomint sees a drop, with the app closed.</div>',
+      'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro has no delay, and a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:var(--s5)">Remove the delay</button><button class="ghost" id="alOff2" style="width:100%;margin-top:var(--s4)">Turn off alerts</button>'+fnote,
+      'off':'<div class="sub">Get pinged when a drop lands, with Holomint closed. <b style="color:var(--ink2)">Free: 10 minutes late, 2 a day.</b> Pro: no delay, your own ceiling.</div><button class="act" id="alOn" style="margin-top:var(--s5)">Enable drop alerts</button>'+fnote,
       'blocked':'<div class="sub">Notifications are blocked for this site. Re-allow them in your browser settings, then come back.</div>',
       'unsupported':'<div class="sub">This browser cannot receive push notifications.</div>',
       'ios-install':'<div class="sub"><b style="color:var(--ink2)">Add Holomint to your Home Screen first.</b><br>On iPhone, alerts only work for installed apps.<br><br>1. Tap the Share button in Safari<br>2. Scroll and tap <b style="color:var(--ink2)">Add to Home Screen</b><br>3. Open Holomint from the new icon<br>4. Come back here and turn alerts on</div>',
@@ -2042,8 +2042,8 @@ const Tour=(function(){
      body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you the moment a drop lands.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
-    {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, the second it lands',
-     body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them instantly.'},
+    {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, with the maths already done',
+     body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them without it.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
      body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room the moment it opens.'},
     {tab:'port', sel:'#portTotals', title:'Track holdings as a P&L, not a binder',
@@ -3169,7 +3169,7 @@ const LiveDrops=(function(){
         +'<span class="lk lk-locked">LOCKED</span>'
         +'<div class="dl-body"><div class="dl-title">'+(e.cls==='intel'?'Pre-drop intel received':'A drop occurred')+'</div>'
         +'<div class="dl-sub">Unlocking in <b class="dl-cd" data-cd="'+e.unlocks_at+'">--:--</b></div>'
-        +'<div class="dl-meta">Pro sees this the second it lands</div></div></div>';
+        +'<div class="dl-meta">Pro sees this without the 10 minute delay</div></div></div>';
     }
     var url=String(e.url||''),safe=(url.slice(0,8)==='https://'||url.slice(0,7)==='http://')?url:'';
     var title=esc(e.title||'Drop');
@@ -4068,7 +4068,7 @@ const FeatureMap=(function(){
       {sel:'#slabCard',t:'Grading calculator',d:'Compare raw value against graded outcomes after grading fees, shipping, and resale fees, with turnaround times.'},
     ]},
     {tab:'settings',name:'Settings',items:[
-      {sel:'#alertCard',t:'Drop alerts',d:'Push notifications when a drop lands, with your own profit floors. Free is delayed and capped; Pro is instant.'},
+      {sel:'#alertCard',t:'Drop alerts',d:'Push notifications when a drop lands, with your own profit floors. Free is delayed 10 minutes and capped; Pro has neither limit.'},
       {sel:'#setTour',t:'Replay the tour',d:'Run the five step walkthrough again any time.'},
     ]},
   ];

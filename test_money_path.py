@@ -773,6 +773,57 @@ with sync_playwright() as pw:
           unknown in ("in-print", "oop", "raw"))
     ctx.close()
 
+    print("\n16. the app does not promise a speed it cannot deliver")
+    # Measured 2026-08-28: Holomint polls at 15s (PC queue), 60s (relays,
+    # Slickdeals, Shopify) and 3600s (PC listings), plus a 10-minute delay on
+    # free. The alert specialists advertise sub-second across 35 retailers, and
+    # the category's own review language is "30 seconds slower can cost more
+    # than a month's subscription".
+    #
+    # The app used to say "instant", "the moment it lands" and "the second a
+    # drop lands". That is the dead Pre-drop toggle in a different costume: a
+    # claim the product cannot meet, waiting for the customer who checks.
+    #
+    # Speed was never the edge. Everyone else sends a naked link; Holomint sends
+    # it with the margin already worked out. That claim is true, so make THAT one.
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "index.html")).read()
+    import re as _re
+    _claims = []
+    for _m in _re.finditer(r"(instant\w*|the second (?:a drop|it lands)|the moment it lands)",
+                           src, _re.I):
+        _a = max(0, _m.start() - 70)
+        _ctx = src[_a:_m.end() + 70].replace("\n", " ")
+        # Local speed is genuinely instant: cached catalog, offline, app launch.
+        if any(k in _ctx.lower() for k in
+               ("offline", "cache", "downloads it once", "home screen",
+                "opens instantly", "resolve", "//")):
+            continue
+        _claims.append(_ctx.strip()[:70])
+    check(f"no copy claims instant/second-it-lands delivery "
+          f"({_claims[:1] or 'none'})", not _claims)
+
+    # And the true differentiator should actually be stated.
+    check("the pitch leads with the maths instead",
+          "net of your fees" in src and "before you buy" in src)
+    check("...and mentions Japanese coverage (half the catalog)",
+          "English and Japanese" in src)
+
+    man = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      "manifest.json")))
+    check(f"the manifest description matches ({man['description'][:44]}…)",
+          "instant" not in man["description"].lower()
+          and "Japanese" in man["description"])
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844})
+    page = ctx.new_page()
+    boot(page, "good")
+    # The 10-minute figure must still be stated plainly -- honesty about the
+    # free tier is the thing that makes the Pro claim credible.
+    check("the free delay is still stated as 10 minutes",
+          "10 minute" in page.evaluate("()=>document.body.innerHTML"))
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

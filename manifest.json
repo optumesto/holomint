@@ -1,7 +1,7 @@
 {
   "name": "Holomint: restock alerts that do the math",
   "short_name": "Holomint",
-  "description": "Pokemon restock drops with the flip margin computed net of your fees.",
+  "description": "Pokemon restock drops with the flip margin computed net of your fees, before you buy. English and Japanese.",
   "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
