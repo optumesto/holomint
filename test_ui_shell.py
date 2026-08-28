@@ -237,8 +237,31 @@ with sync_playwright() as pw:
                         el: a.tagName + (a.id ? '#' + a.id : '')};}"""))
         return out
 
+    # Wait for the previous section's sheet to be fully gone before touching
+    # focus. It closes over ~420ms and the background stays inert until it is,
+    # so focusing too early silently does nothing -- and this section then
+    # reported "closing did not restore focus" when the truth was that focus was
+    # never placed. Roughly 1 run in 4. A flaky test is worse than no test: it
+    # teaches you to skip past red.
+    # #scanBtn lives on the Trade panel, and a panel that is not .on is display:
+    # none -- focus() on it silently does nothing. So put the tab back first,
+    # then wait for the button to be genuinely focusable: no overlay up, not
+    # inert, and actually rendered. Checking inertness alone was not enough and
+    # left this failing about 1 run in 3.
+    page.evaluate("()=>{try{switchTab('block')}catch(e){}}")
+    for _ in range(60):
+        if page.evaluate("""()=>{const s=document.querySelector('#sheet');
+              const open=s&&(s.classList.contains('show')||s.classList.contains('on'));
+              const b=document.querySelector('#scanBtn');
+              return !open && !!b && !b.closest('[inert]')
+                     && b.getBoundingClientRect().height>0;}"""):
+            break
+        page.wait_for_timeout(50)
     opener = page.evaluate("""()=>{const b=document.querySelector('#scanBtn');
         if(b){b.focus();return document.activeElement.id;}return null;}""")
+    # Assert the precondition rather than letting it poison the checks below.
+    check(f"the opener could be focused before opening the sheet (got {opener!r})",
+          opener == "scanBtn")
     page.evaluate("""()=>{Sheet.open('Focus test',
         [{type:'static',html:'<div class="sub">trap</div>'}],'Close',function(){});}""")
     page.wait_for_timeout(450)

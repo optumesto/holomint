@@ -67,9 +67,13 @@ def serve():
 
 
 GOOD_PRICE = {
-    "configured": True, "amount": 4.99, "currency": "USD", "interval": "month",
+    "configured": True, "amount": 19.99, "currency": "USD", "interval": "month",
     "checkout": "https://checkout.example/holomint-pro",
     "portal": "https://portal.example/manage",
+    # Mirrors production: a limited DISCOUNT, not limited stock. The product
+    # stays on sale at `amount` afterwards, which is what the copy must say.
+    "founder": {"amount": 9.99, "left": 24, "total": 25,
+                "checkout": "https://checkout.example/holomint-founder"},
 }
 
 
@@ -133,6 +137,29 @@ with sync_playwright() as pw:
     check(f"no href before consent (got {st['href']!r})", not st["href"])
     check(f"and it reads as disabled (aria-disabled={st['dis']})", st["dis"] == "true")
 
+    print("\n1b. the early-bird offer states BOTH prices, and neither is NaN")
+    # The discount is limited; the PRODUCT is not. "25 seats left" with no second
+    # half reads as "the app has 25 places and then it is gone", which is false
+    # scarcity -- Pro stays available at list price forever. Every place the
+    # discount is mentioned must therefore name the price it reverts to.
+    #
+    # The NaN check is not hypothetical: the list price lives on the pricing
+    # object, while .founder carries only {amount,left,total,checkout}. Reading
+    # it off the founder object renders "$NaN/month" in the one piece of copy
+    # nobody can afford to get wrong, and it renders happily with no error.
+    offer_txt = page.evaluate("""()=>{
+        const s=document.querySelector('#sheet');
+        return (s.textContent||'').replace(/\\s+/g,' ');}""")
+    check(f"no NaN anywhere in the offer copy",
+          "NaN" not in offer_txt and "$undefined" not in offer_txt)
+    if GOOD_PRICE.get("founder"):
+        check("the offer names the price it reverts to",
+              str(GOOD_PRICE["amount"]) in offer_txt)
+    else:
+        skip("reverts-to price", "this fixture has no founder discount")
+    check("it does not imply the product itself runs out",
+          "seats left" not in offer_txt.lower())
+
     print("\n2. a mis-click explains itself")
     page.evaluate("()=>document.querySelector('#ckGo').click()")
     page.wait_for_timeout(250)
@@ -159,8 +186,18 @@ with sync_playwright() as pw:
     st2 = page.evaluate("""()=>{const g=document.querySelector('#ckGo');
         return {href:g.getAttribute('href'), dis:g.getAttribute('aria-disabled'),
                 op:getComputedStyle(g).opacity};}""")
+    # The link has to charge the price that was DISPLAYED. While a discount is
+    # live that means the founder checkout, not the list one -- sending someone
+    # who was shown $9.99 to a $19.99 checkout is the exact price drift the
+    # Worker comments call out as a ROSCA problem, and it is invisible until a
+    # customer disputes the charge.
+    _expect = (GOOD_PRICE.get("founder") or GOOD_PRICE)["checkout"]
+    _shown = page.evaluate("""()=>{const e=document.querySelector('#sheet .ck-price');
+        return e?e.textContent.replace(/\\s+/g,' ').trim():'';}""")
     check(f"both boxes ticked sets the checkout href ({st2['href']!r})",
-          st2["href"] == GOOD_PRICE["checkout"])
+          st2["href"] == _expect)
+    check(f"...and it is the checkout for the price on screen ({_shown!r})",
+          str((GOOD_PRICE.get("founder") or GOOD_PRICE)["amount"]) in _shown)
     check(f"...and it reads as enabled (aria-disabled={st2['dis']})",
           st2["dis"] == "false")
 

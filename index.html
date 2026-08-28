@@ -1739,8 +1739,12 @@ const Alerts=(function(){
       paintWatch(p.watch||[]);
       wireWatchSearch();
     }
-    const F=(typeof Checkout!=='undefined'&&Checkout.get()&&Checkout.get().founder)||null;
-    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Founder pricing: '+F.left+' of '+F.total+' seats left at $'+Number(F.amount).toFixed(2)+'/month, locked for good.</div>':'';
+    const _CK=(typeof Checkout!=='undefined'&&Checkout.get())||null;
+    const F=(_CK&&_CK.founder)||null;
+    // The list price lives on the pricing object, NOT on .founder, which only
+    // carries {amount,left,total,checkout}. Reading it off F renders $NaN.
+    const _LIST=(_CK&&_CK.amount)||0;
+    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Early-bird pricing: '+F.left+' of '+F.total+' left at $'+Number(F.amount).toFixed(2)+'/month, locked for as long as you stay subscribed. After that it is $'+Number(_LIST).toFixed(2)+'/month.</div>':'';
     const msg={
       'on-pro':'<div class="sub" style="color:var(--up)">On, and instant. Your phone buzzes the second a drop lands, with Holomint closed.</div>',
       'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro is instant, with a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:var(--s5)">Get instant alerts</button><button class="ghost" id="alOff2" style="width:100%;margin-top:var(--s4)">Turn off alerts</button>'+fnote,
@@ -1817,7 +1821,7 @@ function paintFounder(again){
   const F=P&&P.founder;
   if(!F||!(F.left>0)||Premium.active()){el.innerHTML='';el.style.display='none';return;}
   el.style.display='block';
-  el.innerHTML='<b>Founder pricing</b> · '+F.left+' of '+F.total+' seats left · tap to lock $'+Number(F.amount).toFixed(2)+'/month for good';
+  el.innerHTML='<b>Early-bird pricing</b> · '+F.left+' of '+F.total+' left · lock $'+Number(F.amount).toFixed(2)+'/month, then $'+Number((P&&P.amount)||0).toFixed(2)+' after';
   el.onclick=()=>$('#proBtn').click();
 }
 
@@ -2120,7 +2124,7 @@ const Checkout=(function(){
     const m=money(o), per=p.interval==='year'?'year':'month';
     const f=o.founder;
     return ''
-      +(f?'<div class="ck-founder"><b>Founder pricing</b> &middot; locked at '+m+'/'+per+' for as long as you stay subscribed.<br><span>'+f.left+' of '+f.total+' seats left. After that it is $'+Number(o.list).toFixed(2)+'/'+per+'.</span></div>':'')
+      +(f?'<div class="ck-founder"><b>Early-bird pricing</b> &middot; locked at '+m+'/'+per+' for as long as you stay subscribed.<br><span>'+f.left+' of '+f.total+' left at this price. After that it is $'+Number(o.list).toFixed(2)+'/'+per+'.</span></div>':'')
       +'<div class="ck-price">'+m+'<span>/'+per+'</span>'+(f?'<em>$'+Number(o.list).toFixed(2)+'</em>':'')+'</div>'
       +'<div class="ck-terms">'
         +'Billed <b>'+(per==='year'?'yearly':'monthly')+'</b>. Your subscription <b>automatically renews every '+per+' at '+m+' and you will be charged until you cancel.</b><br>'
