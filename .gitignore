@@ -22,3 +22,6 @@ playwright-report/
 
 # Visual regression captures — large PNGs, regenerated on demand by shots.py
 .shots/
+
+# Detector fixtures: generated set + Mason's real photos (not for the repo)
+.lotfix/

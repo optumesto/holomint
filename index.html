@@ -3658,7 +3658,11 @@ const LotScanner=(function(){
      cell, and keep the layout that produces the most distinct confident matches.
      A wrong grid slices cards in half and matches almost nothing, so the correct
      layout wins on its own evidence. */
-  var LOT_LAYOUTS=[[1,1],[2,2],[3,3],[2,3],[3,2],[3,4],[4,3]];
+  // 4x2 and 2x4 are here because a real 8-card binder page was missed entirely:
+  // no layout matched, so the grid path returned nothing and fell through to OCR
+  // on a photo with no text to read. Nine-pocket is the common page, but 8-card
+  // and 4-card pages are ordinary too.
+  var LOT_LAYOUTS=[[1,1],[2,2],[3,3],[2,3],[3,2],[3,4],[4,3],[4,2],[2,4],[4,4]];
   var LOT_OK=84;              // same threshold the card scanner uses (HASH_OK)
 
   function cellCanvas(cv,cols,rows,cx,cy,inset){
@@ -4516,6 +4520,27 @@ CondGuide.wire();FeatureMap.wire();Gestures.wire();
     }
   });
 })();
+/* Both overlay observers below used to register with a single querySelector at
+   load and give up on a miss. #cfmModal -- Sheet.confirm, the dialog guarding
+   the actions that cannot be undone -- is built on first use, so it did not
+   exist yet and BOTH silently skipped it, even though it is listed in OVERLAYS.
+   It shipped with no role=dialog, no scroll lock, no focus containment and no
+   back-button close: measured, one Tab off "Delete" landed on #proBtn behind it.
+
+   So wait for it instead of giving up. Body's own children change rarely, which
+   makes a childList observer cheap. attach() also runs once immediately, because
+   a lazily built overlay is normally created AND opened in the same task -- by
+   the time this fires the class is already set, and an attribute observer
+   registered now would miss the opening it was registered for. */
+function HMOverlayWatch(sel,attach){
+  var el=document.querySelector(sel);
+  if(el){attach(el);return;}
+  var bo=new MutationObserver(function(){
+    var e=document.querySelector(sel);
+    if(e){bo.disconnect();attach(e);}
+  });
+  bo.observe(document.body,{childList:true});
+}
 (function(){
   var OVERLAYS=['#lotModal','#featModal','#condModal','#cfmModal','#scanChoose','#scanModal','#sheet'];
   var lastFocus=null;
@@ -4531,18 +4556,21 @@ CondGuide.wire();FeatureMap.wire();Gestures.wire();
     return el;
   }
   OVERLAYS.forEach(function(sel){
-    var el=document.querySelector(sel);if(!el)return;
-    new MutationObserver(function(){
-      var open=el.classList.contains('show')||el.classList.contains('on');
-      if(open&&!el.__hadFocus){
-        el.__hadFocus=true;lastFocus=document.activeElement;
-        el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
-        var f=firstFocusable(el);if(f)setTimeout(function(){try{f.focus();}catch(e){}},60);
-      } else if(!open&&el.__hadFocus){
-        el.__hadFocus=false;
-        if(lastFocus&&lastFocus.focus)setTimeout(function(){try{lastFocus.focus();}catch(e){}},20);
-      }
-    }).observe(el,{attributes:true,attributeFilter:['class']});
+    HMOverlayWatch(sel,function(el){
+      var sync=function(){
+        var open=el.classList.contains('show')||el.classList.contains('on');
+        if(open&&!el.__hadFocus){
+          el.__hadFocus=true;lastFocus=document.activeElement;
+          el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+          var f=firstFocusable(el);if(f)setTimeout(function(){try{f.focus();}catch(e){}},60);
+        } else if(!open&&el.__hadFocus){
+          el.__hadFocus=false;
+          if(lastFocus&&lastFocus.focus)setTimeout(function(){try{lastFocus.focus();}catch(e){}},20);
+        }
+      };
+      new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['class']});
+      sync();   // a lazily built overlay is already open by the time we see it
+    });
   });
   // Escape closes the topmost overlay, matching what the back button already does
   document.addEventListener('keydown',function(e){
@@ -4587,6 +4615,10 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
     {sel:'#scanChoose', is:function(e){return e.classList.contains('show');},   close:function(){e_rm('#scanChoose');}},
     {sel:'#scanModal',  is:function(e){return e.classList.contains('on')||e.classList.contains('show');}, close:function(){Scanner.close();}},
     {sel:'#sheet',      is:function(e){return e.classList.contains('show')||e.classList.contains('on');}, close:function(){var b=$('#sheetOk')||$('#sheetX');if(b)b.click();else e_rm('#sheet');}},
+    // Sheet.confirm's dialog. Listed last among the modals but built first-use,
+    // so it only reaches this list through HMOverlayWatch. Back cancels it,
+    // which is the right default for a dialog whose OK cannot be undone.
+    {sel:'#cfmModal',   is:function(e){return e.classList.contains('show');},   close:function(){var n=$('#cfmNo');if(n)n.click();else e_rm('#cfmModal');}},
     {sel:'#tourWrap',   is:function(e){return e.classList.contains('on');},     close:function(){Tour.stop?Tour.stop():$('#tourSkip').click();}}
   ];
   function e_rm(sel){var e=document.querySelector(sel);if(e){e.classList.remove('show');e.classList.remove('on');}}
@@ -4709,16 +4741,21 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
 
   var depth=0;
   // watch for any overlay opening, and push one history entry per open overlay
-  var mo=new MutationObserver(function(){
+  function syncOverlays(){
     var t=topOpen();
     var open=t?1:0;
     if(open){lockScroll();trapFocus(document.querySelector(t.sel));}
     else{unlockScroll();releaseFocus();}
     if(open&&!depth){depth=1;try{history.pushState({hmOverlay:1},'');}catch(e){}}
     else if(!open&&depth){depth=0;}
+  }
+  var mo=new MutationObserver(syncOverlays);
+  OVER.forEach(function(o){
+    HMOverlayWatch(o.sel,function(e){
+      mo.observe(e,{attributes:true,attributeFilter:['class']});
+      syncOverlays();   // it is usually already open by the time we see it
+    });
   });
-  OVER.forEach(function(o){var e=document.querySelector(o.sel);
-    if(e)mo.observe(e,{attributes:true,attributeFilter:['class']});});
   window.addEventListener('popstate',function(){
     var t=topOpen();
     if(t){depth=0;try{t.close();}catch(e){}

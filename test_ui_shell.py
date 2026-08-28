@@ -302,6 +302,77 @@ with sync_playwright() as pw:
         b.focus();return document.activeElement===b;}""")
     check("...and the background is focusable again once it closes", again)
 
+    print("\n6. the confirm dialog gets the same protections as the rest")
+    # Sheet.confirm's #cfmModal is built on first use, and BOTH overlay
+    # observers registered by querySelector at load -- so the one dialog that
+    # guards irreversible actions was skipped by both, even though it is listed
+    # in OVERLAYS. Measured before the fix: no role=dialog, no aria-modal, no
+    # scroll lock, focus never entered it, and one Tab reached #proBtn behind.
+    page.evaluate("""()=>Sheet.confirm('Delete?','<div>gone for good</div>',
+        'Delete',function(){})""")
+    page.wait_for_timeout(450)
+    cfm = page.evaluate("""()=>{const w=document.getElementById('cfmModal');
+        if(!w) return null;
+        return {role:w.getAttribute('role'), modal:w.getAttribute('aria-modal'),
+                bodyPos:getComputedStyle(document.body).position,
+                navInert:!!document.querySelector('#botnav').inert,
+                inside:w.contains(document.activeElement),
+                active:document.activeElement.id||document.activeElement.tagName};}""")
+    if cfm is None:
+        check("Sheet.confirm built its dialog", False)
+    else:
+        check(f"confirm announces as a modal dialog "
+              f"(role={cfm['role']} aria-modal={cfm['modal']})",
+              cfm["role"] == "dialog" and cfm["modal"] == "true")
+        check(f"confirm locks the page behind it (body position {cfm['bodyPos']})",
+              cfm["bodyPos"] == "fixed")
+        check("confirm inerts the page behind it", cfm["navInert"])
+        check(f"confirm takes focus (on {cfm['active']})", cfm["inside"])
+
+        trail = []
+        for _ in range(8):
+            page.keyboard.press("Tab")
+            trail.append(page.evaluate("""()=>{const w=document.getElementById('cfmModal');
+                const a=document.activeElement;
+                return {inside:w.contains(a), el:a.id||a.tagName};}"""))
+        out = [t for t in trail if not t["inside"]]
+        check("8 Tabs cannot leave the confirm dialog"
+              + (f" (leaked to {', '.join(t['el'] for t in out[:4])})" if out else ""),
+              not out)
+
+        # Escape must reach it too: it is the one dialog where the wrong answer
+        # is unrecoverable, so cancelling has to be the easy path.
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+        closed = page.evaluate("""()=>{const w=document.getElementById('cfmModal');
+            return !w.classList.contains('show');}""")
+        check("Escape cancels the confirm", closed)
+        # ...and the lock comes back off, or the app is stuck unscrollable.
+        page.wait_for_timeout(200)
+        after = page.evaluate("""()=>({pos:getComputedStyle(document.body).position,
+            navInert:!!document.querySelector('#botnav').inert})""")
+        check(f"closing it releases the scroll lock (position {after['pos']})",
+              after["pos"] != "fixed")
+        check("closing it releases the inert background", not after["navInert"])
+
+        # Back must cancel it rather than leaving the app. In an installed PWA
+        # that is the difference between "no, wait" and being thrown out to the
+        # home screen with the delete unconfirmed.
+        page.evaluate("""()=>Sheet.confirm('Delete?','<div>gone</div>',
+            'Delete',function(){window.__cfmFired=true;})""")
+        page.wait_for_timeout(450)
+        page.go_back()
+        page.wait_for_timeout(450)
+        state = page.evaluate("""()=>({open:document.getElementById('cfmModal')
+                .classList.contains('show'),
+            fired:!!window.__cfmFired,
+            stillApp:!!document.getElementById('botnav')})""")
+        check("back cancels the confirm instead of leaving the app",
+              not state["open"] and state["stillApp"])
+        # Cancelling must not run the destructive callback.
+        check("...and back does NOT fire the destructive action",
+              not state["fired"])
+
     browser.close()
 
 httpd.shutdown()
