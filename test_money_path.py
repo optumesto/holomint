@@ -618,6 +618,89 @@ with sync_playwright() as pw:
           f"({kept['saved']}%)", kept["saved"] == 75 and kept["live"] == 75)
     ctx.close()
 
+    print("\n14. price my inventory")
+    # Holomint computes what to PAY for someone else's cards and had nothing
+    # about what to ASK for your own -- no ask price, no negotiation room, no
+    # walk-away floor anywhere in the file. Mason spent ~5 hours pricing a show
+    # by hand, which is the loudest signal available that the gap is real.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+
+    # friendly() must always round DOWN, or the printed price drifts above what
+    # the maths asked for and the total stops matching the parts.
+    fr = page.evaluate("(vs)=>vs.map(v=>[v,ShowPricer.friendly(v)])",
+                       [0.4, 2.6, 4.9, 9.99, 12.7, 24.3, 99.9, 317])
+    check(f"friendly() lands on human numbers ({fr[2][1]}, {fr[4][1]}, {fr[7][1]})",
+          fr[2][1] == 4.75 and fr[4][1] == 12.5 and fr[7][1] == 315)
+    check("...and never rounds UP", all(b <= a for a, b in fr))
+
+    page.evaluate("""()=>{const a=[
+      {id:'h1',name:'Charizard ex PSA 10',type:'graded',qty:1,costBasis:180,currentValue:317,status:'graded'},
+      {id:'h2',name:'Surging Sparks ETB',type:'sealed',qty:3,costBasis:42,currentValue:63.5,status:'in-print'},
+      {id:'h4',name:'Pikachu common',type:'single',qty:40,costBasis:0.1,currentValue:0.4,status:'raw'},
+      {id:'h5',name:'Unpriced',type:'single',qty:2,costBasis:5,currentValue:0,status:'raw'}];
+      localStorage.setItem('holomint:holdings',JSON.stringify(a));}""")
+    page.reload(wait_until="load")
+    page.wait_for_timeout(600)
+
+    rows = page.evaluate("()=>ShowPricer.rows()")
+    tot = page.evaluate("()=>ShowPricer.totals(ShowPricer.rows())")
+    check(f"every holding is priced ({tot['n']} items, {tot['cards']} cards)",
+          tot["n"] == 4 and tot["cards"] == 46)
+    check("the list leads with the most valuable item",
+          rows[0]["name"].startswith("Charizard"))
+
+    # THE BUG THIS CAUGHT. friendly() rounds down, so a $0.40 card with 15% room
+    # became a $0.25 ask -- BELOW its own walk-away. A price list that asks less
+    # than you would accept is worse than no price list.
+    under = [r for r in rows if r["priced"] and r["ask"] < r["floor"] - 0.001]
+    check(f"no ask sits below its own floor ({under or 'none'})", not under)
+    cheap = [r for r in rows if r["name"] == "Pikachu common"][0]
+    check(f"...the sub-dollar card clamps to its floor "
+          f"(ask ${cheap['ask']} = floor ${cheap['floor']})",
+          abs(cheap["ask"] - cheap["floor"]) < 0.001)
+    check(f"asking total is never under market (${tot['ask']} vs ${tot['market']})",
+          tot["ask"] >= tot["market"] - 0.5)
+
+    check(f"a card with no market price is flagged, not priced at $0 "
+          f"({tot['unpriced']} cards)", tot["unpriced"] == 2)
+    check(f"cheap cards are suggested for a bulk box ({tot['bulk']} cards)",
+          tot["bulk"] == 40)
+
+    # Negotiation room must actually move the ask, and only the ask.
+    page.evaluate("()=>Store.save('pricerPrefs',{room:0,bulkUnder:3})")
+    zero = page.evaluate("()=>ShowPricer.rows().find(r=>r.name.indexOf('Charizard')===0)")
+    page.evaluate("()=>Store.save('pricerPrefs',{room:30,bulkUnder:3})")
+    wide = page.evaluate("()=>ShowPricer.rows().find(r=>r.name.indexOf('Charizard')===0)")
+    check(f"0% room asks the floor (${zero['ask']} vs floor ${zero['floor']})",
+          abs(zero["ask"] - zero["floor"]) < 1)
+    check(f"30% room asks more (${wide['ask']})", wide["ask"] > zero["ask"])
+    check("...and the floor never moves with it",
+          abs(wide["floor"] - zero["floor"]) < 0.001)
+
+    # The copy output is the thing that actually gets used at a table.
+    page.evaluate("()=>Store.save('pricerPrefs',{room:15,bulkUnder:3})")
+    txt = page.evaluate("()=>ShowPricer.text()")
+    check("the copied list carries qty, ask AND floor",
+          "40x" in txt and "ask $" in txt and "floor $" in txt)
+    check("...and an unpriced card is left out rather than listed at $0",
+          "Unpriced" not in txt)
+
+    # Empty portfolio must explain itself rather than open a blank list.
+    page.evaluate("()=>{localStorage.setItem('holomint:holdings','[]');}")
+    page.reload(wait_until="load")
+    page.wait_for_timeout(500)
+    page.evaluate("()=>ShowPricer.open()")
+    page.wait_for_timeout(400)
+    empty = page.evaluate("()=>(document.querySelector('#sheet')||{innerText:''})"
+                          ".innerText.toLowerCase()")
+    check("an empty portfolio says what to do next",
+          "nothing in your portfolio" in empty)
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

@@ -712,7 +712,7 @@ catch(e){document.documentElement.style.display="none";}</script>
            in the header shouting at the same volume as Add, wrapping onto two
            lines each on a 390px phone. Behind the overflow they cost one tap and
            stop competing with the data. -->
-      <div class="row hide" id="holdTools" style="gap:var(--s3);margin-bottom:var(--s3);flex-wrap:wrap"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button></div>
+      <div class="row hide" id="holdTools" style="gap:var(--s3);margin-bottom:var(--s3);flex-wrap:wrap"><button class="ghost proglow" id="importCsv" style="padding:var(--s4) var(--s5)">Import</button><button class="ghost proglow" id="exportCsv" style="padding:var(--s4) var(--s5)">Export</button><button class="ghost" id="refreshGraded" style="padding:var(--s4) var(--s5)" title="Update graded card values">Price graded</button><button class="ghost proglow" id="priceShow" style="padding:var(--s4) var(--s5)" title="Turn your holdings into a price list for a show">Price for a show</button></div>
       <!-- Search, sort and the type filter only earn their space once there is
            enough to search. renderHoldings unhides them past HOLD_FILTER_MIN. -->
       <div id="holdFilters" class="hide">
@@ -3465,8 +3465,149 @@ csvIn.onchange=()=>{const file=csvIn.files[0];csvIn.value='';if(!file)return;
   };
   rd.readAsText(file);
 };
+/* ---- Price my inventory -------------------------------------------------
+   Holomint computes what to PAY for someone else's cards. It has never computed
+   what to ASK for your own -- there is no ask price, no negotiation room and no
+   walk-away floor anywhere else in this file. Mason spent about five hours
+   pricing a show by hand on 2026-08-28, which is the loudest signal available
+   that the gap is real.
+
+   The rules here are the ones vendors actually give each other:
+     * price everything -- unpriced cards create friction and people walk
+     * build in 10-20% negotiation room above your minimum acceptable price
+     * $4.50 reads cheaper than $5.00, so land on friendly numbers
+     * put the long tail in a $1 / $3 / $5 box instead of pricing each one
+
+   FLOOR is your walk-away and ASK is floor + room. The floor is the number that
+   matters and it is shown, not hidden, because the whole point is knowing when
+   to say no with a queue behind the person haggling.                        */
+const ShowPricer=(function(){
+  const KEY='pricerPrefs';
+  const D={room:15,bulkUnder:3};
+  const prefs=()=>Object.assign({},D,Store.load(KEY,{}));
+  const save=p=>Store.save(KEY,p);
+
+  /* Land on a number a human says out loud. Always rounds DOWN so the printed
+     price is never above what the maths asked for -- rounding up would quietly
+     widen the margin every time and the total would stop matching the parts. */
+  function friendly(v){
+    if(!(v>0))return 0;
+    if(v<5)   return Math.floor(v*4)/4;            // 0.25 steps
+    if(v<20)  return Math.floor(v*2)/2;            // 0.50 steps
+    if(v<100) return Math.floor(v);                // whole dollars
+    return Math.floor(v/5)*5;                      // fives
+  }
+
+  function rows(){
+    const p=prefs();
+    return (holdings||[]).map(function(h){
+      const mkt=+h.currentValue||0;
+      const floor=mkt;                              // walk-away = market
+      // NEVER below the floor. friendly() rounds DOWN, which on a sub-dollar
+      // card eats the whole margin and then some: $0.40 market + 15% room
+      // rounded down to a quarter-step gives $0.25, an ask UNDER the walk-away.
+      // A price list that asks less than you would accept is worse than no
+      // price list. Clamping means a cheap card simply shows no room, which is
+      // honest -- those belong in the bulk box anyway.
+      const ask=Math.max(floor,friendly(mkt*(1+p.room/100)));
+      return {id:h.id,name:h.name||'Unnamed',qty:+h.qty||1,type:h.type||'sealed',
+              market:mkt,floor:floor,ask:ask,
+              bulk:mkt>0&&mkt<p.bulkUnder,priced:mkt>0};
+    }).sort(function(a,b){return b.ask-a.ask;});
+  }
+
+  function totals(rs){
+    const t={n:0,cards:0,market:0,ask:0,bulk:0,unpriced:0};
+    rs.forEach(function(r){
+      t.n++; t.cards+=r.qty; t.market+=r.market*r.qty; t.ask+=r.ask*r.qty;
+      if(r.bulk)t.bulk+=r.qty;
+      if(!r.priced)t.unpriced+=r.qty;
+    });
+    return t;
+  }
+
+  function text(){
+    const rs=rows(),t=totals(rs);
+    const lines=['Holomint price list  '+new Date().toISOString().slice(0,10),''];
+    rs.forEach(function(r){
+      if(!r.priced)return;
+      lines.push([r.qty+'x',r.name,'ask '+usd(r.ask),'floor '+usd(r.floor)].join('\t'));
+    });
+    lines.push('');
+    lines.push('Items '+t.n+'  Cards '+t.cards+'  Market '+usd(t.market)+'  Ask '+usd(t.ask));
+    return lines.join('\n');
+  }
+
+  function open(){
+    const p=prefs(),rs=rows(),t=totals(rs);
+    if(!rs.length){
+      Sheet.info('Price my inventory',
+        '<p>Nothing in your portfolio yet.</p><p>Add holdings, or import a CSV, '
+        +'and this will turn them into a price list with negotiation room and a '
+        +'walk-away floor for each one.</p>');
+      return;
+    }
+    const list=rs.filter(function(r){return r.priced;}).map(function(r){
+      return '<div class="row between" style="padding:var(--s4) 0;border-top:1px solid var(--line);gap:var(--s5)">'
+        +'<span style="flex:1;min-width:0;font-size:var(--t4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+          +(r.qty>1?'<b>'+r.qty+'×</b> ':'')+esc(r.name)
+          +(r.bulk?' <span class="chip">bulk</span>':'')+'</span>'
+        +'<span style="font-family:var(--mono);font-size:var(--t5);color:var(--gold);font-variant-numeric:tabular-nums">'+usd(r.ask)+'</span>'
+        +'<span style="font-family:var(--mono);font-size:var(--t2);color:var(--ink3);font-variant-numeric:tabular-nums;min-width:58px;text-align:right">'+usd(r.floor)+'</span>'
+        +'</div>';
+    }).join('');
+
+    Sheet.open('Price my inventory',[
+      {type:'static',html:
+        '<div class="row between" style="gap:var(--s5);align-items:flex-end">'
+        +'<div class="field" style="flex:1;margin:0"><label>Negotiation room</label>'
+        +'<div class="row" style="gap:var(--s4)"><input class="num" id="pcRoom" type="number" min="0" max="60" value="'+p.room+'" style="width:70px"><span style="font-family:var(--mono);color:var(--ink3)">%</span></div></div>'
+        +'<div class="field" style="flex:1;margin:0"><label>Bulk box under</label>'
+        +'<div class="row" style="gap:var(--s4)"><span style="font-family:var(--mono);color:var(--ink3)">$</span><input class="num" id="pcBulk" type="number" min="0" max="20" step="0.5" value="'+p.bulkUnder+'" style="width:70px"></div></div>'
+        +'</div>'
+        +'<div class="sub" style="margin-top:var(--s4)">Ask is your floor plus room. <b>Floor is the walk-away</b> — the grey number — so you know when to say no with a queue behind them.</div>'},
+      {type:'static',html:
+        '<div class="lot-tot" style="margin-top:var(--s6)">'
+        +'<div class="tr"><span>Items · cards</span><span>'+t.n+' · '+t.cards+'</span></div>'
+        +'<div class="tr"><span>Market total</span><span>'+usd(t.market)+'</span></div>'
+        +'<div class="tr big"><span>Asking total</span><span>'+usd(t.ask)+'</span></div>'
+        +(t.bulk?'<div class="tr"><span>Suggest a bulk box</span><span>'+t.bulk+' card(s)</span></div>':'')
+        +(t.unpriced?'<div class="tr"><span style="color:var(--down)">No market price</span><span style="color:var(--down)">'+t.unpriced+' card(s)</span></div>':'')
+        +'</div>'},
+      {type:'static',html:
+        '<button class="ghost" id="pcCopy" style="width:100%;margin-top:var(--s6)">Copy price list</button>'},
+      {type:'static',html:
+        '<div style="margin-top:var(--s6)"><div class="row between" style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3);letter-spacing:.08em;text-transform:uppercase"><span>Item</span><span>Ask · floor</span></div>'
+        +list+'</div>'}
+    ],'Done',function(){return true;});
+
+    // Re-open on change rather than patching the DOM in place: the totals, the
+    // rounding and the bulk count all move together, and a partial update is
+    // how one of them silently stops matching the others.
+    const re=function(){
+      const room=Math.max(0,Math.min(60,+($('#pcRoom')||{}).value||0));
+      const bulk=Math.max(0,Math.min(20,+($('#pcBulk')||{}).value||0));
+      save({room:room,bulkUnder:bulk});
+      open();
+    };
+    const r1=$('#pcRoom'),b1=$('#pcBulk');
+    if(r1)r1.onchange=re;
+    if(b1)b1.onchange=re;
+    const cp=$('#pcCopy');
+    if(cp)cp.onclick=function(){
+      const txt=text();
+      try{
+        navigator.clipboard.writeText(txt).then(function(){toast('Price list copied');},
+          function(){toast('Could not copy — long-press to select instead');});
+      }catch(e){toast('Could not copy on this browser');}
+    };
+  }
+  return {open:open,rows:rows,totals:totals,text:text,friendly:friendly};
+})();
+
 /* ---- HOLDINGS CONTROLS (search / sort / type filter) ---- */
 function wireHoldControls(){
+  {const b=$('#priceShow');if(b)b.onclick=function(){ShowPricer.open();};}
   const _ov=$('#holdOverflow');
   if(_ov)_ov.onclick=()=>{
     const t=$('#holdTools');if(!t)return;
