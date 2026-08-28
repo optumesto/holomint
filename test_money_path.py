@@ -562,6 +562,62 @@ with sync_playwright() as pw:
     _os.remove(_fp)
     ctx.close()
 
+    print("\n13. the buy rate can express a real offer")
+    # Measured 2026-08-28: card shops pay 25-50% of retail in CASH and 40-70%
+    # in store credit. The slider used to start at 40 -- the TOP of the normal
+    # cash band -- so a routine 30-35% cash offer was literally unreachable.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    rng = page.evaluate("""()=>{const s=document.querySelector('#rate');
+        return {min:+s.min,max:+s.max,val:+s.value};}""")
+    check(f"the floor reaches the normal cash band ({rng['min']}%)",
+          rng["min"] <= 30)
+    check(f"...and the default is {rng['val']}% (Mason's call: slide it down "
+          "per deal rather than start low)", rng["val"] == 70)
+
+    # A control that moves without the maths moving is decoration.
+    moved = page.evaluate("""()=>{const s=document.querySelector('#rate');
+        s.value='30'; s.dispatchEvent(new Event('input',{bubbles:true}));
+        return {label:document.querySelector('#rateLabel').textContent,
+                rate:buyRate};}""")
+    check(f"dragging to the floor moves the rate ({moved['label']})",
+          moved["rate"] == 30)
+
+    # And it must reach the payout, not just the label.
+    paid = page.evaluate("""()=>{
+        const key=(PriceEngine.search('charizard','all')[0]||{}).id;
+        if(!key)return null;
+        theirPile.length=0;
+        theirPile.push({key:String(key),qty:1,c:'nm'});
+        const s=document.querySelector('#rate');
+        const at=r=>{s.value=String(r);s.dispatchEvent(new Event('input',{bubbles:true}));
+                     const n=cashNumbers();return {market:Math.round(n.market),offer:Math.round(n.offer)};};
+        return {lo:at(30), hi:at(70)};}""")
+    if paid:
+        check(f"a 30% offer really is ~30% of market "
+              f"(${paid['lo']['offer']} of ${paid['lo']['market']})",
+              paid["lo"]["market"] > 0
+              and abs(paid["lo"]["offer"] / paid["lo"]["market"] - 0.30) < 0.06)
+        check(f"...and 70% is ~70% (${paid['hi']['offer']} of "
+              f"${paid['hi']['market']})",
+              abs(paid["hi"]["offer"] / paid["hi"]["market"] - 0.70) < 0.06)
+        check("...so the two differ, which a decorative slider would not",
+              paid["lo"]["offer"] < paid["hi"]["offer"])
+    else:
+        check("a priced card was available to test the payout with", False)
+
+    # A new default must never overwrite a rate someone already chose.
+    page.evaluate("()=>Store.save('buyRate',75)")
+    page.reload(wait_until="load")
+    page.wait_for_timeout(600)
+    kept = page.evaluate("()=>({saved:Store.load('buyRate',null),live:buyRate})")
+    check(f"an existing user's saved rate survives the change "
+          f"({kept['saved']}%)", kept["saved"] == 75 and kept["live"] == 75)
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()

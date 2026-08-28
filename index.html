@@ -665,14 +665,14 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between colhead" data-col="rateCard">
         <label style="margin:0">Rate</label>
         <div class="row" style="gap:var(--s5);align-items:baseline">
-          <span class="rateval" id="rateLabel">75%</span><span class="chev">&#9662;</span>
+          <span class="rateval" id="rateLabel">70%</span><span class="chev">&#9662;</span>
         </div>
       </div>
       <!-- Only the INPUTS collapse. The anchor rows below are the answers --
            market total, payout, net, profit -- and hiding those behind a
            disclosure would hide the entire point of the screen. -->
       <div class="colbody">
-      <input type="range" id="rate" min="40" max="100" step="1" value="75">
+      <input type="range" id="rate" min="30" max="100" step="1" value="70">
       <div class="row between" style="margin-top:var(--s7)"><label style="margin:0">Store-credit bump</label>
         <div class="row" style="gap:var(--s4)"><input class="num" id="creditBump" type="number" value="10" style="width:62px;padding:var(--s4) var(--s5)"><span style="font-family:var(--mono);font-size:var(--t3);color:var(--ink3)">%</span><button class="swbtn" id="creditTog">Off</button></div>
       </div>
@@ -1522,7 +1522,7 @@ function backup(){
   const data={schema:SCHEMA,exported:new Date().toISOString(),
     holdings:Store.load('holdings',[]),sold:Store.load('sold',[]),deals:Store.load('deals',[]),
     fees:Store.load('fees',null),hotlist:Store.load('hotlist',[]),credit:Store.load('credit',null),
-    buyRate:Store.load('buyRate',75),acct:Store.load('acct',{method:'fifo'}),
+    buyRate:Store.load('buyRate',70),acct:Store.load('acct',{method:'fifo'}),
     drops:Store.load('drops',[]),lang:Store.load('lang',null),license:Store.load('license',null),
     alertPrefs:Store.load('alertPrefs',null),caught:Store.load('caught',{}),
     consent:Store.load('consent',null),tourSeen:Store.load('tourSeen',0)};
@@ -2371,7 +2371,7 @@ try{var _vt=document.getElementById('verTag');
 let manualItems={},hotlist=Store.load('hotlist',[]);hotlist.forEach(t=>manualItems[t.key]=t);
 Store.load('lotItems',[]).forEach(t=>manualItems[t.key]=t);
 let storeCredit=Store.load('credit',{on:false,bump:10});
-let buyRate=Store.load('buyRate',75),theirCash=0,yourCash=0;
+let buyRate=Store.load('buyRate',70),theirCash=0,yourCash=0;
 const savedFees=Store.load('fees',null);if(savedFees)Object.keys(savedFees).forEach(k=>{const c=FeeCalc.channels[k],v=savedFees[k];if(c&&v){if(typeof v.pct==='number')c.pct=v.pct;if(typeof v.flat==='number')c.flat=v.flat;}});
 
 function resolveItem(key){return manualItems[key]||PriceEngine.getItem(key);}
