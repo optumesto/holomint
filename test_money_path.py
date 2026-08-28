@@ -223,6 +223,74 @@ with sync_playwright() as pw:
           "not open yet" in unc)
     ctx.close()
 
+    print("\n7. every paywall gate reaches the Pro sheet")
+    # The paywall IS the conversion mechanism, and each gate fires at the moment
+    # of maximum intent -- someone just tried to do the thing they want. A gate
+    # that dead-ends loses the sale precisely then, and looks fine on screen.
+    #
+    # wireLocks() binds only '#port [data-pro-up]', so any Unlock button that
+    # renders outside the Portfolio tab silently has no handler. This checks
+    # every gate in the document rather than the ones we expect.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    # Free state is the default; assert it rather than assume, or every check
+    # below passes trivially against a Pro account with no gates rendered.
+    check("running as a FREE user (no Pro key)",
+          page.evaluate("()=>!Premium.active()"))
+
+    page.evaluate("()=>{try{switchTab('port')}catch(e){}}")
+    page.wait_for_timeout(600)
+    locks = page.evaluate("""()=>Array.from(
+        document.querySelectorAll('[data-pro-up]')).map(b=>({
+          wired: typeof b.onclick === 'function',
+          inPort: !!b.closest('#port'),
+          text: (b.textContent||'').trim(),
+          near: (b.closest('.lk')?.textContent||'').replace(/\\s+/g,' ').trim().slice(0,60)
+        }))""")
+    if not locks:
+        skip("lock panels", "none rendered on this tab in this state")
+    else:
+        unwired = [l for l in locks if not l["wired"]]
+        check(f"all {len(locks)} Unlock button(s) are wired"
+              + (f" -- DEAD: {[l['near'] for l in unwired]}" if unwired else ""),
+              not unwired)
+        outside = [l for l in locks if not l["inPort"]]
+        check(f"...and none render outside #port, where wireLocks cannot see them"
+              + (f" -- {[l['near'] for l in outside]}" if outside else ""),
+              not outside)
+
+        # Behavioural, not just "has a handler": click it and confirm the Pro
+        # sheet actually opens. A bound handler that throws looks identical.
+        page.evaluate("()=>document.querySelector('[data-pro-up]').click()")
+        page.wait_for_timeout(800)
+        opened = page.evaluate("""()=>{const s=document.querySelector('#sheet');
+            return !!s && (s.classList.contains('show')||s.classList.contains('on'))
+                   && !!s.querySelector('#ckGo');}""")
+        check("clicking Unlock opens the Pro sheet with a subscribe button", opened)
+        page.evaluate("""()=>{const s=document.querySelector('#sheet');
+            s.classList.remove('show');s.classList.remove('on');}""")
+        page.wait_for_timeout(400)
+
+    # The other gate style: an action that jumps straight to the Pro sheet.
+    for gate in ["#importCsv", "#exportCsv"]:
+        present = page.evaluate("(g)=>!!document.querySelector(g)", gate)
+        if not present:
+            skip(f"{gate} gate", "control not on this screen")
+            continue
+        page.evaluate("(g)=>document.querySelector(g).click()", gate)
+        page.wait_for_timeout(800)
+        opened = page.evaluate("""()=>{const s=document.querySelector('#sheet');
+            return !!s && (s.classList.contains('show')||s.classList.contains('on'))
+                   && !!s.querySelector('#ckGo');}""")
+        check(f"{gate} sends a free user to the Pro sheet", opened)
+        page.evaluate("""()=>{const s=document.querySelector('#sheet');
+            s.classList.remove('show');s.classList.remove('on');}""")
+        page.wait_for_timeout(400)
+    ctx.close()
+
     browser.close()
 
 httpd.shutdown()
