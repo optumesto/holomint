@@ -25,3 +25,21 @@ playwright-report/
 
 # Detector fixtures: generated set + Mason's real photos (not for the repo)
 .lotfix/
+
+# Android signing material. This repo IS the deployed site -- GitHub Pages
+# publishes what is committed -- so a keystore committed here would be
+# downloadable at holomint.app/android-keystore.jks by anyone. That is the app
+# signing key: whoever has it can publish an update to your listing.
+# Back it up somewhere private; never here.
+*.jks
+*.keystore
+android-keystore.*
+keystore.properties
+twa-manifest.json.bak
+
+# Bubblewrap / Android build output (large, regenerable, and app-release-*.aab
+# is a signed binary that has no business on a static site)
+app-release-*.aab
+app-release-*.apk
+/android/
+.gradle/
