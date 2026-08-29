@@ -629,7 +629,7 @@ with sync_playwright() as pw:
             break
         _tp.wait_for_timeout(50)
 
-    def _walk(pg, label):
+    def _walk(pg, label, min_steps=5):
         titles, bad = [], []
         for _ in range(14):
             _s = pg.evaluate("""()=>{const w=document.getElementById('tourWrap');
@@ -649,7 +649,7 @@ with sync_playwright() as pw:
                 break
             _n.click()
             pg.wait_for_timeout(700)
-        check(f"{label} runs its steps ({len(titles)})", len(titles) >= 5)
+        check(f"{label} runs its steps ({len(titles)})", len(titles) >= min_steps)
         check(f"...with no raw HTML entity in a title ({bad or 'none'})", not bad)
         return titles
 
@@ -702,6 +702,64 @@ with sync_playwright() as pw:
             if(!e)return false;const b=e.getBoundingClientRect(),c=getComputedStyle(e);
             return b.width>0&&b.height>0&&c.display!=='none';}""")
         check("...and the bar actually appears on the Trade tab", _bar)
+    # --- replaying the tour must replay it, not close on the first Continue ---
+    # The gate step had a shortcut: if the tour was opened only to re-collect
+    # assent after a terms change, Continue closes it rather than re-running
+    # onboarding. It decided that from Store.load(KEY,0), which is true for
+    # ANYONE who has toured -- so pressing "Guided walkthrough" in Settings shut
+    # the tour on the very first Continue. Intent is now passed in, and all
+    # three paths are checked, including the one the shortcut exists for.
+    def _open_replay(pg):
+        pg.locator('.navb[data-tab="settings"]').click()
+        pg.wait_for_timeout(700)
+        pg.evaluate("""()=>{const c=document.getElementById('helpCard');
+            if(c&&c.classList.contains('collapsed')){const h=c.querySelector('.colhead');if(h)h.click();}}""")
+        pg.wait_for_timeout(500)
+        pg.locator("#setTour").click()
+        pg.wait_for_timeout(800)
+
+    _rc = browser.new_context(viewport={"width": 390, "height": 844},
+                              service_workers="block")
+    _rp = _rc.new_page()
+    _rp.route("**://api.pokemontcg.io/**", lambda r: r.abort())
+    _rp.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="commit")
+    for _ in range(400):
+        if _rp.evaluate("window.CatalogState") == "ready":
+            break
+        _rp.wait_for_timeout(50)
+    # already onboarded, terms current -> a deliberate replay
+    _rp.evaluate("""()=>{localStorage.setItem('holomint:tourSeen','1');
+        localStorage.setItem('holomint:tosOk',
+          JSON.stringify({v:'1.2',at:1,build:'x'}));}""")
+    _rp.reload(wait_until="commit")
+    for _ in range(400):
+        if _rp.evaluate("window.CatalogState") == "ready":
+            break
+        _rp.wait_for_timeout(50)
+    _open_replay(_rp)
+    _replay = _walk(_rp, "a deliberate replay")
+    check(f"replaying does not close on the first Continue ({len(_replay)} steps)",
+          len(_replay) >= 5)
+
+    # and the shortcut still works where it belongs: toured already, terms moved
+    _rp.evaluate("""()=>{localStorage.setItem('holomint:tourSeen','1');
+        localStorage.setItem('holomint:tosOk',
+          JSON.stringify({v:'0.0-stale',at:1,build:'x'}));}""")
+    _rp.reload(wait_until="commit")
+    for _ in range(400):
+        if _rp.evaluate("window.CatalogState") == "ready":
+            break
+        _rp.wait_for_timeout(50)
+    for _ in range(40):
+        if _rp.evaluate("""()=>{const w=document.getElementById('tourWrap');
+              return !!(w&&w.classList.contains('on'));}"""):
+            break
+        _rp.wait_for_timeout(100)
+    _assent = _walk(_rp, "an assent-only reopen", min_steps=1)
+    check(f"...but a stale-terms reopen still closes after the gate "
+          f"({len(_assent)} step)", len(_assent) == 1)
+    _rc.close()
+
     _tc.close()
 
     browser.close()

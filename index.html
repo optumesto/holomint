@@ -2057,6 +2057,7 @@ window.Caught=Caught;
 const Tour=(function(){
   const KEY='tourSeen';
   let i=0;
+  let _assentOnly=false;   // see start()
   // Cards this tour expanded, to be restored on the way out.
   const _opened=new Set();
 
@@ -2205,7 +2206,14 @@ const Tour=(function(){
     $('#tourWrap').setAttribute('aria-hidden','true');
     if(finish&&wasAlerts){const b=$('#alOn');if(b)b.click();}
   }
-  function start(){
+  /* assentOnly: the tour was opened ONLY to re-collect assent after a terms
+     change, so Continue on the gate should close it rather than walk a user
+     through onboarding they have already had. It has to be passed in, because
+     it cannot be inferred: the previous version tested Store.load(KEY,0), which
+     is true for anyone who has ever toured -- so pressing "Guided walkthrough"
+     in Settings closed the tour on the very first Continue. */
+  function start(assentOnly){
+    _assentOnly=!!assentOnly;
     STEPS=FREE_STEPS;
     $('#tourWrap').classList.add('on');
     $('#tourWrap').setAttribute('aria-hidden','false');
@@ -2214,6 +2222,7 @@ const Tour=(function(){
   /* Same machinery, the other list. Not gated on Premium.active(): a free user
      seeing exactly what they would get is the point of it. */
   function startPro(){
+    _assentOnly=false;
     STEPS=PRO_STEPS;
     $('#tourWrap').classList.add('on');
     $('#tourWrap').setAttribute('aria-hidden','false');
@@ -2240,8 +2249,10 @@ const Tour=(function(){
      stored assent is missing or stale, including for someone who toured months ago,
      which is what makes a TERMS_VERSION bump an actual re-prompt. */
   function maybe(){
-    if(!tosCurrent()) return setTimeout(start,700);
-    if(!Store.load(KEY,0)) setTimeout(start,900);
+    // Terms moved: assent is needed. Only skip the walkthrough if they have
+    // genuinely had it already.
+    if(!tosCurrent()) return setTimeout(function(){start(!!Store.load(KEY,0));},700);
+    if(!Store.load(KEY,0)) setTimeout(function(){start(false);},900);
   }
 
   addEventListener('resize',()=>{ if($('#tourWrap').classList.contains('on'))paint(); });
@@ -2249,8 +2260,10 @@ const Tour=(function(){
     wire(){
       $('#tourNext').onclick=()=>{
         if(STEPS[i]&&STEPS[i].gate){
-          recordTos();
-          if(Store.load(KEY,0)){                 // already toured: they needed the gate only
+          // Re-recording on every replay would post a duplicate consent row
+          // for a version already agreed to.
+          if(!tosCurrent())recordTos();
+          if(_assentOnly){                       // opened for the gate alone
             i=-1;
             $('#tourWrap').classList.remove('on');
             $('#tourWrap').setAttribute('aria-hidden','true');
