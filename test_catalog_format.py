@@ -184,5 +184,29 @@ check("no product is lost across the cycle", _r.get("count") is True)
 hgz = len(gzip.compress(open(os.path.join(HERE, "history.json"), "rb").read(), 9))
 check(f"gzipped history.json is under 1 MB ({hgz/1e6:.2f} MB)", hgz < 1_000_000)
 
+print("\n9. price coverage")
+# Sealed is the commercial surface: every drop, margin and flip number is a
+# sealed product, so an unpriced one is a drop the app cannot value. It has been
+# 100% and must stay there -- a silent slip would show as drops with no margin,
+# which reads exactly like a quiet market.
+_pr = json.load(open(os.path.join(HERE, "prices.json")))
+_sealed = [r for r in rows if r["type"] == "sealed"]
+_singles = [r for r in rows if r["type"] == "single"]
+def _priced(rs):
+    return [r for r in rs if isinstance(_pr.get(r["id"]), (int, float)) and _pr[r["id"]] > 0]
+_sp, _gp = _priced(_sealed), _priced(_singles)
+check(f"every sealed product has a price ({len(_sp)}/{len(_sealed)})",
+      len(_sp) == len(_sealed))
+# Singles will never be 100%: TCGcsv carries no price of any type for ~5k mostly
+# promo cards, verified by sampling 124 of them against the upstream API and
+# finding a price for zero. The floor guards against a pipeline regression, not
+# against those.
+_ratio = len(_gp) / max(1, len(_singles))
+check(f"singles coverage has not regressed ({_ratio*100:.1f}%, floor 88%)",
+      _ratio >= 0.88)
+# And an unpriced card must read as unknown, never as free.
+check("no product is priced at zero rather than absent",
+      not [k for k, v in _pr.items() if isinstance(v, (int, float)) and v == 0])
+
 print("\n" + ("ALL TESTS PASSED" if passed else "SOME TESTS FAILED"))
 sys.exit(0 if passed else 1)

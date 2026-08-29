@@ -840,6 +840,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between colhead" data-col="helpCard"><label style="margin:0">How Holomint works</label><span class="chev">&#9662;</span></div>
       <div class="colbody">
       <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t2);color:var(--ink3)">Guided walkthrough</span><button class="ghost" id="setTour" style="padding:var(--s4) var(--s7)">Replay tour</button></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">What Pro adds</span><button class="ghost" id="setProTour" style="padding:var(--s4) var(--s7)">Show me</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Manage devices</span><button class="ghost" data-open-dev style="padding:var(--s4) var(--s7)">View</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Everything Holomint does</span><button class="ghost" data-open-feat style="padding:var(--s4) var(--s7)">Open</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Card condition guide</span><button class="ghost" data-open-cond style="padding:var(--s4) var(--s7)">View</button></div>
@@ -2049,7 +2050,7 @@ const Tour=(function(){
   // Cards this tour expanded, to be restored on the way out.
   const _opened=new Set();
 
-  const STEPS=[
+  const FREE_STEPS=[
     /* Assent gate. No target element, so paint() centres it. Non-dismissible:
        Skip is hidden here and the backdrop has no click handler, so Continue is
        the only way past. The disclaimer sits in the body rather than behind a
@@ -2059,15 +2060,65 @@ const Tour=(function(){
      body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you when a drop lands — Free waits 10 minutes, Pro does not.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
+    /* The scanner did not exist when this tour was written, and it is the first
+       thing a dealer reaches for at a table. Target is .scan-fab, the nav
+       button, because #scanBtn is only rendered on the Trade tab -- a step
+       pointing at an element the user cannot see is worse than no step. */
+    {tab:'block', sel:'.scan-fab', title:'Price a card, or a whole row of them',
+     body:'Tap <b>Scan</b> and point the camera. One card gets a price; a row of cards laid out on the table gets read together and priced in one go. It all runs on the phone, so nothing is uploaded anywhere. If a scan misses, you get a search box with whatever it managed to read already filled in.'},
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, with the maths already done',
      body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them without it.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
-     body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room the moment it opens.'},
-    {tab:'port', sel:'#portTotals', title:'Track holdings as a P&L, not a binder',
+     body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open — that works on the free tier too, ten minutes behind. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room as soon as it opens. Settings has a <b>What Pro adds</b> walkthrough if you want to see the difference.'},
+    /* #showBar is hidden until Show mode is switched on, so the step points at
+       the switch rather than the thing the switch reveals. */
+    /* No target on purpose. The Show mode switch lives inside #alertPrefs, which
+       is only revealed in the on-pro state, so pointing at it shows a free user
+       an empty screen. Centred and explained instead, until the switch moves
+       somewhere a free user can actually reach it. */
+    {tab:'settings', sel:null, title:'Running a table today?',
+     body:'Show mode puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block, so at the end of a show you know what the day cost and what it is worth without adding anything up. Holomint can also price a whole pile for you at a buy rate you set.'},
+    /* #portTotals is .card.hide until there is a holding, so on a first run this
+       step pointed at nothing -- for every new user since it was written. The
+       Portfolio TAB button is always there, so aim at that instead. */
+    {tab:'port', sel:'.navb[data-tab="port"]', title:'Track holdings as a P&L, not a binder',
      body:'Log what you buy and Holomint tracks cost basis, market value, and realized gains with FIFO or LIFO accounting. It is a portfolio, not a checklist. Pro adds a tax summary and CSV export.'},
     {tab:'slab', sel:'#slabCard', title:'Grading math, before you send it in',
      body:'Slab Math weighs the grading fee against the graded-vs-raw spread and the odds, so you know whether a card is worth submitting. Look up any card and see the numbers.'}
   ];
+  /* The Pro tour. Deliberately reachable by a FREE user -- it is the upgrade
+     pitch, and a locked feature you can be walked through sells better than a
+     bullet list on a checkout sheet.
+
+     Every step here is a gate verified in the code, not a nice-sounding claim:
+     the alert delay, track-a-drop, the deal log, the tax summary, CSV in/out
+     and lot accounting. Things the free tier already has -- the flip margin,
+     push with the app closed, the scanner, Show mode, pre-drop intel -- are
+     NOT here, however tempting. Selling what is already free is what the Pro
+     sheet was doing until tonight.
+
+     Targets are the LOCKED cards (#dealCard, #dropsCard, #taxCard), which a
+     free user can see complete with their PRO badge. Pointing at the feature
+     itself would show them nothing. */
+  const PRO_STEPS=[
+    {tab:'settings', sel:'#alertCard', title:'Drops without the ten-minute wait',
+     body:'Free alerts arrive ten minutes after Pro ones. On a set that sells out in minutes that is the whole window. Pro removes the delay; everything else about alerts — the floors, quiet hours, the daily cap — works the same on both.'},
+    {tab:'port', sel:'#dropsCard', title:'Watch anything you like',
+     body:'Name a product and Holomint tells you when it moves, instead of only what is trending. Useful when you are chasing one specific box rather than whatever the feed happens to surface.'},
+    {tab:'port', sel:'#dealCard', title:'Every deal you ever caught',
+     body:'A year of buying turns into a track record instead of a memory: what you paid, what it was worth, and what you actually kept after fees.'},
+    {tab:'port', sel:'#taxCard', title:'Realized P&L by tax year',
+     body:'Every sale netted of the fees you actually paid, grouped by year, ready to hand to whoever does your filing.'},
+    {tab:'settings', sel:'#setBkBtn', title:'Your own numbers, in and out',
+     body:'Import a cost-basis CSV from the spreadsheet you already keep, and export it back out. Pro also picks FIFO or LIFO lot accounting, so the realized figure matches the position you actually want to report.'},
+    {tab:'block', sel:'#channels', title:'That is the whole of it',
+     body:'Pro is <b>$9.99 a month</b> and cancels in one tap from Settings. Everything you have used so far — the margin maths, the scanner, the portfolio, Show mode — stays free whether you subscribe or not.'}
+  ];
+
+  /* Which list is running. start() and startPro() swap it; everything else
+     (go, paint, done, wire) reads through this one name. */
+  let STEPS=FREE_STEPS;
+
 
   function clear(){}
   function paint(){
@@ -2123,7 +2174,9 @@ const Tour=(function(){
   function done(finish){
     // Nothing closes the tour while the assent step is showing.
     if(STEPS[i]&&STEPS[i].gate)return;
-    Store.save(KEY,1);
+    // Only the onboarding tour counts as onboarding. Marking KEY from the Pro
+    // tour would silently rob a new user of their first run.
+    if(STEPS===FREE_STEPS)Store.save(KEY,1);
     // Leave the UI as it was found. Only re-collapse what THIS tour opened, and
     // only if it is still open -- a user who deliberately kept a card open
     // during the tour keeps it.
@@ -2144,6 +2197,15 @@ const Tour=(function(){
     if(finish&&wasAlerts){const b=$('#alOn');if(b)b.click();}
   }
   function start(){
+    STEPS=FREE_STEPS;
+    $('#tourWrap').classList.add('on');
+    $('#tourWrap').setAttribute('aria-hidden','false');
+    go(0);
+  }
+  /* Same machinery, the other list. Not gated on Premium.active(): a free user
+     seeing exactly what they would get is the point of it. */
+  function startPro(){
+    STEPS=PRO_STEPS;
     $('#tourWrap').classList.add('on');
     $('#tourWrap').setAttribute('aria-hidden','false');
     go(0);
@@ -2174,7 +2236,7 @@ const Tour=(function(){
   }
 
   addEventListener('resize',()=>{ if($('#tourWrap').classList.contains('on'))paint(); });
-  return {start,maybe,
+  return {start,startPro,maybe,
     wire(){
       $('#tourNext').onclick=()=>{
         if(STEPS[i]&&STEPS[i].gate){
@@ -4012,6 +4074,7 @@ renderProBtn();renderChannels();syncFeeInputs();wireSearch('search','results','t
 renderHotlist();recompute();renderPortfolio();renderGrade();applyCollapse();LiveDrops.start();Alerts.wire();Alerts.render();Premium.recheck();
 Tour.wire();
 $('#setTour').onclick=()=>Tour.start();
+var _pt=$('#setProTour');if(_pt)_pt.onclick=()=>Tour.startPro();
 var _rg=$('#refreshGraded');if(_rg)_rg.onclick=function(){_rg.textContent='Pricing…';_rg.disabled=true;GradedPrices.refresh().finally(function(){_rg.textContent='Price graded';_rg.disabled=false;});};
 setTimeout(function(){try{GradedPrices.auto();}catch(e){}},2500);
 Tour.maybe();Checkout.load().then(function(){paintFounder();Alerts.render();});

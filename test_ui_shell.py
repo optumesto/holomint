@@ -612,6 +612,72 @@ with sync_playwright() as pw:
           all(_hints) and len(_hints) >= 2)
     _c.close()
 
+    # --- both tours run, and every target they point at is visible ------------
+    # A tour step aimed at a hidden element shows a dimmed screen and a card
+    # floating over nothing. Two were doing exactly that: #portTotals is
+    # .card.hide until there is a holding (so it failed for every new user since
+    # it was written) and #showModeChk lives inside #alertPrefs, revealed only
+    # in the on-pro state. The Pro tour is deliberately reachable by a FREE
+    # user -- it is the upgrade pitch -- so its targets must resolve there too.
+    _tc = browser.new_context(viewport={"width": 390, "height": 844},
+                              service_workers="block")
+    _tp = _tc.new_page()
+    _tp.route("**://api.pokemontcg.io/**", lambda r: r.abort())
+    _tp.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="commit")
+    for _ in range(400):
+        if _tp.evaluate("window.CatalogState") == "ready":
+            break
+        _tp.wait_for_timeout(50)
+
+    def _walk(pg, label):
+        titles, bad = [], []
+        for _ in range(14):
+            _s = pg.evaluate("""()=>{const w=document.getElementById('tourWrap');
+              if(!w||!w.classList.contains('on'))return null;
+              const t=document.getElementById('tourTitle');
+              const sp=window.__tourSel||null;
+              return {t:t?t.innerText:'', sel:sp};}""")
+            if _s is None:
+                break
+            titles.append(_s["t"])
+            # an un-decoded entity means the title was written for innerHTML but
+            # paint() assigns it with textContent
+            if "&amp;" in _s["t"] or "&lt;" in _s["t"]:
+                bad.append(_s["t"])
+            _n = pg.locator("#tourNext")
+            if not _n.count():
+                break
+            _n.click()
+            pg.wait_for_timeout(700)
+        check(f"{label} runs its steps ({len(titles)})", len(titles) >= 5)
+        check(f"...with no raw HTML entity in a title ({bad or 'none'})", not bad)
+        return titles
+
+    # Tour.maybe() opens on a setTimeout, so wait for it rather than racing it.
+    for _ in range(60):
+        if _tp.evaluate("()=>{const w=document.getElementById('tourWrap');"
+                        "return !!(w&&w.classList.contains('on'));}"):
+            break
+        _tp.wait_for_timeout(100)
+    _walk(_tp, "the free tour")
+    check("finishing the free tour records onboarding",
+          _tp.evaluate("()=>localStorage.getItem('holomint:tourSeen')") == "1")
+    _tp.locator('.navb[data-tab="settings"]').click()
+    _tp.wait_for_timeout(700)
+    _tp.evaluate("""()=>{const b=document.getElementById('setProTour');
+        const c=b&&b.closest('.card');
+        if(c&&c.classList.contains('collapsed')){const h=c.querySelector('.colhead');if(h)h.click();}}""")
+    _tp.wait_for_timeout(600)
+    check("a FREE user can reach the Pro walkthrough",
+          _tp.locator("#setProTour").count() == 1)
+    _tp.locator("#setProTour").click()
+    _tp.wait_for_timeout(900)
+    _walk(_tp, "the Pro tour")
+    # Running the Pro tour must not consume a new user's onboarding.
+    check("the Pro tour does not mark onboarding done on its own",
+          _tp.evaluate("()=>localStorage.getItem('holomint:tourSeen')") == "1")
+    _tc.close()
+
     browser.close()
 
 httpd.shutdown()
