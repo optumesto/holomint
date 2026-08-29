@@ -2039,7 +2039,7 @@ const Tour=(function(){
        link, because conspicuousness of THAT line is what answers a reliance
        claim about a margin figure. */
     {tab:null, sel:null, gate:true, title:'Before you start',
-     body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you the moment a drop lands.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
+     body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you when a drop lands — Free waits 10 minutes, Pro does not.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, with the maths already done',
@@ -2324,7 +2324,7 @@ $('#proBtn').onclick=async()=>{
   }else{
     Sheet.open('Settings',[
       {type:'static',html:
-        '<div class="feat"><i>✓</i> <b>Drops the second they land.</b> Free waits 10 minutes.</div>'+
+        '<div class="feat"><i>✓</i> <b>No 10-minute wait.</b> Free alerts arrive 10 minutes behind.</div>'+
         '<div class="feat"><i>✓</i> <b>Alerts with the app closed.</b> Only when it clears your floors.</div>'+
         '<div class="feat"><i>✓</i> Flip margin on every drop, net of your fees</div>'+
         '<div class="feat"><i>✓</i> Deal log, tax summary, CSV export</div>'+
@@ -2909,7 +2909,7 @@ function renderTicker(){
       +'<div class="tv">'+usd(total)+'</div>'
       +'<div class="tn">Margin across '+n+' drop'+(n===1?'':'s')+', which reached you about ten minutes after they landed.'
       +(caught?' You caught '+caught+'.':'')+'</div>'
-      +'<button class="tup" data-upsell>See these the second they land</button>';
+      +'<button class="tup" data-upsell>See these without the free delay</button>';
   }
 }
 function renderPortfolio(){

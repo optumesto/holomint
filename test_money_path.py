@@ -790,7 +790,15 @@ with sync_playwright() as pw:
                             "index.html")).read()
     import re as _re
     _claims = []
-    for _m in _re.finditer(r"(instant\w*|the second (?:a drop|it lands)|the moment it lands)",
+    # WHY THIS PATTERN IS SHAPED, NOT LISTED
+    # The first version spelled out three literals: "the second a drop",
+    # "the second it lands", "the moment it lands". A Pro feature bullet reading
+    # "Drops the second they land." -- on the CHECKOUT screen, the highest-stakes
+    # copy in the app -- matched none of the three and survived the whole sweep.
+    # A guard built from the examples you already found only ever catches the
+    # examples you already found. Match the SHAPE of the claim instead:
+    # second/moment, a few words of anything, then land.
+    for _m in _re.finditer(r"(instant\w*|the (?:second|moment)\b[^.<]{0,24}?\bland)",
                            src, _re.I):
         _a = max(0, _m.start() - 70)
         _ctx = src[_a:_m.end() + 70].replace("\n", " ")
