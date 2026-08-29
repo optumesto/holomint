@@ -809,6 +809,41 @@ with sync_playwright() as pw:
           "billPer" in _pf)
     ctx.close()
 
+    print("\n15c. the Pro sheet never sells a feature the free tier already has")
+    # Two of the five original bullets did exactly that: "Flip margin on every
+    # drop, net of your fees" and "Alerts with the app closed". Free gets push
+    # with the app closed (ten minutes later), and flipHtml is built on every
+    # row with no Premium check at all. Charging for what is already given away
+    # is the speed overclaim again with a payment attached -- and it is on the
+    # screen where money changes hands.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    page.evaluate("()=>{const b=document.querySelector('#proBtn'); if(b)b.click();}")
+    page.wait_for_timeout(1200)
+    _feats = page.evaluate("""()=>[...document.querySelectorAll('.feat')]
+                                  .map(e=>e.innerText.toLowerCase()).join(' | ')""")
+    # If the sheet did not render, every check below passes vacuously.
+    check(f"the Pro sheet renders its feature list ({len(_feats)} chars)",
+          len(_feats) > 40)
+    _free_claims = {
+        "flip margin":    "the margin is on every drop row for every tier",
+        "app closed":     "free gets push with the app closed, just later",
+        "lot scanner":    "the multi-card scanner is free",
+        "show mode":      "show mode is free",
+        "inventory pric": "the inventory pricer is free",
+        "pre-drop intel": "pre-drop intel is an alert toggle every tier can enable",
+    }
+    _sold = [f"{k} -- {why}" for k, why in _free_claims.items() if k in _feats]
+    check(f"...and none of it is already free ({_sold or 'none'})", not _sold)
+    # And it must still actually sell something.
+    check("...while naming at least one real Pro gate",
+          any(k in _feats for k in ("10-minute delay", "tax year", "lifo", "csv",
+                                    "watch anything")))
+    ctx.close()
+
     print("\n16. the app does not promise a speed it cannot deliver")
     # Measured 2026-08-28: Holomint polls at 15s (PC queue), 60s (relays,
     # Slickdeals, Shopify) and 3600s (PC listings), plus a 10-minute delay on

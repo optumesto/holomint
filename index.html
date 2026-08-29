@@ -2376,11 +2376,21 @@ $('#proBtn').onclick=async()=>{
   }else{
     Sheet.open('Settings',[
       {type:'static',html:
-        '<div class="feat"><i>✓</i> <b>No 10-minute wait.</b> Free alerts arrive 10 minutes behind.</div>'+
-        '<div class="feat"><i>✓</i> <b>Alerts with the app closed.</b> Only when it clears your floors.</div>'+
-        '<div class="feat"><i>✓</i> Flip margin on every drop, net of your fees</div>'+
-        '<div class="feat"><i>✓</i> Deal log, tax summary, CSV export</div>'+
-        '<div class="feat"><i>✓</i> FIFO / LIFO lot accounting</div>'+
+        /* Every line here must name something the FREE tier does NOT have.
+           Two of the five this replaced did not: "Flip margin on every drop"
+           and "Alerts with the app closed" are both free -- free gets push with
+           the app closed, ten minutes later, and the margin is on every row for
+           everyone. Selling a free feature as the paid one is the same defect
+           as the speed overclaim, with a payment attached. Pre-drop intel is
+           also NOT sold here: it is an alert-kind toggle every tier can switch
+           on, however much work it took to make it fire.
+           test_money_path section 15c holds this line. */
+        '<div class="feat"><i>✓</i> <b>No 10-minute delay.</b> Free sees every drop ten minutes after you do.</div>'+
+        '<div class="feat"><i>✓</i> <b>Watch anything you like.</b> Name a product and hear when it moves, instead of only what is trending.</div>'+
+        '<div class="feat"><i>✓</i> <b>Your own numbers, in and out.</b> Import a cost-basis CSV from your spreadsheet; export it back for your accountant.</div>'+
+        '<div class="feat"><i>✓</i> <b>Realized P&amp;L by tax year.</b> Every sale netted of fees, ready for filing.</div>'+
+        '<div class="feat"><i>✓</i> <b>Every deal you ever caught.</b> A year of buying becomes a track record instead of a memory.</div>'+
+        '<div class="feat"><i>✓</i> <b>FIFO or LIFO.</b> Pick the lot accounting that suits your tax position.</div>'+
         Checkout.offerHtml(PR)},
       {type:'static',html:'<div class="sub" style="text-align:center;margin:2px 0 -2px">Already bought? Paste your key below.</div>'},
       {key:'key',label:'License key',placeholder:'HMP-XXXX-XXXX-XXXX'},
