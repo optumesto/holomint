@@ -64,6 +64,7 @@ catch(e){document.documentElement.style.display="none";}</script>
   @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:400;src:url(./fonts/plexmono-400.woff2) format('woff2')}
   @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:500;src:url(./fonts/plexmono-500.woff2) format('woff2')}
   @font-face{font-family:'IBM Plex Mono';font-style:normal;font-display:swap;font-weight:600;src:url(./fonts/plexmono-600.woff2) format('woff2')}
+
 </style>
 <style>
   :root{--bg:#04050e;--bg2:#0f1326;--bg3:#161a30;--line:#242947;--ink:#ece7d8;--ink2:#9aa3b8;--ink3:#757c98;--gold:#d8a93f;--gold-dim:#9c7c34;--holo:linear-gradient(110deg,#c8a2ff,#7fb0ff,#7df0c8,#ffe08a,#ff9ad2,#c8a2ff);--up:#46e3ac;--down:#ff7e8a;--serif:'Fraunces',Georgia,serif;--sans:'Hanken Grotesk',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
@@ -750,6 +751,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="row between" style="padding:var(--s3) 0"><span style="font-size:var(--t5)">Holomint Pro</span><button class="ghost" id="setProBtn" style="padding:var(--s4) var(--s7)">Manage</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Currency &amp; data</span><button class="ghost" id="setCurBtn" style="padding:var(--s4) var(--s7)">Open</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Back up / restore</span><div class="row" style="gap:var(--s3)"><button class="ghost" id="setBkBtn" style="padding:var(--s4) var(--s6)">Back up</button><button class="ghost" id="setRsBtn" style="padding:var(--s4) var(--s6)">Restore</button></div></div>
+      <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Delete my data</span><button class="ghost" id="setWipeBtn" style="padding:var(--s4) var(--s6);color:var(--down)">Delete</button></div>
       <div class="row between" style="padding:var(--s3) 0;border-top:1px solid var(--line)"><span style="font-size:var(--t5)">Device storage</span><div class="row" style="gap:var(--s3);align-items:center"><span id="persistState" style="font-size:var(--t3);color:var(--ink3)">Checking</span><button class="ghost" id="persistBtn" style="padding:var(--s4) var(--s6);display:none">Protect</button></div></div>
     </div>
 
@@ -1207,7 +1209,11 @@ const FeeCalc=(function(){
   return{channels,net};
 })();
 let _stWarn=false;
-const Store={save(k,v){try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){if(!_stWarn){_stWarn=true;try{if(typeof toast==='function')toast('Storage full - export a backup to avoid losing data.');}catch(_){}}}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
+/* Set for the instant between 'delete everything' and the reload. Without it
+   the app's own autosave timers fire during the awaits in eraseAll() and put
+   keys straight back: the first run of that test deleted 7 and found 3 again. */
+let _wiping=false;
+const Store={save(k,v){if(_wiping)return;try{localStorage.setItem('holomint:'+k,JSON.stringify(v))}catch(e){if(!_stWarn){_stWarn=true;try{if(typeof toast==='function')toast('Storage full - export a backup to avoid losing data.');}catch(_){}}}},load(k,d){try{const x=localStorage.getItem('holomint:'+k);return x?JSON.parse(x):d}catch(e){return d}}};
 
 /* Captured HERE, at the top of the script, because beforeinstallprompt fires
    once and early -- often before the catalog has even landed. Miss it and the
@@ -2284,13 +2290,52 @@ const Checkout=(function(){
 
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
-const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:var(--s5);padding-top:var(--s7)"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div></div>';
+const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:var(--s5);padding-top:var(--s7)"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div><button class="ghost" id="wipeBtn" style="width:100%;margin-top:var(--s5);color:var(--down)">Delete everything on this device</button></div>';
 function wireData(){window.__bk=()=>backup();window.__rs=()=>fileIn.click();
   setTimeout(()=>{const b=document.getElementById('bkBtn'),r=document.getElementById('rsBtn');
   if(b)b.onclick=()=>{Sheet.close();backup();};
-  if(r)r.onclick=()=>{Sheet.close();fileIn.click();};},60);}
+  if(r)r.onclick=()=>{Sheet.close();fileIn.click();};
+  const w=document.getElementById('wipeBtn');
+  if(w)w.onclick=()=>{Sheet.close();eraseAll();};},60);}
+
+/* Privacy Policy s2 and Terms s9 BOTH promise this control, by name:
+   "You can delete it at any time from within Holomint."
+   Until this function existed that sentence was simply false, and a privacy
+   policy that describes a control the app does not have is worse than one that
+   never claimed it -- it is a written misrepresentation about data rights.
+   Found by pinning each documented promise to the code rather than re-reading
+   the prose, the same way the asset suite pins referenced files to served ones. */
+async function eraseAll(){
+  const keys=()=>Object.keys(localStorage).filter(k=>k.indexOf('holomint:')===0);
+  const n=keys().length;
+  if(!confirm('Delete everything Holomint has stored on this device?\n\n'
+    +n+' saved items, including your collection, cost basis, and settings.\n\n'
+    +'This cannot be undone. Back up first if you want a copy.'))return;
+  if(!confirm('Last check. This permanently erases your collection and cost '
+    +'basis on this device.'))return;
+  /* The push subscription is the ONLY record of this device that ever leaves
+     the machine. A "delete my data" that skipped it would leave the server
+     holding the one thing the person actually asked us to forget. */
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      try{await fetch(FEED_API+'/api/unsubscribe',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({endpoint:sub.endpoint})});}catch(e){}
+      try{await sub.unsubscribe();}catch(e){}
+    }
+  }catch(e){}
+  try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));}catch(e){}
+  /* Everything above here can yield. The clear and the reload must not be
+     separated by an await, or a timer lands between them and re-saves. */
+  _wiping=true;
+  keys().forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
 ['setProBtn','setCurBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.onclick=()=>$('#proBtn').click();});
 const _sb=document.getElementById('setBkBtn');if(_sb)_sb.onclick=()=>backup();const _sr=document.getElementById('setRsBtn');if(_sr)_sr.onclick=()=>fileIn.click();
+const _sw=document.getElementById('setWipeBtn');if(_sw)_sw.onclick=()=>eraseAll();
 const _bug=document.getElementById('bugBtn');
 if(_bug)_bug.onclick=function(){
   var lines=[
@@ -5579,6 +5624,8 @@ function netStatus(){
 }
 window.addEventListener('online',netStatus);window.addEventListener('offline',netStatus);netStatus();
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+
+
 </script>
 </body>
 </html>

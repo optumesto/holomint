@@ -789,6 +789,12 @@ with sync_playwright() as pw:
     src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "index.html")).read()
     import re as _re
+    # Comments are not copy. This guard is about what a CUSTOMER reads, and a
+    # /* ... */ note explaining a race condition tripped it the moment one was
+    # written -- which would have taught the next person to reword their
+    # comments to appease a test, the exact habit that makes a guard worthless.
+    _vis = _re.sub(r"/\*.*?\*/", " ", src, flags=_re.S)
+    _vis = _re.sub(r"(?m)^\s*//.*$", " ", _vis)
     _claims = []
     # WHY THIS PATTERN IS SHAPED, NOT LISTED
     # The first version spelled out three literals: "the second a drop",
@@ -799,9 +805,9 @@ with sync_playwright() as pw:
     # examples you already found. Match the SHAPE of the claim instead:
     # second/moment, a few words of anything, then land.
     for _m in _re.finditer(r"(instant\w*|the (?:second|moment)\b[^.<]{0,24}?\bland)",
-                           src, _re.I):
+                           _vis, _re.I):
         _a = max(0, _m.start() - 70)
-        _ctx = src[_a:_m.end() + 70].replace("\n", " ")
+        _ctx = _vis[_a:_m.end() + 70].replace("\n", " ")
         # Local speed is genuinely instant: cached catalog, offline, app launch.
         if any(k in _ctx.lower() for k in
                ("offline", "cache", "downloads it once", "home screen",
