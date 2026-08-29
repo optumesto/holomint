@@ -39,6 +39,50 @@ function encodeCatalog(products) {
 /* Row count for either shape. The shrink guard below used Array.isArray(prev),
    which would have gone quietly false the moment the format changed -- the
    check would still "pass" every run while testing nothing at all. */
+/* history.json is 29,223 products x up to 47 daily points, and every point was
+   written as {"d":"2026-07-14","p":86.08} -- 1.2 million copies of the same two
+   key names and of a date string shared across the whole file. The date axis is
+   the union of all dates seen (47 of them), so each product becomes a plain
+   array of prices aligned to it, null where it has no reading that day.
+
+   Measured on the real file: 35.25MB -> 7.11MB raw, 3.377MB -> 0.825MB gzipped,
+   round trip byte-identical.
+
+   Fetched AFTER the load event, so this is sparkline latency rather than first
+   paint -- which is why it went second. */
+function encodeHistory(hist) {
+  const dates = [...new Set(Object.values(hist).flat().map(pt => pt.d))].sort();
+  const idx = new Map(dates.map((d, i) => [d, i]));
+  const p = {};
+  for (const [id, pts] of Object.entries(hist)) {
+    const row = new Array(dates.length).fill(null);
+    for (const pt of pts) {
+      const i = idx.get(pt.d);
+      if (i !== undefined) row[i] = pt.p;
+    }
+    p[id] = row;
+  }
+  return { f: 2, d: dates, p };
+}
+
+/* Back to {id: [{d,p}, ...]}. The append cycle below runs on THIS shape, so the
+   daily job reads, decodes, appends exactly as it always did, and re-encodes on
+   the way out. Keeping the append logic untouched is deliberate: it is the part
+   that would corrupt history slowly and invisibly if it were wrong. */
+function decodeHistory(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  if (!Array.isArray(raw.d)) return raw;      // previous format: already {id:[{d,p}]}
+  const out = {};
+  for (const [id, row] of Object.entries(raw.p || {})) {
+    const pts = [];
+    for (let i = 0; i < row.length; i++) {
+      if (row[i] !== null && row[i] !== undefined) pts.push({ d: raw.d[i], p: row[i] });
+    }
+    out[id] = pts;
+  }
+  return out;
+}
+
 function catalogLength(v) {
   if (Array.isArray(v)) return v.length;
   if (v && Array.isArray(v.id)) return v.id.length;
@@ -193,7 +237,7 @@ async function main() {
   // only items >= $2, capped, 180-day rolling window). Chart fills in over time.
   const today = new Date().toISOString().slice(0, 10);
   let hist = {};
-  try { const { readFile } = await import('node:fs/promises'); hist = JSON.parse(await readFile('history.json', 'utf8')); } catch (e) { hist = {}; }
+  try { const { readFile } = await import('node:fs/promises'); hist = decodeHistory(JSON.parse(await readFile('history.json', 'utf8'))); } catch (e) { hist = {}; }
   const CUTOFF = Date.now() - 180 * 86400 * 1000;
   for (const [id, price] of Object.entries(prices)) {
     if (price < 2) continue;
@@ -201,7 +245,7 @@ async function main() {
     if (!hist[id].some(pt => pt.d === today)) hist[id].push({ d: today, p: price });
     hist[id] = hist[id].filter(pt => new Date(pt.d).getTime() >= CUTOFF);
   }
-  await writeFile('history.json', JSON.stringify(hist));
+  await writeFile('history.json', JSON.stringify(encodeHistory(hist)));
 
   // sealed.json: the catalog the Cloudflare Worker matches drop titles against.
   // This MUST regenerate alongside prices. If it goes stale, sealed products from a

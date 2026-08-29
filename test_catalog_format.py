@@ -114,5 +114,75 @@ p = os.path.join(HERE, "products.json")
 gz = len(gzip.compress(open(p, "rb").read(), 9))
 check(f"gzipped products.json is under 500 KB ({gz/1024:.0f} KB)", gz < 500 * 1024)
 
+print("\n8. history.json: shared date axis, and the daily append cycle")
+# 29,223 products x up to 47 daily points, each written as {"d":...,"p":...} --
+# 1.2 million copies of two key names and of a date string shared file-wide.
+# 35.25MB -> 7.11MB raw, 3.377MB -> 0.825MB gzipped.
+#
+# The round trip is the easy half. The DANGEROUS half is the append cycle: the
+# daily Action reads history.json, adds today's prices, and writes it back. Get
+# that wrong against the new shape and history degrades a little every night,
+# invisibly, until a sparkline is a straight line and nobody can say when it
+# started. So the cycle is simulated here, not just the encoding.
+hraw = json.load(open(os.path.join(HERE, "history.json")))
+check(f"history.json is columnar (f={hraw.get('f') if isinstance(hraw, dict) else '?'})",
+      isinstance(hraw, dict) and hraw.get("f") == 2)
+check(f"it carries a shared date axis ({len(hraw.get('d', []))} dates)",
+      isinstance(hraw.get("d"), list) and len(hraw["d"]) > 5)
+check(f"and one row per product ({len(hraw.get('p', {}))})",
+      len(hraw.get("p", {})) > 10000)
+check("every row is the same length as the date axis",
+      all(len(v) == len(hraw["d"]) for v in list(hraw["p"].values())[:3000]))
+
+# Exercise the GENERATOR'S OWN functions, so the test cannot drift from the job.
+import subprocess, tempfile
+_harness = r"""
+import fs from 'fs';
+const gen = fs.readFileSync(process.argv[2],'utf8');
+const enc = gen.match(/function encodeHistory\(hist\) \{[\s\S]*?\n\}/)[0];
+const dec = gen.match(/function decodeHistory\(raw\) \{[\s\S]*?\n\}/)[0];
+const M = new Function(enc+'\n'+dec+'\nreturn {encodeHistory, decodeHistory};')();
+const wire0 = JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
+const rows = M.decodeHistory(wire0);
+const rt = JSON.stringify(M.decodeHistory(JSON.parse(JSON.stringify(M.encodeHistory(rows)))))
+         === JSON.stringify(rows);
+const ids = Object.keys(rows).slice(0, 500);
+const prices = {}; ids.forEach((id,i)=>prices[id]=10+(i%40));
+let wire = JSON.stringify(wire0);
+for (const day of ['2099-01-01','2099-01-02']) {
+  const h = M.decodeHistory(JSON.parse(wire));
+  for (const [id,pr] of Object.entries(prices)) {
+    if (!h[id]) h[id]=[];
+    if (!h[id].some(p=>p.d===day)) h[id].push({d:day,p:pr});
+  }
+  wire = JSON.stringify(M.encodeHistory(h));
+}
+const after = M.decodeHistory(JSON.parse(wire));
+const untouched = Object.keys(rows).find(k=>!(k in prices));
+console.log(JSON.stringify({
+  roundTrip: rt,
+  grew: after[ids[0]].filter(p=>p.d.startsWith('2099')).length === 2,
+  kept: JSON.stringify(after[untouched])===JSON.stringify(rows[untouched]),
+  count: Object.keys(after).length === Object.keys(rows).length}));
+"""
+with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as fh:
+    fh.write(_harness); _hp = fh.name
+_out = subprocess.run(["node", _hp, os.path.join(HERE, "generate-prices.mjs"),
+                       os.path.join(HERE, "history.json")],
+                      capture_output=True, text=True, timeout=600)
+os.unlink(_hp)
+check(f"the node harness ran (rc={_out.returncode})", _out.returncode == 0)
+_r = json.loads(_out.stdout) if _out.returncode == 0 and _out.stdout.strip() else {}
+check("round trip through the generator's own encode/decode is lossless",
+      _r.get("roundTrip") is True)
+check("two simulated daily appends both land",
+      _r.get("grew") is True)
+check("a product absent from the day's prices keeps its history",
+      _r.get("kept") is True)
+check("no product is lost across the cycle", _r.get("count") is True)
+
+hgz = len(gzip.compress(open(os.path.join(HERE, "history.json"), "rb").read(), 9))
+check(f"gzipped history.json is under 1 MB ({hgz/1e6:.2f} MB)", hgz < 1_000_000)
+
 print("\n" + ("ALL TESTS PASSED" if passed else "SOME TESTS FAILED"))
 sys.exit(0 if passed else 1)

@@ -1060,7 +1060,7 @@ const PriceEngine=(function(){
     try{
       const r=await fetch('history.json');
       if(r&&r.ok){
-        const h=await r.json();
+        const h=decodeHistory(await r.json());
         if(h&&typeof h==='object'){history=h;window.HistoryState='ready';}
         else window.HistoryState='failed';
       } else window.HistoryState='failed';
@@ -2319,6 +2319,28 @@ function decodeCatalog(p){
             status:statuses[p.status[i]],img:IMG_BASE+id+'_200w.jpg'};
   }
   return n?out:null;
+}
+/* history.json is a shared date axis plus one price array per product
+   (3.377MB -> 0.825MB gzipped). This rebuilds {id:[{d,p},...]}, the shape every
+   sparkline and change badge already reads, so nothing downstream changed.
+   Fetched after the load event, so this is sparkline latency, not first paint.
+
+   The old {id:[{d,p}]} shape still passes through untouched -- a daily Action
+   rewrites this file and a Service Worker can serve a cached copy for the life
+   of a tab, so both are live during a rollout. */
+function decodeHistory(raw){
+  if(!raw||typeof raw!=='object')return null;
+  if(!Array.isArray(raw.d))return raw;            // previous format
+  const out={},dates=raw.d,cols=raw.p||{};
+  for(const id in cols){
+    const row=cols[id],pts=[];
+    for(let i=0;i<row.length;i++){
+      const v=row[i];
+      if(v!==null&&v!==undefined)pts.push({d:dates[i],p:v});
+    }
+    out[id]=pts;
+  }
+  return out;
 }
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
