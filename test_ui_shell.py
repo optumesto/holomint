@@ -539,9 +539,83 @@ with sync_playwright() as pw:
                       ".classList.contains('collapsed')"))
     ctx9.close()
 
+
+    # --- recents can be cleared -----------------------------------------------
+    # recentAdds is the last 12 things this device added, which at a card show
+    # is a record of what a dealer has been buying. There was no way to clear it
+    # short of wiping everything on the device.
+    def _qa(pg):
+        return pg.evaluate("""()=>{const b=document.getElementById('quickAdd');
+          return {vis: !!(b&&getComputedStyle(b).display!=='none'),
+                  chips: b?b.querySelectorAll('.qa').length:0,
+                  clear: !!(b&&b.querySelector('#qaClear')),
+                  stored: JSON.parse(localStorage.getItem('holomint:recentAdds')||'[]').length};}""")
+
+    _c = browser.new_context(viewport={"width": 390, "height": 844},
+                             service_workers="block")
+    _p = _c.new_page()
+    _p.route("**://api.pokemontcg.io/**", lambda r: r.abort())
+    _p.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="commit")
+    for _ in range(400):
+        if _p.evaluate("window.CatalogState") == "ready":
+            break
+        _p.wait_for_timeout(50)
+    # Past the assent gate. It is non-dismissible by design, so without this the
+    # tour backdrop swallows every click below and the whole section times out.
+    _p.evaluate("""()=>{localStorage.setItem('holomint:tourSeen','1');
+        localStorage.setItem('holomint:tosOk',
+          JSON.stringify({v:'1.2',at:1,build:'x'}));}""")
+    _p.reload(wait_until="commit")
+    for _ in range(400):
+        if _p.evaluate("window.CatalogState") == "ready":
+            break
+        _p.wait_for_timeout(50)
+    # Added through the search box, the way a dealer does it -- seeding
+    # localStorage with invented keys renders nothing, because renderQuickAdd
+    # drops any key that no longer resolves to a real product.
+    for _term in ("charizard", "booster box"):
+        _p.locator("input[placeholder*='earch'], #q, input[type='search']").first.fill(_term)
+        _p.wait_for_timeout(1200)
+        _r = _p.locator(".res").first
+        if _r.count():
+            _r.click()
+            _p.wait_for_timeout(600)
+    _st = _qa(_p)
+    check(f"adding items builds a Recent row ({_st['chips']} chips)",
+          _st["vis"] and _st["chips"] >= 1)
+    check("...carrying a Clear control", _st["clear"])
+    if _st["clear"]:
+        _p.locator("#qaClear").click()
+        _p.wait_for_timeout(600)
+        _a = _qa(_p)
+        check(f"Clear empties the row ({_a['chips']} chips)", _a["chips"] == 0)
+        # Clearing the DOM but not the store looks fixed until the next render.
+        check(f"...and the stored list with it ({_a['stored']})", _a["stored"] == 0)
+        _p.reload(wait_until="commit")
+        for _ in range(400):
+            if _p.evaluate("window.CatalogState") == "ready":
+                break
+            _p.wait_for_timeout(50)
+        check("...and it stays cleared across a reload", _qa(_p)["stored"] == 0)
+    # Every empty state must read the same. .tbl-empty lost to td:first-child
+    # (which paints the gold item name) and rendered an empty table as though it
+    # were a product -- a specificity collision, invisible unless compared.
+    _p.locator('.navb[data-tab="port"]').click()
+    _p.wait_for_timeout(1200)
+    _cols = _p.evaluate("""()=>[...document.querySelectorAll('.empty,.tbl-empty')]
+        .map(e=>getComputedStyle(e).color)""")
+    check(f"every empty state shares one colour ({sorted(set(_cols))})",
+          len(set(_cols)) <= 1 and len(_cols) >= 2)
+    _hints = _p.evaluate("""()=>[...document.querySelectorAll('.empty,.tbl-empty')]
+        .map(e=>!!e.querySelector('.es-h'))""")
+    check(f"...and every one offers a next step ({sum(_hints)}/{len(_hints)})",
+          all(_hints) and len(_hints) >= 2)
+    _c.close()
+
     browser.close()
 
 httpd.shutdown()
+
 # --- no CSS custom property may be used without being defined ----------------
 # An undefined var() invalidates the WHOLE declaration at computed-value time,
 # so the property silently falls back to its initial value and nothing warns.

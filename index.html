@@ -489,6 +489,17 @@ catch(e){document.documentElement.style.display="none";}</script>
   .lot-progress .msg{font-size:var(--t4);color:var(--ink3);font-family:var(--mono)}
   /* Show mode: read at arm's length, across a table, in bad convention-hall
      light. Bigger than anything else on the screen on purpose. */
+  .qa-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);width:100%}
+  .qa-clr{background:none;border:0;padding:var(--s2) var(--s3);margin:0;cursor:pointer;
+    font-family:var(--mono);font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink3);min-height:var(--tap);}
+  .qa-clr:active{color:var(--ink2)}
+  /* Same voice as .empty, but a table cell cannot carry the block padding. */
+  /* td.tbl-empty, not .tbl-empty: td:first-child sets the gold item-name
+     colour at (0,1,1), and a colspan cell IS the first child, so a bare
+     class at (0,1,0) loses and the empty state renders as a product name. */
+  td.tbl-empty{text-align:center;color:var(--ink3);font-style:italic;font-weight:400;
+    padding:var(--s9) var(--s6);line-height:1.6}
   #showBar{background:var(--bg2);border:1px solid var(--acc);border-radius:var(--r-md);padding:var(--s6) var(--s7);margin-bottom:var(--s8)}
   #showBar .sb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s5)}
   #showBar .sb-t{font-family:var(--mono);font-size:var(--t2);letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
@@ -2718,9 +2729,22 @@ function renderQuickAdd(){
   var keys=Store.load('recentAdds',[]).filter(function(k){return !!resolveItem(k);});
   if(!keys.length){box.innerHTML='';box.style.display='none';return;}
   box.style.display='';
-  box.innerHTML='<div class="qa-l">Recent</div>'+keys.slice(0,8).map(function(k){
-    var it=resolveItem(k);return '<button class="qa" data-qa="'+esc(k)+'">'+esc((it.name||'').slice(0,26))+'</button>';
-  }).join('');
+  // The list is the last 12 things this device added, which at a show is a
+  // record of what a dealer has been buying. It is theirs to wipe without
+  // wiping everything else, so the control sits ON the list rather than in
+  // Settings -- you clear it where you can see what you are clearing.
+  box.innerHTML='<div class="qa-head"><div class="qa-l">Recent</div>'
+    +'<button class="qa-clr" id="qaClear" type="button" '
+    +'aria-label="Clear recent items">Clear</button></div>'
+    +keys.slice(0,8).map(function(k){
+      var it=resolveItem(k);return '<button class="qa" data-qa="'+esc(k)+'">'+esc((it.name||'').slice(0,26))+'</button>';
+    }).join('');
+  var c=box.querySelector('#qaClear');
+  if(c)c.onclick=function(){
+    Store.save('recentAdds',[]);
+    renderQuickAdd();
+    toast('Recent items cleared.');
+  };
 }
 function addTo(which,key){const arr=which==='your'?yourPile:theirPile;const ex=arr.find(p=>p.key===key);
   noteRecent(key);setTimeout(renderQuickAdd,0);
@@ -3082,7 +3106,9 @@ function renderHoldings(){
   $('#holdBody').innerHTML=shown.length?shown.map(h=>{const r=roiPct(h),cls=r>=0?'pos':'neg';
     const chip=(h.grade)?`<span class="chip graded">${(h.grader||'').toUpperCase()} ${h.grade}</span>`:(h.type==='graded'?'<span class="chip graded">graded</span>':(h.type==='single'?'<span class="chip raw">raw</span>':(h.status==='oop'?'<span class="chip oop">oop</span>':'<span class="chip ip">ip</span>')));
     return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
-    :(holdings.length?'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">No matches.</td></tr>':'<tr><td colspan="5" style="text-align:center;color:var(--ink3);font-style:italic;font-weight:400">Empty. Buy something in the Trade Block.</td></tr>');
+    :(holdings.length
+      ? '<tr><td colspan="5" class="tbl-empty">No matches.<br><span class="es-h">Try a shorter search, or clear the filter above.</span></td></tr>'
+      : '<tr><td colspan="5" class="tbl-empty">Nothing tracked yet.<br><span class="es-h">Buy something in the Trade Block, or scan a card to add it here.</span></td></tr>');
   if(hidden>0){
     $('#holdBody').insertAdjacentHTML('beforeend',
       '<tr><td colspan="5" style="text-align:center;padding:var(--s6)"><button class="ghost" id="holdMore" style="padding:var(--s4) var(--s8);font-size:var(--t3)">Show all '+sorted.length+' holdings</button><div style="font-size:var(--t2);color:var(--ink3);margin-top:var(--s2);font-family:var(--mono)">'+hidden+' more not shown</div></td></tr>');
@@ -4142,7 +4168,8 @@ const Devices=(function(){
     Sheet.info('Manage devices',
       '<p>Your Pro key is using <b>'+(d.seats||0)+'</b> of <b>'+(d.cap||0)+'</b> device seats. Releasing a seat frees it immediately; that device drops to the free view until it takes a seat again.</p>'
       +'<p style="font-size:var(--t2);color:var(--ink3)">Seats you stop using are released automatically after 45 days.</p>'
-      +(rows||'<p>No devices recorded yet.</p>'));
+      +(rows||'<div class="empty">No devices recorded yet.<br>'
+        +'<span class="es-h">A device appears here the first time it uses your Pro key.</span></div>'));
   }
   document.addEventListener('click',async function(e){
     var b=e.target.closest('[data-rel]');if(!b)return;
