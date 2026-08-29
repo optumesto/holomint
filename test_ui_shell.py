@@ -766,6 +766,34 @@ with sync_playwright() as pw:
 
 httpd.shutdown()
 
+# --- the version the user sees must be the version that shipped --------------
+# Three version strings existed: sw.js's cache name, APP_VERSION, and a literal
+# in the markup. A previous fix pointed the footer at APP_VERSION and left the
+# comment "one constant, and it cannot drift again" -- then APP_VERSION itself
+# drifted from the cache name, because releases bump sw.js. Settings read v1.25
+# while the running build was v1.49. Mason spotted it; nothing in the suite did.
+#
+# Pinned across the seam: the two files must agree, or a release fails here.
+import re as _vre
+_idx = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "index.html")).read()
+_sw = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "sw.js")).read()
+_app = _vre.search(r"APP_VERSION\s*=\s*'([^']+)'", _idx)
+_cache = _vre.search(r"holomint-v([0-9.]+)", _sw)
+check(f"index.html declares APP_VERSION ({_app.group(1) if _app else None})",
+      bool(_app))
+check(f"sw.js declares a cache version ({_cache.group(1) if _cache else None})",
+      bool(_cache))
+check(f"...and they are the SAME "
+      f"({_app.group(1) if _app else '?'} vs {_cache.group(1) if _cache else '?'})",
+      bool(_app) and bool(_cache) and _app.group(1) == _cache.group(1))
+# The markup fallback is shown only if the script fails; it must not name a
+# version at all rather than name a stale one.
+_stale = _vre.findall(r"v1\.\d+\s*&middot;\s*early access|v1\.\d+\s*\u00b7\s*early access", _idx)
+check(f"no hardcoded version in the markup fallback ({_stale or 'none'})",
+      not _stale)
+
 # --- no CSS custom property may be used without being defined ----------------
 # An undefined var() invalidates the WHOLE declaration at computed-value time,
 # so the property silently falls back to its initial value and nothing warns.
