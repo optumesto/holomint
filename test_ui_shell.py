@@ -676,6 +676,32 @@ with sync_playwright() as pw:
     # Running the Pro tour must not consume a new user's onboarding.
     check("the Pro tour does not mark onboarding done on its own",
           _tp.evaluate("()=>localStorage.getItem('holomint:tourSeen')") == "1")
+    # Show mode is a FREE feature whose switch used to live inside #alertPrefs,
+    # revealed only in the on-pro state -- so no free user could turn it on. It
+    # now has its own card, and both the state sync and the handler run at
+    # startup instead of inside Alerts.render's Pro branch.
+    check("a free session is genuinely not Pro",
+          _tp.evaluate("()=>Premium.active()") is False)
+    _tp.locator('.navb[data-tab="settings"]').click()
+    _tp.wait_for_timeout(700)
+    _tp.evaluate("""()=>{const c=document.getElementById('showCard');
+        if(c&&c.classList.contains('collapsed')){const h=c.querySelector('.colhead');if(h)h.click();}}""")
+    _tp.wait_for_timeout(600)
+    _vis = _tp.evaluate("""()=>{const e=document.getElementById('showModeChk');
+        if(!e)return false;const b=e.getBoundingClientRect(),c=getComputedStyle(e);
+        return b.width>0&&b.height>0&&c.display!=='none'&&c.visibility!=='hidden';}""")
+    check("...and can reach the Show mode switch", _vis)
+    if _vis:
+        _tp.locator("#showModeChk").check()
+        _tp.wait_for_timeout(700)
+        check("ticking it turns Show mode on",
+              _tp.evaluate("()=>ShowMode.on()") is True)
+        _tp.locator('.navb[data-tab="block"]').click()
+        _tp.wait_for_timeout(900)
+        _bar = _tp.evaluate("""()=>{const e=document.getElementById('showBar');
+            if(!e)return false;const b=e.getBoundingClientRect(),c=getComputedStyle(e);
+            return b.width>0&&b.height>0&&c.display!=='none';}""")
+        check("...and the bar actually appears on the Trade tab", _bar)
     _tc.close()
 
     browser.close()

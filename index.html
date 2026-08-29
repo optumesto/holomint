@@ -796,10 +796,7 @@ catch(e){document.documentElement.style.display="none";}</script>
             <div class="sub">Watched products alert you on every restock, whether or not they clear your floors.</div>
             <label class="ck-chk" style="margin-top:var(--s4)"><input type="checkbox" id="alWatchOnly"><span><b>Watchlist only</b> (ignore the profit floors, alert me for nothing else)</span></label>
           </div>
-          <div class="field">
-            <label class="ck-chk"><input type="checkbox" id="showModeChk"><span><b>Show mode</b> (running totals for a day behind a table)</span></label>
-            <div class="sub">Puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
-          </div>
+          
           <div class="field">
             <label class="ck-chk"><input type="checkbox" id="alUsOnly"><span><b>US retailers only</b></span></label>
             <div class="sub">Holomint also watches Canadian shops. Their prices are real but they are in CAD, they ship from Canada, and the flip margin is not calculated against US market comps. On by default; turn it off to hear about them too, clearly labelled.</div>
@@ -832,6 +829,20 @@ catch(e){document.documentElement.style.display="none";}</script>
       </div>
     </div>
 
+    <div class="card collapsed" id="showCard">
+      <!-- Show mode used to live inside #alertPrefs, which render() reveals only
+           in the on-pro state. Show mode is a FREE feature, so that made it
+           unreachable for exactly the people it was built for: a dealer behind a
+           table who has not subscribed. It has nothing to do with alerts either;
+           it belongs to the Trade Block. Its own card, collapsed like the rest. -->
+      <div class="row between colhead" data-col="showCard"><label style="margin:0">At a show</label><span class="chev">&#9662;</span></div>
+      <div class="colbody">
+        <div class="field">
+            <label class="ck-chk"><input type="checkbox" id="showModeChk"><span><b>Show mode</b> (running totals for a day behind a table)</span></label>
+            <div class="sub">Puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
+          </div>
+      </div>
+    </div>
     <div class="card" id="helpCard">
       <!-- 835px of explainer, read once and then never again, sat expanded on a
            2.5-screen settings page. Collapsed by default. The Replay tour button
@@ -1840,7 +1851,6 @@ const Alerts=(function(){
       $('#alWatchOnly').checked=!!p.watchOnly;
       $('#alQueue').checked=!!p.queueAlerts;
       $('#alUsOnly').checked=p.usOnly!==false;
-      {const c=$('#showModeChk');if(c)c.checked=ShowMode.on();}
       $('#alIntel').checked=!!p.intelAlerts;
       paintWatch(p.watch||[]);
       wireWatchSearch();
@@ -2072,11 +2082,10 @@ const Tour=(function(){
      body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open — that works on the free tier too, ten minutes behind. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room as soon as it opens. Settings has a <b>What Pro adds</b> walkthrough if you want to see the difference.'},
     /* #showBar is hidden until Show mode is switched on, so the step points at
        the switch rather than the thing the switch reveals. */
-    /* No target on purpose. The Show mode switch lives inside #alertPrefs, which
-       is only revealed in the on-pro state, so pointing at it shows a free user
-       an empty screen. Centred and explained instead, until the switch moves
-       somewhere a free user can actually reach it. */
-    {tab:'settings', sel:null, title:'Running a table today?',
+    /* Points at the real switch again now that it has its own card and is
+       reachable without Pro. paint() expands a collapsed .card on the way in
+       and done() re-collapses it, so this does not leave Settings rearranged. */
+    {tab:'settings', sel:'#showModeChk', title:'Running a table today?',
      body:'Show mode puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block, so at the end of a show you know what the day cost and what it is worth without adding anything up. Holomint can also price a whole pile for you at a buy rate you set.'},
     /* #portTotals is .card.hide until there is a holding, so on a first run this
        step pointed at nothing -- for every new user since it was written. The
@@ -5341,7 +5350,12 @@ $('#scanBtn').onclick=()=>Scanner.open(false);
 $('#quickBtn').onclick=()=>Scanner.open(true);
 $('#scanClose').onclick=()=>Scanner.close();
 // Lot scanner wiring
-{const c=$('#showModeChk');if(c)c.onchange=function(){ShowMode.set(c.checked);
+// Show mode is FREE, so both the state sync and the handler live here at
+  // startup rather than in Alerts.render's on-pro branch, where the sync used
+  // to sit. A free dealer behind a table is exactly who this is for.
+  {const c=$('#showModeChk');
+   if(c)c.checked=ShowMode.on();
+   if(c)c.onchange=function(){ShowMode.set(c.checked);
    toast(c.checked?'Show mode on. Totals are at the top of Trade.':'Show mode off.');};}
 // Paint once at startup: the bar reads today's deals, and a reload mid-show
 // must not blank the number the vendor is working from.
