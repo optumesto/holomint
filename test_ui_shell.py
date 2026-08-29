@@ -542,5 +542,21 @@ with sync_playwright() as pw:
     browser.close()
 
 httpd.shutdown()
+# --- no CSS custom property may be used without being defined ----------------
+# An undefined var() invalidates the WHOLE declaration at computed-value time,
+# so the property silently falls back to its initial value and nothing warns.
+# #showBar -- the Show mode bar, whose own comment says it must look different
+# from everything else on screen -- had `border: 1px solid var(--acc)` with
+# --acc never defined, so its border computed to currentColor: a bright cream
+# line, the most ordinary colour in the app. Found only by parsing the stylesheet.
+import re as _re
+_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "index.html")).read()
+_defined = set(_re.findall(r"(--[a-z0-9-]+)\s*:", _src))
+_used = _re.findall(r"var\((--[a-z0-9-]+)(,[^)]*)?\)", _src)
+_undef = sorted({n for n, fb in _used if n not in _defined and not fb})
+check(f"every var() with no fallback is defined ({_undef or 'all defined'})",
+      not _undef)
+
 print("\nPASS" if passed else "\nFAIL")
 sys.exit(0 if passed else 1)
