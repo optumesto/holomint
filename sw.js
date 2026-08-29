@@ -1,4 +1,4 @@
-const CACHE = 'holomint-v1.42';        // app shell, replaced on every release
+const CACHE = 'holomint-v1.43';        // app shell, replaced on every release
 const MEDIA = 'holomint-media';      // card images / cross-origin - persists across releases
 const SHELL = ['./', './index.html', './cardfind.js', './manifest.json', './icon-192.png', './icon-512.png', './leaf-splash.png'];
 
@@ -66,7 +66,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // products.json is 10MB and the product LIST changes a few times a year, not daily.
+  // products.json is ~2.2MB (435KB gzipped) and the product LIST changes a few times
+  // a year, not daily.
   // Network-first meant re-downloading it on every cold open, which is brutal on show
   // wifi or mobile data and is the slowest moment in the whole app. Serve it cache-first
   // from the persistent media cache (survives version bumps) and refresh in the

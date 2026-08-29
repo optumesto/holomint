@@ -1105,8 +1105,8 @@ const PriceEngine=(function(){
       Object.assign(cache,await pRes.value.json());
       Store.save('pricesAt',new Date().toISOString());}}catch(e){}
     try{if(cRes.status==='fulfilled'&&cRes.value.ok){
-      const p=await cRes.value.json();
-      if(Array.isArray(p)&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
+      const p=decodeCatalog(await cRes.value.json());
+      if(p&&p.length){catalog=p;gotProducts=true;}}}catch(e){}
     // A silent failure here leaves every search empty forever with no explanation, which
     // reads as a broken app rather than a missing download.
     window.CatalogState=gotProducts?'ready':'failed';
@@ -2295,6 +2295,31 @@ const Checkout=(function(){
    misstatement on the buying screen is the precise thing ROSCA and the state
    auto-renewal laws are about. */
 function billPer(p){return (p&&p.interval)==='year'?'year':'month';}
+/* products.json is columnar on the wire: 824 KB -> 445 KB gzipped, and it is
+   fetched BEFORE the load event, so those bytes are splash-screen time on a
+   booth visitor's phone. This rebuilds the exact row objects the rest of the
+   app already expects, `img` included, so nothing downstream of the fetch knows
+   the format changed.
+
+   A bare array is still accepted. That is not politeness: products.json is
+   rewritten daily by a GitHub Action and a Service Worker can hold a cached
+   copy for as long as a visitor keeps the tab open. Refusing the old shape
+   would blank the catalogue for anyone caught between the two, and an empty
+   catalogue looks exactly like a working app that happens to have nothing in
+   it -- the failure this codebase keeps producing. */
+const IMG_BASE='https://tcgplayer-cdn.tcgplayer.com/product/';
+function decodeCatalog(p){
+  if(Array.isArray(p))return p.length?p:null;      // previous format
+  if(!p||!Array.isArray(p.id))return null;
+  const sets=p.sets||[],types=p.types||[],statuses=p.statuses||[];
+  const n=p.id.length,out=new Array(n);
+  for(let i=0;i<n;i++){
+    const id=p.id[i];
+    out[i]={id:id,name:p.name[i],set:sets[p.set[i]],type:types[p.type[i]],
+            status:statuses[p.status[i]],img:IMG_BASE+id+'_200w.jpg'};
+  }
+  return n?out:null;
+}
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
 const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:var(--s5);padding-top:var(--s7)"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div><button class="ghost" id="wipeBtn" style="width:100%;margin-top:var(--s5);color:var(--down)">Delete everything on this device</button></div>';

@@ -77,13 +77,19 @@ def dhash_hex(im: "Image.Image") -> str:
 
 # ---------------------------------------------------------------- io helpers
 def load_products():
+    # products.json is columnar now; catalog.decode handles both that and the
+    # older bare array. Without it this function returns a dict, the "single"
+    # filter below matches nothing, and this script cheerfully writes a
+    # hashes.json built from zero cards -- on a schedule, straight into the
+    # repo, with a green run.
+    import catalog
     if os.path.exists(PRODUCTS_PATH):
         with open(PRODUCTS_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return catalog.decode(json.load(f))
     print("products.json not found locally — downloading from repo...")
     req = urllib.request.Request(PRODUCTS_URL, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-        return json.loads(r.read().decode("utf-8"))
+        return catalog.decode(json.loads(r.read().decode("utf-8")))
 
 def fetch_image(url: str):
     last = None

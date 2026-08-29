@@ -6,6 +6,45 @@
  */
 import { writeFile } from 'node:fs/promises';
 
+/* products.json is the biggest thing on the critical path: it is fetched before
+   the load event, so its bytes are time a visitor spends on a splash screen.
+   Measured on the real catalogue: 10.7 MB -> 2.2 MB raw, 824 KB -> 445 KB gzip.
+   Three savings, no data lost:
+     - `img` is dropped. All 60,168 rows were exactly
+       product/{id}_200w.jpg, with zero exceptions, so it is 60k copies of a
+       50-character prefix the app can rebuild from an id it already has.
+     - `set` (658 distinct), `type` (2) and `status` (3) are interned to an
+       index into a table, instead of repeating the string on every row.
+     - columnar, so the key names appear once each rather than 60,168 times.
+   The app decodes this back to the identical row objects, img included, so
+   nothing downstream of the fetch knows the format changed. */
+function encodeCatalog(products) {
+  const sets = [...new Set(products.map(p => p.set))].sort();
+  const types = [...new Set(products.map(p => p.type))].sort();
+  const statuses = [...new Set(products.map(p => p.status))].sort();
+  const si = new Map(sets.map((v, i) => [v, i]));
+  const ti = new Map(types.map((v, i) => [v, i]));
+  const ui = new Map(statuses.map((v, i) => [v, i]));
+  return {
+    f: 2,                       // format version; the app still reads a bare array
+    sets, types, statuses,
+    id:     products.map(p => p.id),
+    name:   products.map(p => p.name),
+    set:    products.map(p => si.get(p.set)),
+    type:   products.map(p => ti.get(p.type)),
+    status: products.map(p => ui.get(p.status)),
+  };
+}
+
+/* Row count for either shape. The shrink guard below used Array.isArray(prev),
+   which would have gone quietly false the moment the format changed -- the
+   check would still "pass" every run while testing nothing at all. */
+function catalogLength(v) {
+  if (Array.isArray(v)) return v.length;
+  if (v && Array.isArray(v.id)) return v.id.length;
+  return 0;
+}
+
 const HEADERS = {
   'User-Agent': 'Holomint/1.0 (+https://holomint.app; price tracker)',
   'Accept': 'application/json'
@@ -124,8 +163,9 @@ async function main() {
     const prevRaw = await readFile('products.json', 'utf8').catch(() => null);
     if (prevRaw) {
       const prev = JSON.parse(prevRaw);
-      if (Array.isArray(prev) && prev.length > 1000) {
-        const drop = 1 - (products.length / prev.length);
+      const prevN = catalogLength(prev);
+      if (prevN > 1000) {
+        const drop = 1 - (products.length / prevN);
         if (drop > 0.15) {
           console.error(`Catalog shrank ${(drop * 100).toFixed(1)}% (${prev.length} to ${products.length}). ` +
             `That is a partial fetch, not a real change. Leaving files untouched.`);
@@ -146,7 +186,7 @@ async function main() {
     console.error('Sanity comparison failed, continuing:', e.message);
   }
 
-  await writeFile('products.json', JSON.stringify(products));
+  await writeFile('products.json', JSON.stringify(encodeCatalog(products)));
   await writeFile('prices.json', JSON.stringify(prices));
 
   // Price history: append today's snapshot for tracked movers (keeps file lean,

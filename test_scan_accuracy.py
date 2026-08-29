@@ -98,7 +98,8 @@ def fetch_fixtures(n=60, seed=42):
     """One-off: pull n random singles that have both a hash and an image."""
     os.makedirs(CARDS, exist_ok=True)
     hashes = set(json.load(open(os.path.join(ROOT, "hashes.json"))).keys())
-    prods = json.load(open(os.path.join(ROOT, "products.json")))
+    import catalog
+    prods = catalog.decode(json.load(open(os.path.join(ROOT, "products.json"))))
     pool = [p for p in prods
             if p.get("type") == "single" and p.get("img") and str(p["id"]) in hashes]
     random.seed(seed)
