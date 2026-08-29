@@ -1838,7 +1838,7 @@ const Alerts=(function(){
     // The list price lives on the pricing object, NOT on .founder, which only
     // carries {amount,left,total,checkout}. Reading it off F renders $NaN.
     const _LIST=(_CK&&_CK.amount)||0;
-    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Early-bird pricing: '+F.left+' of '+F.total+' left at $'+Number(F.amount).toFixed(2)+'/month, locked for as long as you stay subscribed. After that it is $'+Number(_LIST).toFixed(2)+'/month.</div>':'';
+    const fnote=(F&&F.left>0&&!Premium.active())?'<div class="sub" style="color:var(--gold);margin-top:var(--s4)">Early-bird pricing: '+F.left+' of '+F.total+' left at $'+Number(F.amount).toFixed(2)+'/'+billPer(_CK)+', locked for as long as you stay subscribed. After that it is $'+Number(_LIST).toFixed(2)+'/'+billPer(_CK)+'.</div>':'';
     const msg={
       'on-pro':'<div class="sub" style="color:var(--up)">On, with no delay. Your phone buzzes when Holomint sees a drop, with the app closed.</div>',
       'on-free':'<div class="sub">On, but <b style="color:var(--gold)">delayed 10 minutes and capped at 2 alerts a day</b>. By the time a free alert reaches you, the drop is usually gone. Pro has no delay, and a ceiling you set yourself.</div><button class="act" id="alPro" style="margin-top:var(--s5)">Remove the delay</button><button class="ghost" id="alOff2" style="width:100%;margin-top:var(--s4)">Turn off alerts</button>'+fnote,
@@ -1915,7 +1915,7 @@ function paintFounder(again){
   const F=P&&P.founder;
   if(!F||!(F.left>0)||Premium.active()){el.innerHTML='';el.style.display='none';return;}
   el.style.display='block';
-  el.innerHTML='<b>Early-bird pricing</b> · '+F.left+' of '+F.total+' left · lock $'+Number(F.amount).toFixed(2)+'/month, then $'+Number((P&&P.amount)||0).toFixed(2)+' after';
+  el.innerHTML='<b>Early-bird pricing</b> · '+F.left+' of '+F.total+' left · lock $'+Number(F.amount).toFixed(2)+'/'+billPer(P)+', then $'+Number((P&&P.amount)||0).toFixed(2)+' after';
   el.onclick=()=>$('#proBtn').click();
 }
 
@@ -2236,7 +2236,7 @@ const Checkout=(function(){
           +'<button class="act" id="ckRetry" style="width:100%">Try again</button>';
       return '<div class="feat" style="color:var(--ink3)">Subscriptions are not open yet.</div>';
     }
-    const m=money(o), per=p.interval==='year'?'year':'month';
+    const m=money(o), per=billPer(p);
     const f=o.founder;
     return ''
       +(f?'<div class="ck-founder"><b>Early-bird pricing</b> &middot; locked at '+m+'/'+per+' for as long as you stay subscribed.<br><span>'+f.left+' of '+f.total+' left at this price. After that it is $'+Number(o.list).toFixed(2)+'/'+per+'.</span></div>':'')
@@ -2288,6 +2288,13 @@ const Checkout=(function(){
   return {load,refresh,offer,offerHtml,wire,money,get:()=>P};
 })();
 
+/* One source of truth for the billing period. The checkout sheet derived this
+   correctly; the early-bird banner hardcoded "/month" in three places, so an
+   annual plan -- a Polar dashboard change needing no deploy -- would have made
+   the loudest upsell in the app quote a yearly price as a monthly one. A price
+   misstatement on the buying screen is the precise thing ROSCA and the state
+   auto-renewal laws are about. */
+function billPer(p){return (p&&p.interval)==='year'?'year':'month';}
 /* ---- PRO sheet ---- */
 function renderProBtn(){const b=$('#proBtn');b.classList.toggle('on',Premium.active());b.textContent=Premium.active()?'PRO ✓':'PRO';}
 const DATA_ROW='<div style="border-top:1px solid var(--line);margin-top:var(--s5);padding-top:var(--s7)"><label>Data</label><div class="btnrow"><button class="ghost" id="bkBtn" style="flex:1">Back up</button><button class="ghost" id="rsBtn" style="flex:1">Restore</button></div><button class="ghost" id="wipeBtn" style="width:100%;margin-top:var(--s5);color:var(--down)">Delete everything on this device</button></div>';

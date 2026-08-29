@@ -773,6 +773,42 @@ with sync_playwright() as pw:
           unknown in ("in-print", "oop", "raw"))
     ctx.close()
 
+    print("\n15b. the price never states an interval the plan does not have")
+    # The checkout sheet was already interval-aware. The early-bird banner was
+    # not: three hardcoded "/month" literals. Adding an annual plan in Polar is
+    # a dashboard change needing no deploy, so the loudest upsell in the app
+    # would have quoted a yearly price as monthly -- a price misstatement on the
+    # buying screen, which is exactly what ROSCA and the state ARLs govern.
+    ctx = browser.new_context(service_workers="block",
+                              viewport={"width": 390, "height": 844},
+                              reduced_motion="reduce")
+    page = ctx.new_page()
+    boot(page, "good")
+    _bp = page.evaluate("""()=>({
+        year:  billPer({interval:'year'}),
+        month: billPer({interval:'month'}),
+        none:  billPer(null),
+        junk:  billPer({interval:'fortnight'})})""")
+    check(f"a yearly plan bills per year ({_bp['year']})", _bp["year"] == "year")
+    check(f"a monthly plan bills per month ({_bp['month']})", _bp["month"] == "month")
+    # Unknown or missing must fall back to the CONSERVATIVE answer. Monthly is
+    # the shorter period, so a wrong guess understates the commitment rather
+    # than overstating what someone is signing up to.
+    check(f"missing interval falls back to month ({_bp['none']})",
+          _bp["none"] == "month")
+    check(f"an unrecognised interval also falls back ({_bp['junk']})",
+          _bp["junk"] == "month")
+
+    # And the banner must actually USE it. Read the LIVE function body, not the
+    # file: this asserts on the code that shipped, and cannot be fooled by a
+    # comment mentioning the literal.
+    _pf = page.evaluate("()=>String(paintFounder)")
+    check("the early-bird banner holds no hardcoded /month",
+          "/month" not in _pf)
+    check("...and derives it from billPer instead",
+          "billPer" in _pf)
+    ctx.close()
+
     print("\n16. the app does not promise a speed it cannot deliver")
     # Measured 2026-08-28: Holomint polls at 15s (PC queue), 60s (relays,
     # Slickdeals, Shopify) and 3600s (PC listings), plus a 10-minute delay on
