@@ -839,7 +839,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="colbody">
         <div class="field">
             <label class="ck-chk"><input type="checkbox" id="showModeChk"><span><b>Show mode</b> (running totals for a day behind a table)</span></label>
-            <div class="sub">Puts a running <b>value out</b>, <b>value in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
+            <div class="sub">Puts a running <b>value out</b>, <b>value in</b> and <b>spread</b> across the top of the Trade Block for today. Desk deals and booked sales both count. The day rolls over on its own, so there is nothing to start or remember to end.</div>
           </div>
       </div>
     </div>
@@ -2585,7 +2585,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.53';
+const APP_VERSION='1.54';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -2950,11 +2950,18 @@ const ShowMode=(function(){
     const d=today();
     const rows=(dealLog||[]).filter(x=>x&&x.date===d);
     // `payout` is what left the till, `market` what came in at market value.
-    // The gap is the day's spread -- it is NOT profit, nothing is sold yet, and
-    // the label says so.
-    const out=rows.reduce((a,x)=>a+(+x.payout||0),0);
-    const mkt=rows.reduce((a,x)=>a+(+x.market||0),0);
-    return {n:rows.length,out:out,mkt:mkt,spread:mkt-out,date:d};
+    // The gap is the day's spread -- for BUYS it is paper edge, nothing sold.
+    let out=rows.reduce((a,x)=>a+(+x.payout||0),0);
+    let mkt=rows.reduce((a,x)=>a+(+x.market||0),0);
+    // Sales are the other half of a show day. A sold row contributes the cost
+    // of the goods that left (basis) to value-out and the proceeds actually
+    // received (net, after that sale's channel fees) to value-in, so the
+    // spread picks up exactly the realized profit. soldLog rows carry
+    // row-level totals already, never per-unit figures.
+    const sold=(soldLog||[]).filter(x=>x&&x.date===d);
+    out+=sold.reduce((a,x)=>a+(+x.basis||0),0);
+    mkt+=sold.reduce((a,x)=>a+(+x.net||0),0);
+    return {n:rows.length+sold.length,out:out,mkt:mkt,spread:mkt-out,date:d};
   }
   function refresh(){
     const bar=$('#showBar');if(!bar)return;
@@ -3127,7 +3134,12 @@ function saveHoldings(){Store.save('holdings',holdings);
   if(!_persistAsked&&holdings.length){_persistAsked=true;
     try{Persist.ensure().then(function(){if(typeof renderPersist==='function')renderPersist();});}catch(e){}}
 }
-function saveSold(){Store.save('sold',soldLog);}
+function saveSold(){Store.save('sold',soldLog);
+  /* The one choke point every sale AND un-sale passes through, so the day bar
+     can never miss one. sellHolding did not repaint the bar and totals() did
+     not read soldLog at all: a vendor selling all morning watched the day
+     total sit still. Found live, launch day. */
+  if(typeof ShowMode!=='undefined')ShowMode.refresh();}
 function roiPct(h){return h.costBasis>0?(h.currentValue-h.costBasis)/h.costBasis*100:0;}
 
 let holdQuery='',holdSort='roi',holdTypeF='all';

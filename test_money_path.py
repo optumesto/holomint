@@ -475,6 +475,25 @@ with sync_playwright() as pw:
           page.evaluate("()=>document.querySelector('#sbOut').textContent") == "$210"
           and page.evaluate("()=>document.querySelector('#sbSpread').textContent") == "$130")
 
+    # A SALE is half of a show day, and the bar ignored it: totals() read only
+    # dealLog, and sellHolding never refreshed the bar -- a vendor selling all
+    # morning watched the day total sit still (live, launch day 2026-08-30).
+    # A sold row contributes cost of goods to value-out, proceeds to value-in,
+    # so the spread picks up exactly the realized profit. saveSold() is the one
+    # choke point every sale and un-sale passes through, so the repaint lives
+    # there, not in each caller.
+    page.evaluate("""()=>{soldLog.push({id:'s_t1',name:'Test Slab',qty:1,basis:30,
+        net:100,realized:70,channel:'Cash',type:'graded',status:'graded',
+        date:new Date().toISOString().slice(0,10)});saveSold();}""")
+    page.wait_for_timeout(150)
+    t2 = page.evaluate("()=>ShowMode.totals()")
+    check(f"a booked sale adds its cost basis to value out ({t2['out']})", t2["out"] == 240)
+    check(f"...and its net proceeds to value in ({t2['mkt']})", t2["mkt"] == 440)
+    check(f"...so spread gains the realized profit ({t2['spread']})", t2["spread"] == 200)
+    check(f"...and the deal count includes it ({t2['n']})", t2["n"] == 4)
+    check("saveSold() alone repaints the bar (no caller needs to remember)",
+          page.evaluate("()=>document.querySelector('#sbOut').textContent") == "$240")
+
     # NEGATIVE CASE: a day total that quietly includes other days is worse than
     # no total -- it is the number the vendor works from.
     page.evaluate("""()=>{dealLog.push({id:'old',date:'2020-01-01',kind:'buy',
@@ -483,7 +502,7 @@ with sync_playwright() as pw:
     page.wait_for_timeout(200)
     t2 = page.evaluate("()=>ShowMode.totals()")
     check(f"an older deal does NOT leak into today ({t2['n']} deals, ${t2['out']})",
-          t2["n"] == 3 and t2["out"] == 210)
+          t2["n"] == 4 and t2["out"] == 240)   # 3 deals + the booked sale
 
     # A vendor reloading mid-show must not lose the number they are working from.
     page.reload(wait_until="load")
@@ -492,7 +511,7 @@ with sync_playwright() as pw:
     page.wait_for_timeout(300)
     check("survives a reload mid-show",
           vis() and page.evaluate(
-              "()=>document.querySelector('#sbOut').textContent") == "$210")
+              "()=>document.querySelector('#sbOut').textContent") == "$240")
     ctx.close()
 
     print("\n12. CSV import at dealer scale")
