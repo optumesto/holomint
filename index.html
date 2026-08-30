@@ -625,8 +625,8 @@ catch(e){document.documentElement.style.display="none";}</script>
     <div id="showBar" class="hide" role="status" aria-live="polite">
       <div class="sb-head"><span class="sb-t">Show day</span><span class="sb-d" id="sbDate"></span></div>
       <div class="sb-grid">
-        <div><span class="sb-n" id="sbOut">$0</span><span class="sb-l">Cash out</span></div>
-        <div><span class="sb-n" id="sbMkt">$0</span><span class="sb-l">Market in</span></div>
+        <div><span class="sb-n" id="sbOut">$0</span><span class="sb-l">Value out</span></div>
+        <div><span class="sb-n" id="sbMkt">$0</span><span class="sb-l">Value in</span></div>
         <div><span class="sb-n" id="sbSpread">$0</span><span class="sb-l">Spread</span></div>
         <div><span class="sb-n" id="sbDeals">0</span><span class="sb-l">Deals</span></div>
       </div>
@@ -839,7 +839,7 @@ catch(e){document.documentElement.style.display="none";}</script>
       <div class="colbody">
         <div class="field">
             <label class="ck-chk"><input type="checkbox" id="showModeChk"><span><b>Show mode</b> (running totals for a day behind a table)</span></label>
-            <div class="sub">Puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
+            <div class="sub">Puts a running <b>value out</b>, <b>value in</b> and <b>spread</b> across the top of the Trade Block for today's deals. Every deal you send to the Desk counts. The day rolls over on its own, so there is nothing to start or remember to end.</div>
           </div>
       </div>
     </div>
@@ -2110,7 +2110,7 @@ const Tour=(function(){
        reachable without Pro. paint() expands a collapsed .card on the way in
        and done() re-collapses it, so this does not leave Settings rearranged. */
     {tab:'settings', sel:'#showModeChk', title:'Running a table today?',
-     body:'Show mode puts a running <b>cash out</b>, <b>market in</b> and <b>spread</b> across the top of the Trade Block, so at the end of a show you know what the day cost and what it is worth without adding anything up. Holomint can also price a whole pile for you at a buy rate you set.'},
+     body:'Show mode puts a running <b>value out</b>, <b>value in</b> and <b>spread</b> across the top of the Trade Block, so at the end of a show you know what the day cost and what it is worth without adding anything up. Holomint can also price a whole pile for you at a buy rate you set.'},
     /* #portTotals is .card.hide until there is a holding, so on a first run this
        step pointed at nothing -- for every new user since it was written. The
        Portfolio TAB button is always there, so aim at that instead. */
@@ -2582,7 +2582,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.51';
+const APP_VERSION='1.52';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
