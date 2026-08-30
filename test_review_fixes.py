@@ -76,6 +76,19 @@ show = pip[:pip.index('function pinnedChip')]
 check('no var(--...) inside the PiP window markup', 'var(--' not in strip_comments(show),
       'custom properties resolve to nothing in a fresh document')
 
+print('=== C1: no em dashes in user-visible copy (2026-08-30, Mason) ===')
+# The em dash has become the tell people read as machine-written copy. Every
+# prose instance was rewritten (comma, colon, parenthetical, or a full stop).
+# The ONE sanctioned use is the standalone no-price placeholder '\u2014' in
+# price cells, which is a table convention, not a sentence.
+lit = SRC.count('\u2014')            # literal em dash characters in the page
+ent = SRC.count('&mdash;')
+esc = SRC.count("'\\u2014'")          # the quoted placeholder literal in JS
+check('no literal em dash anywhere in the page', lit == 0, f'found {lit}')
+check('no &mdash; entity anywhere', ent == 0, f'found {ent}')
+check('the no-price placeholder survives as the sanctioned exception',
+      esc == 2, f'found {esc} (expected exactly 2: priceTag and PiP)')
+
 print()
 print('ALL PASS' if not failed else f'{failed} FAILED')
 sys.exit(1 if failed else 0)

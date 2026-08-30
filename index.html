@@ -1017,7 +1017,7 @@ catch(e){document.documentElement.style.display="none";}</script>
          means retry the thing that just failed, or leave and find + Manual.
          Every competitor review complains about exactly this dead end. -->
     <div id="scanFallback" class="hide" style="width:100%;max-width:340px;margin-top:var(--s8)">
-      <div id="scanFbHead" style="font-size:var(--t3);color:var(--ink2);margin-bottom:var(--s4)">Type the name instead &mdash; we kept what we could read.</div>
+      <div id="scanFbHead" style="font-size:var(--t3);color:var(--ink2);margin-bottom:var(--s4)">Type the name instead. We kept what we could read.</div>
       <input id="scanFbInput" type="text" placeholder="Card name or number" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;padding:var(--s5) var(--s6);font-size:var(--t5)">
       <div id="scanFbRes" style="margin-top:var(--s4)"></div>
     </div>
@@ -2091,7 +2091,7 @@ const Tour=(function(){
        link, because conspicuousness of THAT line is what answers a reliance
        claim about a margin figure. */
     {tab:null, sel:null, gate:true, title:'Before you start',
-     body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you when a drop lands — Free waits 10 minutes, Pro does not.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
+     body:'Holomint prices sealed product and singles against current market data refreshed daily, tracks what you hold as a running P&amp;L, and can alert you when a drop lands: Free waits 10 minutes, Pro does not.<br><br><b>Every figure in this app is an estimate, not financial advice.</b> Market values move, comps can be thin or stale, and what you actually clear depends on your channel, its fees, and your timing. Do not treat any number here as a guaranteed sale price.'},
     {tab:'block', sel:'#channels', title:'Know your real margin before you buy',
      body:'This is the Trade Block. Pick where you sell: eBay, TCGplayer, Whatnot, or cash. Every number in the app is then <b>net of that channel\'s fees</b>, so the profit you see is the profit you keep. Singles also price by condition, so a played card is never valued as if it were mint.'},
     /* The scanner did not exist when this tour was written, and it is the first
@@ -2103,7 +2103,7 @@ const Tour=(function(){
     {tab:'port', sel:'.navb[data-tab="port"]', title:'Every Pokemon restock, with the maths already done',
      body:'The live feed. Pokemon Center, Best Buy, Target, and more, each matched to its sealed listing and priced against retail. No hunting, no refreshing. <b>Locked rows are the 10 minute free delay;</b> Pro sees them without it.'},
     {tab:'settings', sel:'#alertCard', title:'Get buzzed with Holomint closed',
-     body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open — that works on the free tier too, ten minutes behind. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room as soon as it opens. Settings has a <b>What Pro adds</b> walkthrough if you want to see the difference.'},
+     body:'Turn on alerts and your phone buzzes when a drop clears the floors you set. The app does not need to be open, and that works on the free tier too, ten minutes behind. <b>Queue alerts are on by default</b>, so you hear about a Pokemon Center waiting room as soon as it opens. Settings has a <b>What Pro adds</b> walkthrough if you want to see the difference.'},
     /* #showBar is hidden until Show mode is switched on, so the step points at
        the switch rather than the thing the switch reveals. */
     /* Points at the real switch again now that it has its own card and is
@@ -2135,7 +2135,7 @@ const Tour=(function(){
      itself would show them nothing. */
   const PRO_STEPS=[
     {tab:'settings', sel:'#alertCard', title:'Drops without the ten-minute wait',
-     body:'Free alerts arrive ten minutes after Pro ones. On a set that sells out in minutes that is the whole window. Pro removes the delay; everything else about alerts — the floors, quiet hours, the daily cap — works the same on both.'},
+     body:'Free alerts arrive ten minutes after Pro ones. On a set that sells out in minutes that is the whole window. Pro removes the delay; everything else about alerts (the floors, quiet hours, the daily cap) works the same on both.'},
     {tab:'port', sel:'#dropsCard', title:'Watch anything you like',
      body:'Name a product and Holomint tells you when it moves, instead of only what is trending. Useful when you are chasing one specific box rather than whatever the feed happens to surface.'},
     {tab:'port', sel:'#dealCard', title:'Every deal you ever caught',
@@ -2145,7 +2145,7 @@ const Tour=(function(){
     {tab:'settings', sel:'#setBkBtn', title:'Your own numbers, in and out',
      body:'Import a cost-basis CSV from the spreadsheet you already keep, and export it back out. Pro also picks FIFO or LIFO lot accounting, so the realized figure matches the position you actually want to report.'},
     {tab:'block', sel:'#channels', title:'That is the whole of it',
-     body:'Pro is <b>$9.99 a month</b> and cancels in one tap from Settings. Everything you have used so far — the margin maths, the scanner, the portfolio, Show mode — stays free whether you subscribe or not.'}
+     body:'Pro is <b>$9.99 a month</b> and cancels in one tap from Settings. Everything you have used so far (the margin maths, the scanner, the portfolio, Show mode) stays free whether you subscribe or not.'}
   ];
 
   /* Which list is running. start() and startPro() swap it; everything else
@@ -2349,8 +2349,8 @@ const Checkout=(function(){
     if(!o){
       if(p&&p.unreachable)
         return '<div class="feat" style="color:var(--ink3)">'
-          +'<b>Could not reach the store.</b> This is usually the network, not you '
-          +'&mdash; Pro is still on sale.</div>'
+          +'<b>Could not reach the store.</b> This is usually the network, not you. '
+          +'Pro is still on sale.</div>'
           +'<button class="act" id="ckRetry" style="width:100%">Try again</button>';
       return '<div class="feat" style="color:var(--ink3)">Subscriptions are not open yet.</div>';
     }
@@ -3852,13 +3852,13 @@ const ShowPricer=(function(){
         +'<div class="field" style="flex:1;margin:0"><label>Bulk box under</label>'
         +'<div class="row" style="gap:var(--s4)"><span style="font-family:var(--mono);color:var(--ink3)">$</span><input class="num" id="pcBulk" type="number" min="0" max="20" step="0.5" value="'+p.bulkUnder+'" style="width:70px"></div></div>'
         +'</div>'
-        +'<div class="sub" style="margin-top:var(--s4)">Ask is your floor plus room. <b>Floor is the walk-away</b> — the grey number — so you know when to say no with a queue behind them.</div>'},
+        +'<div class="sub" style="margin-top:var(--s4)">Ask is your floor plus room. <b>Floor is the walk-away</b>, the grey number, so you know when to say no with a queue behind them.</div>'},
       {type:'static',html:
         '<div class="lot-tot" style="margin-top:var(--s6)">'
         +'<div class="tr"><span>Items · cards</span><span>'+t.n+' · '+t.cards+'</span></div>'
         +'<div class="tr"><span>Market total</span><span>'+usd(t.market)+'</span></div>'
         +'<div class="tr big"><span>Asking total</span><span>'+usd(t.ask)+'</span></div>'
-        +(t.oop?'<div class="tr"><span>Out of print &mdash; cannot be restocked</span><span>'+t.oop+' card(s) &middot; '+usd(t.oopValue)+'</span></div>':'')
+        +(t.oop?'<div class="tr"><span>Out of print: cannot be restocked</span><span>'+t.oop+' card(s) &middot; '+usd(t.oopValue)+'</span></div>':'')
         +(t.bulk?'<div class="tr"><span>Suggest a bulk box</span><span>'+t.bulk+' card(s)</span></div>':'')
         +(t.unpriced?'<div class="tr"><span style="color:var(--down)">No market price</span><span style="color:var(--down)">'+t.unpriced+' card(s)</span></div>':'')
         +'</div>'},
@@ -3888,7 +3888,7 @@ const ShowPricer=(function(){
       const txt=text();
       try{
         navigator.clipboard.writeText(txt).then(function(){toast('Price list copied');},
-          function(){toast('Could not copy — long-press to select instead');});
+          function(){toast('Could not copy. Long-press to select instead');});
       }catch(e){toast('Could not copy on this browser');}
     };
   }
