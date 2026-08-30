@@ -3219,7 +3219,7 @@ function renderHoldings(){
     return `<tr><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name} ${chip}<div style="font-family:var(--mono);font-size:var(--t1);color:var(--ink3);font-weight:400">\u00d7${h.qty}${h.location?' · '+h.location:''}</div></td><td>${usd(h.costBasis)}</td><td>${usd(h.currentValue)}</td><td class="${cls}">${pct(r)}</td><td style="white-space:nowrap"><span class="toolbtn" data-sell="${h.id}">$</span><span class="toolbtn" data-edit="${h.id}">\u270e</span><span class="toolbtn" data-del="${h.id}">\u00d7</span></td></tr>`;}).join('')
     :(holdings.length
       ? '<tr><td colspan="5" class="tbl-empty">No matches.<br><span class="es-h">Try a shorter search, or clear the filter above.</span></td></tr>'
-      : '<tr><td colspan="5" class="tbl-empty">Nothing tracked yet.<br><span class="es-h">Buy something in the Trade Block, or scan a card to add it here.</span></td></tr>');
+      : '<tr><td colspan="5" class="tbl-empty">Nothing tracked yet.<br><span class="es-h">Tap Add above to log what you already own.</span></td></tr>');
   if(hidden>0){
     $('#holdBody').insertAdjacentHTML('beforeend',
       '<tr><td colspan="5" style="text-align:center;padding:var(--s6)"><button class="ghost" id="holdMore" style="padding:var(--s4) var(--s8);font-size:var(--t3)">Show all '+sorted.length+' holdings</button><div style="font-size:var(--t2);color:var(--ink3);margin-top:var(--s2);font-family:var(--mono)">'+hidden+' more not shown</div></td></tr>');
