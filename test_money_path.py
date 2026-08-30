@@ -494,6 +494,30 @@ with sync_playwright() as pw:
     check("saveSold() alone repaints the bar (no caller needs to remember)",
           page.evaluate("()=>document.querySelector('#sbOut').textContent") == "$240")
 
+    # Bulk box quick-add (Mason, from the show floor 2026-08-30): low-value
+    # cards sell by the handful and cannot each be listed. One tap on +$5
+    # books a $0-basis sale for $5, riding the ENTIRE existing sale machinery:
+    # it persists, it shows in the sold log where it can be un-sold, the tax
+    # summary counts it as the realized income it is, and the bar repaints
+    # through the same saveSold() choke point as any other sale.
+    check("the quick-add row exists on the show bar",
+          page.evaluate("()=>document.querySelectorAll('#showBar [data-bulk]').length") == 4)
+    page.evaluate("()=>document.querySelector('#showBar [data-bulk=\"5\"]').click()")
+    page.wait_for_timeout(150)
+    t3 = page.evaluate("()=>ShowMode.totals()")
+    check(f"+$5 adds five to value in, nothing to value out ({t3['mkt']},{t3['out']})",
+          t3["mkt"] == 445 and t3["out"] == 240)
+    check(f"...spread gains the full five ({t3['spread']})", t3["spread"] == 205)
+    check("...and it is a real sold row, not bar-local state",
+          page.evaluate("()=>soldLog[soldLog.length-1].net") == 5
+          and page.evaluate("()=>soldLog[soldLog.length-1].basis") == 0)
+    # A mistap at a busy table must cost one tap, not an argument with a log.
+    page.evaluate("()=>document.querySelector('#toast .tu').click()")
+    page.wait_for_timeout(150)
+    t4 = page.evaluate("()=>ShowMode.totals()")
+    check(f"undo removes it everywhere ({t4['mkt']})",
+          t4["mkt"] == 440 and t4["spread"] == 200)
+
     # NEGATIVE CASE: a day total that quietly includes other days is worse than
     # no total -- it is the number the vendor works from.
     page.evaluate("""()=>{dealLog.push({id:'old',date:'2020-01-01',kind:'buy',

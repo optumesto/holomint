@@ -508,6 +508,10 @@ catch(e){document.documentElement.style.display="none";}</script>
   #showBar .sb-n{display:block;font-family:var(--mono);font-size:var(--t8);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
   #showBar .sb-l{display:block;font-family:var(--mono);font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:var(--s2)}
   @media (max-width:400px){#showBar .sb-grid{grid-template-columns:repeat(2,1fr);gap:var(--s5)}}
+  #showBar .sb-quick{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s5);padding-top:var(--s5);border-top:1px solid var(--line)}
+  #showBar .sb-ql{font-family:var(--mono);font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+  #showBar .sb-quick button{flex:1;min-height:var(--tap);padding:var(--s3) 0;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink);font-family:var(--mono);font-size:var(--t4);font-weight:600;cursor:pointer}
+  #showBar .sb-quick button:active{background:var(--bg2);border-color:var(--acc)}
   /* Once the rescue search is open the panel is taller than a phone screen.
      justify-content:center then pushes the status off the top and the results
      off the bottom, and they render on top of each other. Anchor to the top and
@@ -630,6 +634,10 @@ catch(e){document.documentElement.style.display="none";}</script>
         <div><span class="sb-n" id="sbSpread">$0</span><span class="sb-l">Spread</span></div>
         <div><span class="sb-n" id="sbDeals">0</span><span class="sb-l">Deals</span></div>
       </div>
+      <!-- Bulk box quick-add: a handful of low-value cards sells as "$5 from
+           the dollar box", too many to list one by one. One tap books a
+           $0-basis sale so the day totals stay honest. -->
+      <div class="sb-quick"><span class="sb-ql">Bulk box</span><button data-bulk="1">+$1</button><button data-bulk="5">+$5</button><button data-bulk="10">+$10</button><button data-bulk="20">+$20</button></div>
     </div>
     <div class="seg" id="modeSeg"><button class="on" data-mode="cash">Cash buy</button><button data-mode="trade">Trade</button></div>
     <div class="card">
@@ -2585,7 +2593,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.54';
+const APP_VERSION='1.55';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -5415,6 +5423,23 @@ $('#scanClose').onclick=()=>Scanner.close();
 // Paint once at startup: the bar reads today's deals, and a reload mid-show
 // must not blank the number the vendor is working from.
 ShowMode.refresh();
+/* Bulk box quick-add. Each tap is a REAL sold row (basis 0, net = the tap),
+   so it rides the whole existing sale machinery: persisted, visible in the
+   sold log, un-sellable from there, counted by the tax summary as the
+   realized income it is, and the bar repaints through saveSold() like any
+   other sale. A mistap at a busy table costs one tap on Undo. */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('#showBar [data-bulk]');if(!b)return;
+  var amt=+b.dataset.bulk||0;if(!(amt>0))return;
+  var row={id:'s'+Math.random().toString(36).slice(2,8),name:'Bulk box',
+    type:'single',status:'raw',grader:null,grade:null,qty:1,
+    basis:0,net:amt,realized:amt,channel:'Cash',
+    date:new Date().toISOString().slice(0,10)};
+  soldLog.push(row);saveSold();renderPortfolio();buzz();
+  toast('+$'+amt+' bulk sale',{undo:function(){
+    soldLog=soldLog.filter(function(x){return x.id!==row.id;});
+    saveSold();renderPortfolio();}});
+});
 var _lotOpen=function(){LotScanner.open();};
 var _sl=$('#scanLot');if(_sl)_sl.onclick=_lotOpen;
 $('#lotClose').onclick=function(){LotScanner.close();};
