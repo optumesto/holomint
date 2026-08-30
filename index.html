@@ -1563,7 +1563,11 @@ function restoreFile(file){const rd=new FileReader();
     // Restoring replaces everything currently in the app. Say what is about to happen,
     // and what it will be replaced with, before doing it.
     const inc=(d.holdings||[]).length, cur=(Store.load('holdings',[])||[]).length;
-    const when=d.at?new Date(d.at).toLocaleString():'an unknown date';
+    // backup() writes `exported`; `d.at` was a field nothing ever wrote, so
+    // every restore said "an unknown date". Kept as the last fallback for any
+    // hand-edited file that happens to carry it.
+    const _when0=d.exported||d.at;
+    const when=_when0?new Date(_when0).toLocaleString():'an unknown date';
     Sheet.confirm
       ? Sheet.confirm('Restore this backup?',
           '<p>This replaces everything currently in Holomint with the contents of this file.</p>'+
@@ -1786,15 +1790,30 @@ const Alerts=(function(){
     });
   }
 
+  /* Every await in here can hang or reject, and an async onclick swallows both:
+     the button just does nothing, forever, with no message -- at a show that
+     reads as "the app is broken". serviceWorker.ready gets the same timeout
+     current() uses (it never rejects, it hangs), and subscribe()/fetch get
+     try/catch so every failure path ends in a toast and a render. */
   async function enable(){
     if(!(await askAge())){render();return;}
     const perm=await Notification.requestPermission();
     if(perm!=='granted'){toast('Alerts not allowed. You can change this in browser settings.');render();return;}
-    const reg=await navigator.serviceWorker.ready;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID_PUBLIC)});
-    const r=await fetch(FEED_API+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload(sub))});
-    if(!r.ok){
+    let reg;
+    try{
+      reg=await Promise.race([navigator.serviceWorker.ready,
+        new Promise((_,rj)=>setTimeout(()=>rj(new Error('sw timeout')),4000))]);
+    }catch(e){toast('The alert service is not ready yet. Reload Holomint and try again.');render();return;}
+    let sub;
+    try{
+      sub=await reg.pushManager.getSubscription();
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID_PUBLIC)});
+    }catch(e){toast('This browser refused the push subscription. Try again, or use another browser.');render();return;}
+    let r;
+    try{
+      r=await fetch(FEED_API+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload(sub))});
+    }catch(e){r=null;}
+    if(!r||!r.ok){
       toast('Could not turn on alerts. Try again.');
       try{await sub.unsubscribe();}catch(e){}
       render();return;
@@ -1912,7 +1931,11 @@ const Alerts=(function(){
     if(o)o.onclick=disable;
     // the SW tells us when the browser rotates a subscription out from under us
     if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{
-      if(e.data&&e.data.type==='push-resubscribe'&&Premium.active())enable();
+      // Every tier re-subscribes. This was gated on Premium.active(), so a FREE
+      // user's alerts died permanently the day their browser rotated the push
+      // endpoint -- silently, which is the house defect class. Permission is
+      // already granted at this point, so enable() runs without a prompt.
+      if(e.data&&e.data.type==='push-resubscribe')enable();
       if(e.data&&e.data.type==='drop-open'&&e.data.url)location.href=e.data.url;
     });
   }
@@ -2559,7 +2582,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.50';
+const APP_VERSION='1.51';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */
@@ -2950,7 +2973,11 @@ const ShowMode=(function(){
 $('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
   if(mode==='cash'){
     const n=cashNumbers();if(n.market<=0)return;
-    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key),r=(p.rate!=null?p.rate:buyRate)/100;
+    /* linePrice, not priceOf: the pile total, the payout and the receipt are all
+       condition-adjusted, but the holdings were booked at the NM price -- so a
+       heavily played single landed in the portfolio at mint basis and mint
+       value, and the sum of the bases no longer matched the payout just logged. */
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=linePrice(p),r=(p.rate!=null?p.rate:buyRate)/100;
       holdings.push(makeHolding({type:it.type,name:it.name,qty:p.qty,costBasis:Math.round(pr*r),currentValue:pr,acquired:today,status:it.status}));});
     logDeal('buy',theirPile.map(p=>({name:resolveItem(p.key).name,qty:p.qty})),n.market,n.offer);
     toast('Booked at '+buyRate+'%');
@@ -2958,7 +2985,7 @@ $('#sendDesk').onclick=()=>{const today=new Date().toISOString().slice(0,10);
     const recvMarket=pileValue(theirPile);if(recvMarket<=0)return;
     const given=Math.max(0,pileValue(yourPile)+yourCash-theirCash);
     const ratio=given>0?given/recvMarket:0;
-    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=priceOf(p.key);
+    theirPile.forEach(p=>{const it=resolveItem(p.key),pr=linePrice(p);
       holdings.push(makeHolding({type:it.type,name:it.name,qty:p.qty,costBasis:Math.round(pr*ratio),currentValue:pr,acquired:today,status:it.status}));});
     logDeal('trade',theirPile.map(p=>({name:resolveItem(p.key).name,qty:p.qty})),recvMarket,given);
     toast('Trade booked at '+Math.round(ratio*100)+'% basis');
@@ -4290,7 +4317,7 @@ const FeatureMap=(function(){
     ]},
     {tab:'settings',name:'Settings',items:[
       {sel:'#alertCard',t:'Drop alerts',d:'Push notifications when a drop lands, with your own profit floors. Free is delayed 10 minutes and capped; Pro has neither limit.'},
-      {sel:'#setTour',t:'Replay the tour',d:'Run the five step walkthrough again any time.'},
+      {sel:'#setTour',t:'Replay the tour',d:'Run the guided walkthrough again any time.'},
     ]},
   ];
   function open(){
@@ -5562,7 +5589,11 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
     if(typeof netStatus==='function')netStatus();
     toast('Back online.');
     if(typeof LiveDrops!=='undefined')LiveDrops.refresh();
-    if(typeof PriceEngine!=='undefined'&&PriceEngine.refresh)PriceEngine.refresh();
+    // loadData, because PriceEngine.refresh never existed: the existence guard
+    // made this line a silent no-op, so prices simply never refreshed on
+    // reconnect. A guard on a method nobody defined is a check that never runs.
+    if(typeof PriceEngine!=='undefined'&&PriceEngine.loadData)
+      PriceEngine.loadData().then(function(){if(typeof recompute==='function')recompute();}).catch(function(){});
     // Finish activating a key that was pasted while the authority was
     // unreachable. Signal coming back is the natural moment, and it means a
     // buyer at a show does not have to think about it again.
@@ -5580,7 +5611,11 @@ setTimeout(function(){try{if(typeof Alerts!=='undefined'&&Alerts.resync)Alerts.r
     {sel:'#condModal',  is:function(e){return e.classList.contains('show');},   close:function(){CondGuide.close();}},
     {sel:'#scanChoose', is:function(e){return e.classList.contains('show');},   close:function(){e_rm('#scanChoose');}},
     {sel:'#scanModal',  is:function(e){return e.classList.contains('on')||e.classList.contains('show');}, close:function(){Scanner.close();}},
-    {sel:'#sheet',      is:function(e){return e.classList.contains('show')||e.classList.contains('on');}, close:function(){var b=$('#sheetOk')||$('#sheetX');if(b)b.click();else e_rm('#sheet');}},
+    /* Back CANCELS, it never submits. This clicked #sheetOk, so pressing the
+       Android back button with the Sell sheet open BOOKED THE SALE with
+       whatever the fields held. Escape and #cfmModal both route through
+       Cancel with comments saying why; this path had quietly diverged. */
+    {sel:'#sheet',      is:function(e){return e.classList.contains('show')||e.classList.contains('on');}, close:function(){var b=$('#sheetCancel');if(b)b.click();else e_rm('#sheet');}},
     // Sheet.confirm's dialog. Listed last among the modals but built first-use,
     // so it only reaches this list through HMOverlayWatch. Back cancels it,
     // which is the right default for a dialog whose OK cannot be undone.
@@ -5774,11 +5809,14 @@ const PiP=(function(){
       if(win){win.close();win=null;}
       win=await documentPictureInPicture.requestWindow({width:240,height:128});
       const d=win.document;
-      d.body.style.cssText='margin:0;font-family:system-ui,sans-serif;background:#0e1122;color:#ece7d8;display:flex;flex-direction:column;justify-content:center;padding:var(--s7);gap:var(--s2)';
+      /* Literals, not var(--...): this is a NEW document with none of the app's
+         stylesheets, so every custom property resolved to nothing and the float
+         rendered at browser defaults. Same fixed brand palette Receipt uses. */
+      d.body.style.cssText='margin:0;font-family:system-ui,sans-serif;background:#0e1122;color:#ece7d8;display:flex;flex-direction:column;justify-content:center;padding:16px;gap:2px';
       d.body.innerHTML=
-        '<div style="font-size:var(--t4);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
-        '<div style="font-family:monospace;font-size:var(--t2);color:var(--ink4)">'+(it.set||'')+'</div>'+
-        '<div style="display:flex;align-items:baseline;gap:var(--s4);margin-top:var(--s2)"><div style="font-family:monospace;font-size:var(--t10);font-weight:600;color:var(--gold)">'+price+'</div><div style="font-family:monospace;font-size:var(--t3);color:'+chgCol+'">'+chgTxt+'</div></div>';
+        '<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+(it.jp?' \ud83c\uddef\ud83c\uddf5':'')+'</div>'+
+        '<div style="font-family:monospace;font-size:11px;color:#5f6680">'+(it.set||'')+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:8px;margin-top:2px"><div style="font-family:monospace;font-size:30px;font-weight:600;color:#d8a93f">'+price+'</div><div style="font-family:monospace;font-size:12px;color:'+chgCol+'">'+chgTxt+'</div></div>';
     }catch(e){pinnedChip(it,price,chgTxt,chgCol);}
   }
   function pinnedChip(it,price,chgTxt,chgCol){
