@@ -51,6 +51,7 @@ def decode(data):
             "type": types[ti[i]],
             "status": statuses[ui[i]],
             "img": f"{IMG_BASE}{pid}_200w.jpg",
+            **({"jp": True} if (data.get("jp") and data["jp"][i]) else {}),
         })
     return out
 

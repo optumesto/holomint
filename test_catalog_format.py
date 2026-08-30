@@ -208,5 +208,26 @@ check(f"singles coverage has not regressed ({_ratio*100:.1f}%, floor 88%)",
 check("no product is priced at zero rather than absent",
       not [k for k, v in _pr.items() if isinstance(v, (int, float)) and v == 0])
 
+# --- jp survives the wire (added launch morning 2026-08-30) -----------------
+# The columnar migration mapped id/name/set/type/status and silently DROPPED
+# jp: the encoder set entry.jp on the in-memory rows and never emitted a
+# column, so the first daily rewrite in the new format erased the Japanese
+# half of the catalog from every fresh download. The JP toggle filtered all
+# 60k rows out, and JP products leaked into the EN view unlabeled. Writer and
+# reader must agree ON THE WIRE, so this pins all three: column present,
+# python decoder surfaces it, and the app's decodeCatalog mentions it.
+import json as _json, re as _re
+_wire=_json.load(open('products.json'))
+check("the wire carries a jp column", isinstance(_wire,dict) and 'jp' in _wire)
+if isinstance(_wire,dict) and 'jp' in _wire:
+    import catalog as _cat
+    _rows=_cat.decode(_wire)
+    _n=sum(1 for r in _rows if r.get('jp'))
+    check(f"python decoder surfaces jp ({_n:,} rows)", _n>1000)
+    check(f"jp count is plausible ({_n}/{len(_rows)})", 0.2 < _n/len(_rows) < 0.7)
+_app=open('index.html',encoding='utf-8').read()
+_m=_re.search(r'function decodeCatalog[\s\S]{0,900}?return n\?out:null', _app)
+check("app decodeCatalog reads the jp column", bool(_m) and 'p.jp' in _m.group(0))
+
 print("\n" + ("ALL TESTS PASSED" if passed else "SOME TESTS FAILED"))
 sys.exit(0 if passed else 1)

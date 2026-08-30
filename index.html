@@ -2435,6 +2435,9 @@ function decodeCatalog(p){
     const id=p.id[i];
     out[i]={id:id,name:p.name[i],set:sets[p.set[i]],type:types[p.type[i]],
             status:statuses[p.status[i]],img:IMG_BASE+id+'_200w.jpg'};
+    // A Service Worker can serve a cached wire from before the jp column
+    // existed, so its absence is tolerated; its presence restores the flag.
+    if(p.jp&&p.jp[i])out[i].jp=true;
   }
   return n?out:null;
 }
@@ -2582,7 +2585,7 @@ $('#proBtn').onclick=async()=>{
 /* ---- TRADE BLOCK ---- */
 let theirPile=[],yourPile=[],mode='cash',channel='cash';
 let lang=Store.load('lang','all'); // all | en | jp
-const APP_VERSION='1.52';
+const APP_VERSION='1.53';
 /* Bump this whenever the Terms change materially: price, venue, arbitration,
    liability, or what we collect. A user whose stored assent carries an older
    value is re-gated on next open. Typo fixes do not need a bump. */

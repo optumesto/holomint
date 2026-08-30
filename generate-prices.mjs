@@ -33,6 +33,11 @@ function encodeCatalog(products) {
     set:    products.map(p => si.get(p.set)),
     type:   products.map(p => ti.get(p.type)),
     status: products.map(p => ui.get(p.status)),
+    // jp landed on the in-memory rows (entry.jp) but never on the wire, so the
+    // columnar migration silently dropped the ENTIRE Japanese half of the
+    // catalog from the app: the JP toggle filtered everything out and JP rows
+    // leaked into the EN view unlabeled. Found live on launch morning.
+    jp:     products.map(p => (p.jp ? 1 : 0)),
   };
 }
 
